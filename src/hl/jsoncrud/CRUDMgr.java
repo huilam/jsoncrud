@@ -118,9 +118,16 @@ public class CRUDMgr {
 		
 		StringBuffer sbColName 	= new StringBuffer();
 		StringBuffer sbParams 	= new StringBuffer();
+		
+		StringBuffer sbRollbackParentSQL = new StringBuffer();
+		
 		List<Object> listValues = new ArrayList<Object>();
 		
 		List<String> listUnmatchedJsonName = new ArrayList<String>();
+		
+		String sTableName 	= map.get(JsonCrudConfig._PROP_KEY_TABLENAME);
+		boolean isDebug		= "true".equalsIgnoreCase(map.get(JsonCrudConfig._PROP_KEY_DEBUG)); 
+		
 		
 		Map<String, String> mapCrudJsonCol = mapJson2ColName.get(aCrudKey);
 		for(String sJsonName : aDataJson.keySet())
@@ -134,6 +141,11 @@ public class CRUDMgr {
 					sbColName.append(",");
 					sbParams.append(",");
 				}
+				else if(sbRollbackParentSQL.length()==0)
+				{
+					sbRollbackParentSQL.append("DELETE FROM ").append(sTableName).append(" WHERE 1=1 ");					
+				}
+				sbRollbackParentSQL.append(" AND ").append(sColName).append(" = ? ");
 				sbColName.append(sColName);
 				sbParams.append("?");
 				//
@@ -145,12 +157,11 @@ public class CRUDMgr {
 			}
 		}
 		
-		String sTableName 	= map.get(JsonCrudConfig._PROP_KEY_TABLENAME);
-		boolean isDebug		= "true".equalsIgnoreCase(map.get(JsonCrudConfig._PROP_KEY_DEBUG)); 
+
 		String sSQL 		= "INSERT INTO "+sTableName+"("+sbColName.toString()+") values ("+sbParams.toString()+")";
 		
-		String sJdbcName = map.get(JsonCrudConfig._PROP_KEY_DBCONFIG);
-		JdbcDBMgr dbmgr = mapDBMgr.get(sJdbcName);
+		String sJdbcName 	= map.get(JsonCrudConfig._PROP_KEY_DBCONFIG);
+		JdbcDBMgr dbmgr 	= mapDBMgr.get(sJdbcName);
 		
 		long lAffectedRow = 0;
 				
@@ -168,7 +179,6 @@ public class CRUDMgr {
 			//child create
 			if(listUnmatchedJsonName.size()>0)
 			{
-				long lAffectedRow2 = 0;
 				JSONArray jsonArrReturn = retrieve(aCrudKey, aDataJson);
 				
 				for(int i=0 ; i<jsonArrReturn.length(); i++  )
@@ -189,7 +199,29 @@ public class CRUDMgr {
 						List<Object[]> listParams2 	= getSubQueryParams(map, jsonReturn, sJsonName2);
 						String sObjInsertSQL 		= map.get("jsonattr."+sJsonName2+"."+JsonCrudConfig._PROP_KEY_OBJ_SQL);
 						
-						long lupdatedRow = updateChildObject(dbmgr, sObjInsertSQL, listParams2);
+						long lupdatedRow = 0;
+						
+						try {
+							lupdatedRow = updateChildObject(dbmgr, sObjInsertSQL, listParams2);
+						}
+						catch(Throwable ex)
+						{
+							try {
+								//rollback parent
+								long lRollbackRow = dbmgr.executeUpdate(sbRollbackParentSQL.toString(), listValues);
+								if(lAffectedRow!=lRollbackRow)
+								{
+									throw new Exception("Record fail to Rollback!");
+								}
+							}
+							catch(Throwable ex2)
+							{
+								throw new Exception("[Rollback Failed], parent:[sql:"+sbRollbackParentSQL.toString()+",params:"+listParamsToString(listValues)+"], child:[sql:"+sObjInsertSQL+",params:"+listParamsToString(listParams2)+"]", ex);
+							}
+							
+							throw new Exception("[Rollback Success] : child : sql:"+sObjInsertSQL+", params:"+listParamsToString(listParams2), ex);
+						}
+							
 					}
 				}
 			}			
@@ -953,11 +985,17 @@ public class CRUDMgr {
 				sbObjDel.append(" OR ").append(sbWhere);
 				for(Object o : obj2)
 				{
+					if((o instanceof String) && o.toString().equals(""))
+					{
+						o = null;
+					}
 					listFlattenParam.add(o);
 				}
 				
 				if(aDBMgr.getExecuteQueryCount(sbObjSQL2.toString(), obj2)==0)
+				{
 					listParams_new.add(obj2);
+				}
 			}
 			sbObjDel.append(" ) ");
 			aListParams.clear();

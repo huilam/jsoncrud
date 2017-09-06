@@ -126,6 +126,28 @@ public class CRUDMgrTest {
 			{
 				System.out.println("10. retrieve.sample_users:"+jArr.get(i));
 			}
+			
+			/////////// Test Rollback
+			jsonUser = new JSONObject();
+			jsonUser.put("uid", "rollback_uid");
+			jsonUser.put("displayname", "Rollback User Name");
+			jsonUser.put("gender", "M");
+			jsonUser.put("enabled", true);
+			jsonUser.put("age", 1);
+			
+			jsonUserAttrs = new JSONObject();
+			jsonUserAttrs.put("","");
+			jsonUser.put("attrs", jsonUserAttrs);
+			
+			try {
+				jsonUser = m.create("crud.sample_users", jsonUser);
+			}catch(Exception ex) { ex.printStackTrace();}
+			
+			jsonUser = new JSONObject(); 
+			jsonUser.put("uid", "rollback_uid");
+			jsonUser = m.retrieveFirst("crud.sample_users", jsonUser);
+			System.out.println("11. rollback.create.sample_users (should be null) :"+jsonUser);
+			//////////////////////////			
 		}
 		finally
 		{
