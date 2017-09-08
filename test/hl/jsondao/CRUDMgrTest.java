@@ -128,26 +128,46 @@ public class CRUDMgrTest {
 			}
 			
 			/////////// Test Rollback
-			jsonUser = new JSONObject();
-			jsonUser.put("uid", "rollback_uid");
-			jsonUser.put("displayname", "Rollback User Name");
-			jsonUser.put("gender", "M");
-			jsonUser.put("enabled", true);
-			jsonUser.put("age", 1);
-			
-			jsonUserAttrs = new JSONObject();
-			jsonUserAttrs.put("","");
-			jsonUser.put("attrs", jsonUserAttrs);
-			
 			try {
+				jsonUser = new JSONObject();
+				jsonUser.put("uid", "rollback_uid");
+				jsonUser.put("displayname", "Rollback User Name");
+				jsonUser.put("gender", "M");
+				jsonUser.put("enabled", true);
+				jsonUser.put("age", 1);
+				
+				jsonUserAttrs = new JSONObject();
+				jsonUserAttrs.put("","");
+				jsonUser.put("attrs", jsonUserAttrs);
+			
 				jsonUser = m.create("crud.sample_users", jsonUser);
-			}catch(Exception ex) { ex.printStackTrace();}
+			}catch(Exception ex) { }
 			
 			jsonUser = new JSONObject(); 
 			jsonUser.put("uid", "rollback_uid");
 			jsonUser = m.retrieveFirst("crud.sample_users", jsonUser);
 			System.out.println("11. rollback.create.sample_users (should be null) :"+jsonUser);
 			//////////////////////////			
+			// Range filter test
+			
+			for(int i=0; i<100; i++)
+			{
+				jsonUser = new JSONObject();
+				jsonUser.put("uid", "uid_"+i);
+				jsonUser.put("displayname", "name_"+i);
+				jsonUser.put("age", i);
+				jsonUser = m.create("crud.sample_users", jsonUser);
+			}
+			
+			jsonUser = new JSONObject();
+			jsonUser.put("age.from", 5);
+			jsonUser.put("age.to", 9);
+			jArr = m.retrieve("crud.sample_users", jsonUser);
+			for(int i=0; i<jArr.length(); i++)
+			{
+				System.out.println((i+12)+". retrieve.sample_users:"+jArr.get(i));
+			}
+			//////////////////////////
 		}
 		finally
 		{

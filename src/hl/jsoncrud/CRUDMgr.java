@@ -44,19 +44,23 @@ import hl.common.JdbcDBMgr;
 
 public class CRUDMgr {
 	
+	private final static String JSONFILTER_FROM 				= "from";
+	private final static String JSONFILTER_TO 					= "to";
+	
 	private Map<String, JdbcDBMgr> mapDBMgr 					= null;
 	private Map<String, Map<String, String>> mapJson2ColName 	= null;
 	private Map<String, Map<String, String>> mapColName2Json 	= null;
 	private Map<String, Map<String, String>> mapJson2Sql 		= null;
 	private Map<String, DBColMeta[]> mapTableCols 				= null;
 	
+	private Pattern pattSQLjsonname		= null;
 	private Pattern pattJsonColMapping 	= null;
 	private Pattern pattJsonSQL 		= null;
-	private Pattern pattSQLjsonname		= null;
-	private Pattern pattInsertSQLtableFields = null;
+	private Pattern pattJsonNameFilter			= null;
+	private Pattern pattInsertSQLtableFields 	= null;
 	
-	private JsonCrudConfig jsoncrudConfig 	= null;
-	private String config_prop_filename 	= null;
+	private JsonCrudConfig jsoncrudConfig 		= null;
+	private String config_prop_filename 		= null;
 	
 	public String _LIST_META 		= "meta";
 	public String _LIST_RESULT 		= "result";
@@ -101,6 +105,9 @@ public class CRUDMgr {
 		pattSQLjsonname 			= Pattern.compile("\\{(.+?)\\}");
 		pattInsertSQLtableFields 	= Pattern.compile("insert\\s+?into\\s+?([a-zA-Z_]+?)\\s+?\\((.+?)\\)");
 		//
+		pattJsonNameFilter 	= Pattern.compile("([a-zA-Z_-]+?)\\.("+JSONFILTER_FROM+"|"+JSONFILTER_TO+")");
+		//
+		
 		try {
 			reloadProps();
 		} catch (Exception e) {
@@ -271,15 +278,36 @@ public class CRUDMgr {
 
 		// WHERE
 		StringBuffer sbWhere 	= new StringBuffer();
-		for(String sJsonName : aWhereJson.keySet())
+		for(String sOrgJsonName : aWhereJson.keySet())
 		{
+			String sOperator = " = ";
+			String sJsonName = sOrgJsonName;
+			
+			if(sJsonName.indexOf(".")>-1)
+			{
+				Matcher m = pattJsonNameFilter.matcher(sJsonName);
+				if(m.find())
+				{
+					sJsonName = m.group(1);
+					String sJsonOperator = m.group(2);
+					if(JSONFILTER_FROM.equals(sJsonOperator))
+					{
+						sOperator = " >= ";
+					}
+					else if(JSONFILTER_TO.equals(sJsonOperator))
+					{
+						sOperator = " <= ";
+					}
+				}
+			}
+			
 			String sColName = mapCrudJsonCol.get(sJsonName);
 			//
 			if(sColName!=null)
 			{
-				sbWhere.append(" AND ").append(sColName).append(" = ? ");
+				sbWhere.append(" AND ").append(sColName).append(sOperator).append(" ? ");
 				// 
-				Object o = aWhereJson.get(sJsonName);
+				Object o = aWhereJson.get(sOrgJsonName);
 				o = castJson2DBVal(aCrudKey, sJsonName, o);
 				listValues.add(o);
 			}
@@ -617,7 +645,7 @@ public class CRUDMgr {
 		
 		String sTableName 	= map.get(JsonCrudConfig._PROP_KEY_TABLENAME);
 		boolean isDebug		= "true".equalsIgnoreCase(map.get(JsonCrudConfig._PROP_KEY_DEBUG)); 
-		String sSQL = "DELETE FROM "+sTableName+" WHERE 1=1 "+sbWhere.toString();
+		String sSQL 		= "DELETE FROM "+sTableName+" WHERE 1=1 "+sbWhere.toString();
 		
 		String sJdbcName = map.get(JsonCrudConfig._PROP_KEY_DBCONFIG);
 		JdbcDBMgr dbmgr = mapDBMgr.get(sJdbcName);
@@ -795,6 +823,7 @@ public class CRUDMgr {
 			return aVal;
 		
 		//only cast string value
+		aJsonName = getJsonNameNoFilter(aJsonName);
 		
 		Object oVal = aVal;
 		DBColMeta col = getDBColMetaByJsonName(aCrudKey, aJsonName);
@@ -827,6 +856,8 @@ public class CRUDMgr {
 	
 	public DBColMeta getDBColMetaByJsonName(String aCrudKey, String aJsonName)
 	{
+		aJsonName = getJsonNameNoFilter(aJsonName);
+		//
 		DBColMeta[] cols = mapTableCols.get(aCrudKey);
 		Map<String,String> mapCol2Json = mapColName2Json.get(aCrudKey);
 		for(DBColMeta col : cols)
@@ -1098,6 +1129,16 @@ public class CRUDMgr {
 		///		
 		
 		return listAllParams;
-	}	
+	}
 	
+	private String getJsonNameNoFilter(String aJsonName)
+	{
+		int iPos = aJsonName.indexOf(".");
+		if(iPos >-1)
+		{
+			aJsonName = aJsonName.substring(0,iPos);
+		}
+		return aJsonName;
+		
+	}
 }
