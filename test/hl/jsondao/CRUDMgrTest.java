@@ -146,7 +146,7 @@ public class CRUDMgrTest {
 			jsonUser = new JSONObject(); 
 			jsonUser.put("uid", "rollback_uid");
 			jsonUser = m.retrieveFirst("crud.sample_users", jsonUser);
-			System.out.println("11. rollback.create.sample_users (should be null) :"+jsonUser);
+			System.out.println("11. rollback.create.sample_users (should be null):"+jsonUser);
 			//////////////////////////			
 			// Range filter test
 			
@@ -162,11 +162,26 @@ public class CRUDMgrTest {
 			jsonUser = new JSONObject();
 			jsonUser.put("age.from", 5);
 			jsonUser.put("age.to", 9);
+			jsonUser.put("uid.from", "uid_6");
 			jArr = m.retrieve("crud.sample_users", jsonUser);
+			System.out.println("12. retrieve.sample_users (age>=5 + age<=9 + uid>='uid_6'):"+jArr.length());
 			for(int i=0; i<jArr.length(); i++)
 			{
-				System.out.println((i+12)+". retrieve.sample_users:"+jArr.get(i));
+				System.out.println("    12."+(i+1)+" - "+jArr.get(i));
 			}
+
+			/////
+			jsonUser = new JSONObject();
+			jsonUser.put("displayname", "*5*");
+			jsonUser.put("uid.startwith", "uid_");
+			jsonUser.put("uid.endwith", "2");
+			jArr = m.retrieve("crud.sample_users", jsonUser);
+			System.out.println("13. retrieve.sample_users (age.startwith='5' + uid.contain='uid_'):"+jArr.length());
+			for(int i=0; i<jArr.length(); i++)
+			{
+				System.out.println("    13."+(i+1)+" - "+jArr.get(i));
+			}
+			
 			//////////////////////////
 		}
 		finally

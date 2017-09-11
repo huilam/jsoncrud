@@ -46,6 +46,11 @@ public class CRUDMgr {
 	
 	private final static String JSONFILTER_FROM 				= "from";
 	private final static String JSONFILTER_TO 					= "to";
+	private final static String JSONFILTER_STARTWITH			= "startwith";
+	private final static String JSONFILTER_ENDWITH				= "endwith";
+	private final static String JSONFILTER_CONTAIN				= "contain";
+	private final static String SQLLIKE_WILDCARD				= "%";
+	private final static String JSONLIKE_WILDCARD				= "*";
 	
 	private Map<String, JdbcDBMgr> mapDBMgr 					= null;
 	private Map<String, Map<String, String>> mapJson2ColName 	= null;
@@ -105,7 +110,7 @@ public class CRUDMgr {
 		pattSQLjsonname 			= Pattern.compile("\\{(.+?)\\}");
 		pattInsertSQLtableFields 	= Pattern.compile("insert\\s+?into\\s+?([a-zA-Z_]+?)\\s+?\\((.+?)\\)");
 		//
-		pattJsonNameFilter 	= Pattern.compile("([a-zA-Z_-]+?)\\.("+JSONFILTER_FROM+"|"+JSONFILTER_TO+")");
+		pattJsonNameFilter 	= Pattern.compile("([a-zA-Z_-]+?)\\.("+JSONFILTER_FROM+"|"+JSONFILTER_TO+"|"+JSONFILTER_STARTWITH+"|"+JSONFILTER_ENDWITH+"|"+JSONFILTER_CONTAIN+")");
 		//
 		
 		try {
@@ -280,8 +285,9 @@ public class CRUDMgr {
 		StringBuffer sbWhere 	= new StringBuffer();
 		for(String sOrgJsonName : aWhereJson.keySet())
 		{
-			String sOperator = " = ";
-			String sJsonName = sOrgJsonName;
+			String sOperator 	= " = ";
+			String sJsonName 	= sOrgJsonName;
+			Object oJsonValue 	= aWhereJson.get(sOrgJsonName);
 			
 			if(sJsonName.indexOf(".")>-1)
 			{
@@ -298,7 +304,31 @@ public class CRUDMgr {
 					{
 						sOperator = " <= ";
 					}
+					else if(oJsonValue!=null && oJsonValue instanceof String)
+					{
+						if(JSONFILTER_STARTWITH.equals(sJsonOperator))
+						{
+							sOperator = " like ";
+							oJsonValue = oJsonValue+SQLLIKE_WILDCARD;
+						}
+						else if (JSONFILTER_ENDWITH.equals(sJsonOperator))
+						{
+							sOperator = " like ";
+							oJsonValue = SQLLIKE_WILDCARD+oJsonValue;
+						}
+						else if (JSONFILTER_CONTAIN.equals(sJsonOperator))
+						{
+							sOperator = " like ";
+							oJsonValue = SQLLIKE_WILDCARD+oJsonValue+SQLLIKE_WILDCARD;
+						}
+					}
 				}
+			}
+			else if(oJsonValue!=null && (oJsonValue instanceof String) && (oJsonValue.toString().indexOf(JSONLIKE_WILDCARD)>-1))
+			{
+				sOperator = " like ";
+				oJsonValue = oJsonValue.toString().replaceAll("\\"+JSONLIKE_WILDCARD, SQLLIKE_WILDCARD);
+				
 			}
 			
 			String sColName = mapCrudJsonCol.get(sJsonName);
@@ -307,9 +337,8 @@ public class CRUDMgr {
 			{
 				sbWhere.append(" AND ").append(sColName).append(sOperator).append(" ? ");
 				// 
-				Object o = aWhereJson.get(sOrgJsonName);
-				o = castJson2DBVal(aCrudKey, sJsonName, o);
-				listValues.add(o);
+				oJsonValue = castJson2DBVal(aCrudKey, sJsonName, oJsonValue);
+				listValues.add(oJsonValue);
 			}
 		}
 		
