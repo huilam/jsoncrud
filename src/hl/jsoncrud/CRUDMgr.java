@@ -50,7 +50,8 @@ public class CRUDMgr {
 	private final static String JSONFILTER_ENDWITH				= "endwith";
 	private final static String JSONFILTER_CONTAIN				= "contain";
 	private final static String SQLLIKE_WILDCARD				= "%";
-	private final static String JSONLIKE_WILDCARD				= "*";
+	private final static String JSONVAL_WILDCARD				= "*";
+	private final static String JSONFILTER_CASE_INSENSITIVE		= "ci";
 	
 	private Map<String, JdbcDBMgr> mapDBMgr 					= null;
 	private Map<String, Map<String, String>> mapJson2ColName 	= null;
@@ -110,8 +111,11 @@ public class CRUDMgr {
 		pattSQLjsonname 			= Pattern.compile("\\{(.+?)\\}");
 		pattInsertSQLtableFields 	= Pattern.compile("insert\\s+?into\\s+?([a-zA-Z_]+?)\\s+?\\((.+?)\\)");
 		//
-		pattJsonNameFilter 	= Pattern.compile("([a-zA-Z_-]+?)\\.("+JSONFILTER_FROM+"|"+JSONFILTER_TO+"|"+JSONFILTER_STARTWITH+"|"+JSONFILTER_ENDWITH+"|"+JSONFILTER_CONTAIN+")");
-		//
+		pattJsonNameFilter 	= Pattern.compile("([a-zA-Z_-]+?)\\.("
+					+JSONFILTER_FROM+"|"+JSONFILTER_TO+"|"
+					+JSONFILTER_STARTWITH+"|"+JSONFILTER_ENDWITH+"|"+JSONFILTER_CONTAIN+"|"
+					+JSONFILTER_CASE_INSENSITIVE+")"
+					+"(?:\\.("+JSONFILTER_CASE_INSENSITIVE+"))?");
 		
 		try {
 			reloadProps();
@@ -270,8 +274,8 @@ public class CRUDMgr {
 	public JSONObject retrieve(String aCrudKey, JSONObject aWhereJson, 
 			int aStartFrom, int aFetchSize, String[] aOrderBy, boolean isOrderDesc) throws Exception
 	{
-		JSONObject jsonReturn = null;
-		
+		JSONObject jsonReturn 		= null;
+
 		aWhereJson = castJson2DBVal(aCrudKey, aWhereJson);
 		
 		Map<String, String> map = jsoncrudConfig.getConfig(aCrudKey);
@@ -285,6 +289,7 @@ public class CRUDMgr {
 		StringBuffer sbWhere 	= new StringBuffer();
 		for(String sOrgJsonName : aWhereJson.keySet())
 		{
+			boolean isCaseInSensitive = false;
 			String sOperator 	= " = ";
 			String sJsonName 	= sOrgJsonName;
 			Object oJsonValue 	= aWhereJson.get(sOrgJsonName);
@@ -296,6 +301,13 @@ public class CRUDMgr {
 				{
 					sJsonName = m.group(1);
 					String sJsonOperator = m.group(2);
+					String sJsonCI = m.group(3);
+					
+					if(sJsonCI!=null || JSONFILTER_CASE_INSENSITIVE.equals(sJsonOperator))
+					{
+						isCaseInSensitive = true;
+					}
+					
 					if(JSONFILTER_FROM.equals(sJsonOperator))
 					{
 						sOperator = " >= ";
@@ -324,10 +336,11 @@ public class CRUDMgr {
 					}
 				}
 			}
-			else if(oJsonValue!=null && (oJsonValue instanceof String) && (oJsonValue.toString().indexOf(JSONLIKE_WILDCARD)>-1))
+			
+			if(oJsonValue!=null && (oJsonValue instanceof String) && (oJsonValue.toString().indexOf(JSONVAL_WILDCARD)>-1))
 			{
 				sOperator = " like ";
-				oJsonValue = oJsonValue.toString().replaceAll("\\"+JSONLIKE_WILDCARD, SQLLIKE_WILDCARD);
+				oJsonValue = oJsonValue.toString().replaceAll(Pattern.quote(JSONVAL_WILDCARD), SQLLIKE_WILDCARD);
 				
 			}
 			
@@ -335,7 +348,14 @@ public class CRUDMgr {
 			//
 			if(sColName!=null)
 			{
-				sbWhere.append(" AND ").append(sColName).append(sOperator).append(" ? ");
+				if(isCaseInSensitive && (oJsonValue instanceof String))
+				{
+					sbWhere.append(" AND UPPER(").append(sColName).append(") ").append(sOperator).append(" UPPER(?) ");
+				}
+				else
+				{
+					sbWhere.append(" AND ").append(sColName).append(sOperator).append(" ? ");
+				}
 				// 
 				oJsonValue = castJson2DBVal(aCrudKey, sJsonName, oJsonValue);
 				listValues.add(oJsonValue);
@@ -845,7 +865,6 @@ public class CRUDMgr {
 		return jsonObj;
 	}
 	
-	
 	public Object castJson2DBVal(String aCrudKey, String aJsonName, Object aVal)
 	{
 		if(!(aVal instanceof String))
@@ -1170,4 +1189,5 @@ public class CRUDMgr {
 		return aJsonName;
 		
 	}
+	
 }

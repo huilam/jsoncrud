@@ -47,22 +47,22 @@ public class CRUDMgrTest {
 			System.out.println();
 			
 			System.out.println("1. delete.sample_user_attrs:"+m.delete("crud.sample_userattrs", new JSONObject()));
-			System.out.println("1. delete.sample_userroles:"+m.delete("crud.sample_userroles", new JSONObject()));
-			System.out.println("2. delete.sample_users:"+m.delete("crud.sample_users", new JSONObject()));
-			System.out.println("3. delete.sample_roles:"+m.delete("crud.sample_roles", new JSONObject()));
+			System.out.println("2. delete.sample_userroles:"+m.delete("crud.sample_userroles", new JSONObject()));
+			System.out.println("3. delete.sample_users:"+m.delete("crud.sample_users", new JSONObject()));
+			System.out.println("4. delete.sample_roles:"+m.delete("crud.sample_roles", new JSONObject()));
 
 			System.out.println();
 			JSONObject jsonRole = new JSONObject();
 			jsonRole.put("rolename", "dev");
 			jsonRole.put("roledesc", "java developer");
 			jsonRole = m.create("crud.sample_roles", jsonRole);
-			System.out.println("4. create.sample_roles:"+jsonRole);
+			System.out.println("5. create.sample_roles:"+jsonRole);
 			
 			jsonRole = new JSONObject();
 			jsonRole.put("rolename", "admin");
 			jsonRole.put("roledesc", "administrator");
 			jsonRole = m.create("crud.sample_roles", jsonRole);
-			System.out.println("5. create.sample_roles:"+jsonRole);
+			System.out.println("6. create.sample_roles:"+jsonRole);
 			
 			JSONObject jsonUser = new JSONObject();
 			jsonUser.put("uid", "huilam_ong");
@@ -77,7 +77,7 @@ public class CRUDMgrTest {
 			jsonUser.put("attrs", jsonUserAttrs);
 			
 			jsonUser = m.create("crud.sample_users", jsonUser);
-			System.out.println("6. create.sample_users:"+jsonUser);
+			System.out.println("7. create.sample_users:"+jsonUser);
 	
 			JSONObject jsonWhere = new JSONObject();
 			jsonWhere.put("uid", "huilam_ong");
@@ -93,7 +93,7 @@ public class CRUDMgrTest {
 			JSONArray jArr = m.update("crud.sample_users", jsonUser, jsonWhere);
 			for(int i=0; i<jArr.length(); i++)
 			{
-				System.out.println("7. update.sample_users:"+jArr.get(i));
+				System.out.println("8. update.sample_users:"+jArr.get(i));
 			}
 			
 			jsonUser = new JSONObject();
@@ -108,7 +108,7 @@ public class CRUDMgrTest {
 			jsonUserRoles.put("userid", jsonUser.get("id"));
 			jsonUserRoles.put("roleid", jsonRole.get("id"));
 			jsonUserRoles = m.create("crud.sample_userroles", jsonUserRoles);
-			System.out.println("8. create.sample_userroles:"+jsonUserRoles);
+			System.out.println("9. create.sample_userroles:"+jsonUserRoles);
 			
 			jsonRole = new JSONObject();
 			jsonRole.put("rolename", "dev");
@@ -118,13 +118,13 @@ public class CRUDMgrTest {
 			jsonUserRoles.put("userid", jsonUser.get("id"));
 			jsonUserRoles.put("roleid", jsonRole.get("id"));
 			jsonUserRoles = m.create("crud.sample_userroles", jsonUserRoles);
-			System.out.println("9. create.sample_userroles:"+jsonUserRoles);
+			System.out.println("10. create.sample_userroles:"+jsonUserRoles);
 			//
 			
 			jArr = m.retrieve("crud.sample_users", jsonUser);
 			for(int i=0; i<jArr.length(); i++)
 			{
-				System.out.println("10. retrieve.sample_users:"+jArr.get(i));
+				System.out.println("11. retrieve.sample_users:"+jArr.get(i));
 			}
 			
 			/////////// Test Rollback
@@ -146,7 +146,7 @@ public class CRUDMgrTest {
 			jsonUser = new JSONObject(); 
 			jsonUser.put("uid", "rollback_uid");
 			jsonUser = m.retrieveFirst("crud.sample_users", jsonUser);
-			System.out.println("11. rollback.create.sample_users (should be null):"+jsonUser);
+			System.out.println("12. rollback.create.sample_users (should be null):"+jsonUser);
 			//////////////////////////			
 			// Range filter test
 			
@@ -164,22 +164,22 @@ public class CRUDMgrTest {
 			jsonUser.put("age.to", 9);
 			jsonUser.put("uid.from", "uid_6");
 			jArr = m.retrieve("crud.sample_users", jsonUser);
-			System.out.println("12. retrieve.sample_users (age>=5 + age<=9 + uid>='uid_6'):"+jArr.length());
+			System.out.println("13. retrieve.sample_users (age>=5 + age<=9 + uid>='uid_6'):"+jArr.length());
 			for(int i=0; i<jArr.length(); i++)
 			{
-				System.out.println("    12."+(i+1)+" - "+jArr.get(i));
+				System.out.println("    13."+(i+1)+" - "+jArr.get(i));
 			}
 
 			/////
 			jsonUser = new JSONObject();
-			jsonUser.put("displayname", "*5*");
-			jsonUser.put("uid.startwith", "uid_");
+			jsonUser.put("displayname.ci", "NAME_5*");
+			jsonUser.put("uid.startwith.ci", "uiD_");
 			jsonUser.put("uid.endwith", "2");
 			jArr = m.retrieve("crud.sample_users", jsonUser);
-			System.out.println("13. retrieve.sample_users (age.startwith='5' + uid.contain='uid_'):"+jArr.length());
+			System.out.println("14. retrieve.sample_users (displayname='*5*' + uid.startwith='uid_' + uin.endwith='2'):"+jArr.length());
 			for(int i=0; i<jArr.length(); i++)
 			{
-				System.out.println("    13."+(i+1)+" - "+jArr.get(i));
+				System.out.println("    14."+(i+1)+" - "+jArr.get(i));
 			}
 			
 			//////////////////////////
