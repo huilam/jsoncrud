@@ -183,7 +183,8 @@ public class CRUDMgrTest {
 			}
 			
 			//////////////////////////
-		}
+			JSONObject json = m.retrieve("crud.sample_users", new JSONObject(), 5, 2, new String[] {"uid"}, false );
+			System.out.println("15. "+json.toString());		}
 		finally
 		{
 			/*

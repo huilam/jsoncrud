@@ -68,6 +68,8 @@ public class CRUDMgr {
 	private JsonCrudConfig jsoncrudConfig 		= null;
 	private String config_prop_filename 		= null;
 	
+	public String _PAGINATION_CONFIGKEY	= "list.pagination";
+	
 	public String _LIST_META 		= "meta";
 	public String _LIST_RESULT 		= "result";
 	public String _LIST_TOTAL 		= "total";
@@ -122,6 +124,47 @@ public class CRUDMgr {
 		} catch (Exception e) {
 			throw new RuntimeException(e);
 		}
+		
+		initPaginationConfig();
+	}
+
+	private void initPaginationConfig()
+	{
+		Map<String, String> mapPagination = jsoncrudConfig.getConfig(_PAGINATION_CONFIGKEY);
+		
+		if(mapPagination.size()>0)
+		{
+			String sMetaKey = null;
+			
+			sMetaKey = mapPagination.get(_LIST_META);
+			if(sMetaKey!=null)
+				_LIST_META = sMetaKey;
+			
+			sMetaKey = mapPagination.get(_LIST_RESULT);
+			if(sMetaKey!=null)
+				_LIST_RESULT = sMetaKey;
+			
+			sMetaKey = mapPagination.get(_LIST_TOTAL);
+			if(sMetaKey!=null)
+				_LIST_TOTAL = sMetaKey;
+	
+			sMetaKey = mapPagination.get(_LIST_FETCHSIZE);
+			if(sMetaKey!=null)
+				_LIST_FETCHSIZE = sMetaKey;
+			
+			sMetaKey = mapPagination.get(_LIST_START);
+			if(sMetaKey!=null)
+				_LIST_START = sMetaKey;
+					
+			sMetaKey = mapPagination.get(_LIST_ORDERBY);
+			if(sMetaKey!=null)
+				_LIST_ORDERBY = sMetaKey;
+			
+			sMetaKey = mapPagination.get(_LIST_ORDERDESC);
+			if(sMetaKey!=null)
+				_LIST_ORDERDESC = sMetaKey;
+		}		
+		
 	}
 	
 	public JSONObject create(String aCrudKey, JSONObject aDataJson) throws Exception
