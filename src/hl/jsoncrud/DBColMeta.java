@@ -78,9 +78,9 @@ public class DBColMeta extends JSONObject{
 		set(_COL_AUTOINCREMENT, String.valueOf(aColAutoincrement));
 	}
 	//
-	public String getColautoincrement()
+	public boolean getColautoincrement()
 	{
-		return get(_COL_AUTOINCREMENT, null);
+		return Boolean.parseBoolean(get(_COL_AUTOINCREMENT, "false"));
 	}
 	//--	
 	public void setColtypename(String aColtypename)
@@ -138,9 +138,9 @@ public class DBColMeta extends JSONObject{
 		set(_COL_NULLABLE, String.valueOf(aColnullable));
 	}
 	//
-	public int getColnullable()
+	public boolean getColnullable()
 	{
-		return Integer.parseInt(get(_COL_NULLABLE, "0"));
+		return Boolean.parseBoolean(get(_COL_NULLABLE, "true"));
 	}
 	//--	
 	public boolean isBoolean()
@@ -177,6 +177,27 @@ public class DBColMeta extends JSONObject{
 		return false;		
 	}
 	
+	public boolean isString()
+	{
+		String sColType = getColtype();
+		if(sColType!=null)
+		{
+			int iColType = Integer.parseInt(sColType);
+			switch(iColType)
+			{
+				case Types.CHAR  :
+				case Types.VARCHAR  :
+				case Types.NVARCHAR  :
+				case Types.LONGVARCHAR :
+				case Types.LONGNVARCHAR :
+					return true;
+				default :
+					return false;
+			}
+		}
+		return false;		
+	}
+
 	public boolean isNumeric()
 	{
 		String sColType = getColtype();

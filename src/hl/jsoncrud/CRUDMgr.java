@@ -57,7 +57,7 @@ public class CRUDMgr {
 	private Map<String, Map<String, String>> mapJson2ColName 	= null;
 	private Map<String, Map<String, String>> mapColName2Json 	= null;
 	private Map<String, Map<String, String>> mapJson2Sql 		= null;
-	private Map<String, DBColMeta[]> mapTableCols 				= null;
+	private Map<String, Map<String,DBColMeta>> mapTableCols 	= null;
 	
 	private Pattern pattSQLjsonname		= null;
 	private Pattern pattJsonColMapping 	= null;
@@ -102,7 +102,7 @@ public class CRUDMgr {
 		mapJson2ColName 	= new HashMap<String, Map<String, String>>();
 		mapColName2Json 	= new HashMap<String, Map<String, String>>();
 		mapJson2Sql 		= new HashMap<String, Map<String, String>>();
-		mapTableCols 		= new HashMap<String, DBColMeta[]>();
+		mapTableCols 		= new HashMap<String, Map<String, DBColMeta>>();
 		
 		//
 		pattJsonColMapping 	= Pattern.compile("jsonattr\\.([a-zA-Z_-]+?)\\.colname");
@@ -840,15 +840,98 @@ public class CRUDMgr {
 
 				String sTableName = mapCrudConfig.get(JsonCrudConfig._PROP_KEY_TABLENAME);
 				System.out.print("[init] "+sKey+" - "+sTableName+" ... ");
-				DBColMeta[] cols = getTableMetaData(sKey, dbmgr, sTableName);
-				if(cols!=null)
+				Map<String, DBColMeta> mapCols = getTableMetaData(sKey, dbmgr, sTableName);
+				if(mapCols!=null)
 				{
-					System.out.println(cols.length+" cols meta loaded.");
-					mapTableCols.put(sKey, cols);
+					System.out.println(mapCols.size()+" cols meta loaded.");
+					mapTableCols.put(sKey, mapCols);
 				}
 			}
 		}
 	}
+	
+	private Map<String, String> validateDataWithSchema(String aCrudKey, JSONObject aJsonData)
+	{
+		Map<String, String> mapError = new HashMap<String, String>();
+		if(aJsonData!=null)
+		{
+			Map<String, DBColMeta> mapCols = mapTableCols.get(aCrudKey);
+			if(mapCols!=null && mapCols.size()>0)
+			{
+				for(String sKey : aJsonData.keySet())
+				{
+					DBColMeta col = mapCols.get(sKey);
+					if(col!=null)
+					{
+						Object oVal = aJsonData.get(sKey);
+						
+						////// Check if Nullable //////////
+						if(col.getColnullable())
+						{
+							if(oVal==null || oVal.toString().trim().length()==0)
+							{
+								//Mandatory field is empty 
+								mapError.put(col.getColname(), "mandatory field cannot be empty");
+							}
+						}
+
+						if(oVal==null)
+							continue;
+						
+						
+						////// Check Data Type //////////
+						if(oVal instanceof String)
+						{
+							if(!col.isString())
+							{
+								mapError.put(col.getColname(), "expect string type - "+oVal);
+							}
+							
+						}
+						else if (oVal instanceof Boolean)
+						{
+							if(!col.isBit() && !col.isBoolean())
+							{
+								//Invalid Data Type - expected boolean
+								mapError.put(col.getColname(), "expect boolean type - "+oVal);
+							}
+						}
+						else if (oVal instanceof Long 
+								|| oVal instanceof Double
+								|| oVal instanceof Float
+								|| oVal instanceof Integer)
+						{
+							if(!col.isNumeric())
+							{
+								//Invalid Data Type - expected numeric
+								mapError.put(col.getColname(), "expect numberic type - "+oVal);
+							}
+							
+						}
+						
+						////// Check Data Size //////////
+						String sVal = oVal.toString();
+						if(sVal.length()>col.getColsize())
+						{
+							//Invalid Data Size
+							mapError.put(col.getColname(), "exceed size - expected:"+col.getColsize()+" actual:"+sVal.length());
+						}
+						
+						///// Check if Data is autoincremental //////
+						if(col.getColautoincrement())
+						{
+							// 
+							mapError.put(col.getColname(), "auto incremental field not allowed");
+						}
+						
+					}
+				}
+			}	
+		}
+		
+		return mapError;
+	}
+	
 	
 	public JSONObject castJson2DBVal(String aCrudKey, JSONObject jsonObj)
 	{
@@ -891,8 +974,8 @@ public class CRUDMgr {
 	
 	public DBColMeta getDBColMetaByColName(String aCrudKey, String aColName)
 	{
-		DBColMeta[] cols = mapTableCols.get(aCrudKey);
-		for(DBColMeta col : cols)
+		Map<String,DBColMeta> cols = mapTableCols.get(aCrudKey);
+		for(DBColMeta col : cols.values())
 		{
 			if(col.getColname().equalsIgnoreCase(aColName))
 			{
@@ -906,9 +989,9 @@ public class CRUDMgr {
 	{
 		aJsonName = getJsonNameNoFilter(aJsonName);
 		//
-		DBColMeta[] cols = mapTableCols.get(aCrudKey);
+		Map<String,DBColMeta> cols = mapTableCols.get(aCrudKey);
 		Map<String,String> mapCol2Json = mapColName2Json.get(aCrudKey);
-		for(DBColMeta col : cols)
+		for(DBColMeta col : cols.values())
 		{
 			String sColJsonName = mapCol2Json.get(col.getColname());
 			if(sColJsonName!=null && sColJsonName.equalsIgnoreCase(aJsonName))
@@ -919,9 +1002,9 @@ public class CRUDMgr {
 		return null;
 	}
 	
-	private DBColMeta[] getTableMetaData(String aKey, JdbcDBMgr aDBMgr, String aTableName) throws SQLException
+	private Map<String, DBColMeta> getTableMetaData(String aKey, JdbcDBMgr aDBMgr, String aTableName) throws SQLException
 	{
-		List<DBColMeta> listDBColJson = new ArrayList<DBColMeta>();
+		Map<String, DBColMeta> mapDBColJson = new HashMap<String, DBColMeta>();
 		String sSQL = "SELECT * FROM "+aTableName+" WHERE 1=2";
 
 		Connection conn = null;
@@ -956,7 +1039,7 @@ public class CRUDMgr {
 					coljson.setJsonname(sJsonName);
 				}
 				//
-				listDBColJson.add(coljson);
+				mapDBColJson.put(coljson.getColname(), coljson);
 			}
 		}
 		finally
@@ -964,11 +1047,11 @@ public class CRUDMgr {
 			aDBMgr.closeQuietly(conn, stmt, rs);
 		}
 		
-		if(listDBColJson.size()==0)
+		if(mapDBColJson.size()==0)
 			return null;
 		else
 		{
-			return listDBColJson.toArray(new DBColMeta[listDBColJson.size()]);
+			return mapDBColJson;
 		}
 	}
 	
