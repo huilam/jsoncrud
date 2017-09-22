@@ -941,9 +941,9 @@ public class CRUDMgr {
 			Map<String, DBColMeta> mapCols = mapTableCols.get(aCrudKey);
 			if(mapCols!=null && mapCols.size()>0)
 			{
-				for(String sKey : aJsonData.keySet())
+				for(String sJsonKey : aJsonData.keySet())
 				{
-					String sJsonColName = mapJsonToCol.get(sKey);
+					String sJsonColName = mapJsonToCol.get(sJsonKey);
 					if(sJsonColName==null)
 					{
 						//skip not mapping found
@@ -952,7 +952,7 @@ public class CRUDMgr {
 					DBColMeta col = mapCols.get(sJsonColName);
 					if(col!=null)
 					{
-						Object oVal = aJsonData.get(sKey);
+						Object oVal = aJsonData.get(sJsonKey);
 						
 						////// Check if Nullable //////////
 						if(!col.getColnullable())
@@ -963,9 +963,9 @@ public class CRUDMgr {
 								sbErrInfo.append(ERRCODE_NOT_NULLABLE);								
 								if(isDebugMode)
 								{
-									sbErrInfo.append(" - mandatory field cannot be empty. ").append(col);
+									sbErrInfo.append(" - '").append(col.getColname()).append("' cannot be empty. ").append(col);
 								}
-								mapError.put(col.getColname(), sbErrInfo.toString());
+								mapError.put(sJsonKey, sbErrInfo.toString());
 							}
 						}
 
@@ -996,9 +996,9 @@ public class CRUDMgr {
 							sbErrInfo.append(ERRCODE_INVALID_TYPE);								
 							if(isDebugMode)
 							{
-								sbErrInfo.append(" - invalid data type, expect:").append(col.getColtypename()).append(" actual:").append(oVal.getClass().getSimpleName()).append(". ").append(col);
+								sbErrInfo.append(" - '").append(col.getColname()).append("' invalid type, expect:").append(col.getColtypename()).append(" actual:").append(oVal.getClass().getSimpleName()).append(". ").append(col);
 							}
-							mapError.put(col.getColname(), sbErrInfo.toString());
+							mapError.put(sJsonKey, sbErrInfo.toString());
 						}
 
 						
@@ -1010,9 +1010,9 @@ public class CRUDMgr {
 							sbErrInfo.append(ERRCODE_EXCEED_SIZE);								
 							if(isDebugMode)
 							{
-								sbErrInfo.append(" - exceed allowed size, expect:").append(col.getColsize()).append(" actual:").append(sVal.length()).append(". ").append(col);
+								sbErrInfo.append(" - '").append(col.getColname()).append("' exceed allowed size, expect:").append(col.getColsize()).append(" actual:").append(sVal.length()).append(". ").append(col);
 							}
-							mapError.put(col.getColname(), sbErrInfo.toString());
+							mapError.put(sJsonKey, sbErrInfo.toString());
 						}
 						
 						///// Check if Data is autoincremental //////
@@ -1023,9 +1023,9 @@ public class CRUDMgr {
 							sbErrInfo.append(ERRCODE_SYSTEM_FIELD);								
 							if(isDebugMode)
 							{
-								sbErrInfo.append(" - auto increment field not allowed. ").append(col);
+								sbErrInfo.append(" - '").append(col.getColname()).append("' not allowed (auto increment field). ").append(col);
 							}
-							mapError.put(col.getColname(), sbErrInfo.toString());
+							mapError.put(sJsonKey, sbErrInfo.toString());
 						}
 						
 					}
