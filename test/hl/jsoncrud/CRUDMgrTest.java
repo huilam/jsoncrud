@@ -20,7 +20,7 @@
  
  */
 
-package hl.jsondao;
+package hl.jsoncrud;
 
 import java.util.Map;
 
