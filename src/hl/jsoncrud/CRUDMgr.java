@@ -68,8 +68,7 @@ public class CRUDMgr {
 	private JsonCrudConfig jsoncrudConfig 		= null;
 	private String config_prop_filename 		= null;
 	
-	public String _PAGINATION_CONFIGKEY	= "list.pagination";
-	
+	public final static String _PAGINATION_CONFIGKEY = "list.pagination";
 	public String _LIST_META 		= "meta";
 	public String _LIST_RESULT 		= "result";
 	public String _LIST_TOTAL 		= "total";
@@ -77,6 +76,12 @@ public class CRUDMgr {
 	public String _LIST_START 		= "start";
 	public String _LIST_ORDERBY 	= "orderby";
 	public String _LIST_ORDERDESC	= "orderdesc";
+	
+	public final static String _DB_VALIDATION_ERRCODE_CONFIGKEY = "dbschema.validation_errcode";
+	public static String ERRCODE_NOT_NULLABLE 	= "not_nullable";
+	public static String ERRCODE_EXCEED_SIZE 	= "exceed_size";
+	public static String ERRCODE_INVALID_TYPE	= "invalid_type";
+	public static String ERRCODE_SYSTEM_FIELD	= "system_field";
 	
 	public CRUDMgr()
 	{
@@ -126,13 +131,41 @@ public class CRUDMgr {
 		}
 		
 		initPaginationConfig();
+		initValidationErrCodeConfig();
+	}
+
+	private void initValidationErrCodeConfig()
+	{
+		Map<String, String> mapErrCodes = jsoncrudConfig.getConfig(_DB_VALIDATION_ERRCODE_CONFIGKEY);
+		
+		if(mapErrCodes!=null && mapErrCodes.size()>0)
+		{
+			String sMetaKey = null;
+			
+			sMetaKey = mapErrCodes.get(ERRCODE_EXCEED_SIZE);
+			if(sMetaKey!=null)
+				ERRCODE_EXCEED_SIZE = sMetaKey;
+			
+			sMetaKey = mapErrCodes.get(ERRCODE_INVALID_TYPE);
+			if(sMetaKey!=null)
+				ERRCODE_INVALID_TYPE = sMetaKey;
+
+			sMetaKey = mapErrCodes.get(ERRCODE_NOT_NULLABLE);
+			if(sMetaKey!=null)
+				ERRCODE_NOT_NULLABLE = sMetaKey;
+			
+			sMetaKey = mapErrCodes.get(ERRCODE_SYSTEM_FIELD);
+			if(sMetaKey!=null)
+				ERRCODE_SYSTEM_FIELD = sMetaKey;
+		}		
+		
 	}
 
 	private void initPaginationConfig()
 	{
 		Map<String, String> mapPagination = jsoncrudConfig.getConfig(_PAGINATION_CONFIGKEY);
 		
-		if(mapPagination.size()>0)
+		if(mapPagination!=null && mapPagination.size()>0)
 		{
 			String sMetaKey = null;
 			
@@ -839,7 +872,6 @@ public class CRUDMgr {
 				}
 			}
 			
-			
 			if(dbmgr!=null)
 			{
 				Map<String, String> mapCrudJson2Col = new HashMap<String, String> ();
@@ -895,10 +927,16 @@ public class CRUDMgr {
 	
 	public Map<String, String> validateDataWithSchema(String aCrudKey, JSONObject aJsonData)
 	{
+		return validateDataWithSchema(aCrudKey, aJsonData, false);
+	}
+	
+	public Map<String, String> validateDataWithSchema(String aCrudKey, JSONObject aJsonData, boolean isDebugMode)
+	{
 		Map<String, String> mapError = new HashMap<String, String>();
 		if(aJsonData!=null)
 		{
 			Map<String, String> mapJsonToCol = mapJson2ColName.get(aCrudKey);
+			StringBuffer sbErrInfo = new StringBuffer();
 			
 			Map<String, DBColMeta> mapCols = mapTableCols.get(aCrudKey);
 			if(mapCols!=null && mapCols.size()>0)
@@ -906,19 +944,28 @@ public class CRUDMgr {
 				for(String sKey : aJsonData.keySet())
 				{
 					String sJsonColName = mapJsonToCol.get(sKey);
-					
+					if(sJsonColName==null)
+					{
+						//skip not mapping found
+						continue;
+					}
 					DBColMeta col = mapCols.get(sJsonColName);
 					if(col!=null)
 					{
 						Object oVal = aJsonData.get(sKey);
 						
 						////// Check if Nullable //////////
-						if(col.getColnullable())
+						if(!col.getColnullable())
 						{
 							if(oVal==null || oVal.toString().trim().length()==0)
 							{
-								//Mandatory field is empty 
-								mapError.put(col.getColname(), "mandatory field cannot be empty");
+								sbErrInfo.setLength(0);
+								sbErrInfo.append(ERRCODE_NOT_NULLABLE);								
+								if(isDebugMode)
+								{
+									sbErrInfo.append(" - mandatory field cannot be empty. ").append(col);
+								}
+								mapError.put(col.getColname(), sbErrInfo.toString());
 							}
 						}
 
@@ -926,48 +973,59 @@ public class CRUDMgr {
 							continue;
 						
 						////// Check Data Type //////////
+						boolean isInvalidDataType = false;
 						if(oVal instanceof String)
 						{
-							if(!col.isString())
-							{
-								mapError.put(col.getColname(), "expect string type - "+oVal);
-							}
-							
+							isInvalidDataType = !col.isString();
 						}
 						else if (oVal instanceof Boolean)
 						{
-							if(!col.isBit() && !col.isBoolean())
-							{
-								//Invalid Data Type - expected boolean
-								mapError.put(col.getColname(), "expect boolean type - "+oVal);
-							}
+							isInvalidDataType = (!col.isBit() && !col.isBoolean());
 						}
 						else if (oVal instanceof Long 
 								|| oVal instanceof Double
 								|| oVal instanceof Float
 								|| oVal instanceof Integer)
 						{
-							if(!col.isNumeric())
-							{
-								//Invalid Data Type - expected numeric
-								mapError.put(col.getColname(), "expect numberic type - "+oVal);
-							}
-							
+							isInvalidDataType = !col.isNumeric();
 						}
+						
+						if(isInvalidDataType)
+						{
+							sbErrInfo.setLength(0);
+							sbErrInfo.append(ERRCODE_INVALID_TYPE);								
+							if(isDebugMode)
+							{
+								sbErrInfo.append(" - invalid data type, expect:").append(col.getColtypename()).append(" actual:").append(oVal.getClass().getSimpleName()).append(". ").append(col);
+							}
+							mapError.put(col.getColname(), sbErrInfo.toString());
+						}
+
 						
 						////// Check Data Size //////////
 						String sVal = oVal.toString();
 						if(sVal.length()>col.getColsize())
 						{
-							//Invalid Data Size
-							mapError.put(col.getColname(), "exceed size - expected:"+col.getColsize()+" actual:"+sVal.length());
+							sbErrInfo.setLength(0);
+							sbErrInfo.append(ERRCODE_EXCEED_SIZE);								
+							if(isDebugMode)
+							{
+								sbErrInfo.append(" - exceed allowed size, expect:").append(col.getColsize()).append(" actual:").append(sVal.length()).append(". ").append(col);
+							}
+							mapError.put(col.getColname(), sbErrInfo.toString());
 						}
 						
 						///// Check if Data is autoincremental //////
 						if(col.getColautoincrement())
 						{
 							// 
-							mapError.put(col.getColname(), "auto incremental field not allowed");
+							sbErrInfo.setLength(0);
+							sbErrInfo.append(ERRCODE_SYSTEM_FIELD);								
+							if(isDebugMode)
+							{
+								sbErrInfo.append(" - auto increment field not allowed. ").append(col);
+							}
+							mapError.put(col.getColname(), sbErrInfo.toString());
 						}
 						
 					}
