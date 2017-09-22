@@ -183,8 +183,34 @@ public class CRUDMgrTest {
 			}
 			
 			//////////////////////////
-			JSONObject json = m.retrieve("crud.sample_users", new JSONObject(), 5, 2, new String[] {"uid"}, false );
-			System.out.println("15. "+json.toString());		}
+			JSONObject json = m.retrieve("crud.sample_users", new JSONObject(), 0, 3, new String[] {"id"}, false );
+			System.out.println("15. Pagination");
+			System.out.println("  - "+m._LIST_META+" = "+json.get(m._LIST_META));
+			
+			JSONArray jarr = json.getJSONArray(m._LIST_RESULT);
+			System.out.println("  - "+m._LIST_RESULT+" = "+jarr.length());
+			for(int i=0; i<jarr.length(); i++)
+			{
+				System.out.println("       15."+(i+1)+" - "+jarr.getJSONObject(i).toString());
+			}
+			
+			//////////////////////////
+			System.out.println();
+			jsonRole = new JSONObject();
+			String s100 = "1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890";
+			jsonRole.put("rolename", s100+s100+s100+s100+s100+s100+s100+s100+s100+s100);
+			jsonRole.put("roledesc", "");
+			
+			Map<String, String> mapErr = m.validateDataWithSchema("crud.sample_roles", jsonRole);
+			System.out.println("17. validation errors = "+mapErr.size());
+			for(String sColName : mapErr.keySet())
+			{
+				System.out.println("  - "+sColName+" : "+mapErr.get(sColName));
+			}
+			
+			
+			//////////////////////////
+		}
 		finally
 		{
 			/*

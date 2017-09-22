@@ -893,17 +893,21 @@ public class CRUDMgr {
 		}
 	}
 	
-	private Map<String, String> validateDataWithSchema(String aCrudKey, JSONObject aJsonData)
+	public Map<String, String> validateDataWithSchema(String aCrudKey, JSONObject aJsonData)
 	{
 		Map<String, String> mapError = new HashMap<String, String>();
 		if(aJsonData!=null)
 		{
+			Map<String, String> mapJsonToCol = mapJson2ColName.get(aCrudKey);
+			
 			Map<String, DBColMeta> mapCols = mapTableCols.get(aCrudKey);
 			if(mapCols!=null && mapCols.size()>0)
 			{
 				for(String sKey : aJsonData.keySet())
 				{
-					DBColMeta col = mapCols.get(sKey);
+					String sJsonColName = mapJsonToCol.get(sKey);
+					
+					DBColMeta col = mapCols.get(sJsonColName);
 					if(col!=null)
 					{
 						Object oVal = aJsonData.get(sKey);
@@ -920,7 +924,6 @@ public class CRUDMgr {
 
 						if(oVal==null)
 							continue;
-						
 						
 						////// Check Data Type //////////
 						if(oVal instanceof String)

@@ -26,8 +26,8 @@ CREATE TABLE jsoncrud_sample_user_attrs
 CREATE TABLE jsoncrud_sample_roles
 (
     id bigserial NOT NULL,
-    role_name character varying NOT NULL,
-    role_desc character varying,
+    role_name character varying(50) NOT NULL,
+    role_desc character varying(100),
     created_timestamp bigint DEFAULT extract('epoch' from CURRENT_TIMESTAMP) * 1000,
     CONSTRAINT sample_roles_pkey PRIMARY KEY (id)
 );
