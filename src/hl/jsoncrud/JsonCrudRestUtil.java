@@ -161,6 +161,11 @@ public class JsonCrudRestUtil {
    	    return jsonCfg;
     }
 	
+	public static String getJsonCrudVersion()
+	{
+		return crudmgr.getVersionInfo();
+	}
+	
 	public static CRUDMgr getCRUDMgr()
 	{
 		return crudmgr;

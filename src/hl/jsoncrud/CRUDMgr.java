@@ -89,6 +89,14 @@ public class CRUDMgr {
 		init();
 	}
 	
+	public String getVersionInfo()
+	{
+		JSONObject jsonVer = new JSONObject();
+		jsonVer.put("framework", "jsoncrud");
+		jsonVer.put("version", "0.0.8 beta");
+		return jsonVer.toString();
+	}
+	
 	public CRUDMgr(String aPropFileName)
 	{
 		config_prop_filename = aPropFileName;
