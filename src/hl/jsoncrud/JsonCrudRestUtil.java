@@ -76,6 +76,39 @@ public class JsonCrudRestUtil {
 	}
         
 	public static JSONObject retrieveList(
+			String aCrudKey, String aSQL, Object[] aObjParams,
+			int iStartFrom, int iFetchSize) throws Exception
+	{
+		String sConfigKey = JsonCrudConfig._PROP_KEY_CRUD+"."+aCrudKey;
+		
+		JSONObject jsonOutput = crudmgr.retrieve(
+				sConfigKey, aSQL, aObjParams, iStartFrom, iFetchSize);
+		
+		if(jsonOutput==null)
+		{
+			jsonOutput = new JSONObject();
+		}
+		
+		try {
+			jsonOutput.get(crudmgr._LIST_RESULT);
+		}
+		catch(JSONException ex)
+		{
+			jsonOutput.put(crudmgr._LIST_RESULT, new JSONArray());
+		}
+		
+		try {
+			jsonOutput.get(crudmgr._LIST_META);
+		}
+		catch(JSONException ex)
+		{
+			jsonOutput.put(crudmgr._LIST_META, new JSONObject());
+		}
+
+		return jsonOutput;
+	}
+	
+	public static JSONObject retrieveList(
 			String aCrudKey, JSONObject aJsonWhere,
 			int iStartFrom, int iFetchSize, List<String> listOrderBy, boolean isOrderDesc) throws Exception
 	{

@@ -228,7 +228,6 @@ public class CRUDMgr {
 		String sTableName 	= map.get(JsonCrudConfig._PROP_KEY_TABLENAME);
 		boolean isDebug		= "true".equalsIgnoreCase(map.get(JsonCrudConfig._PROP_KEY_DEBUG)); 
 		
-		
 		Map<String, String> mapCrudJsonCol = mapJson2ColName.get(aCrudKey);
 		for(String sJsonName : aDataJson.keySet())
 		{
@@ -241,11 +240,6 @@ public class CRUDMgr {
 					sbColName.append(",");
 					sbParams.append(",");
 				}
-				else if(sbRollbackParentSQL.length()==0)
-				{
-					sbRollbackParentSQL.append("DELETE FROM ").append(sTableName).append(" WHERE 1=1 ");					
-				}
-				sbRollbackParentSQL.append(" AND ").append(sColName).append(" = ? ");
 				sbColName.append(sColName);
 				sbParams.append("?");
 				//
@@ -257,16 +251,15 @@ public class CRUDMgr {
 			}
 		}
 		
-
 		String sSQL 		= "INSERT INTO "+sTableName+"("+sbColName.toString()+") values ("+sbParams.toString()+")";
 		
 		String sJdbcName 	= map.get(JsonCrudConfig._PROP_KEY_DBCONFIG);
 		JdbcDBMgr dbmgr 	= mapDBMgr.get(sJdbcName);
 		
-		long lAffectedRow = 0;
-				
+		JSONArray jArrCreated = null; 
+		
 		try {
-			lAffectedRow = dbmgr.executeUpdate(sSQL, listValues);	
+			jArrCreated = dbmgr.executeUpdate(sSQL, listValues);
 		}
 		catch(Throwable ex)
 		{
@@ -274,8 +267,25 @@ public class CRUDMgr {
 		}
 
 		
-		if(lAffectedRow>0)
+		if(jArrCreated.length()>0)
 		{
+			Map<String, String> mapCrudCol2Json = mapColName2Json.get(aCrudKey);
+			JSONObject jsonCreated = jArrCreated.getJSONObject(0);
+			for(String sColName : jsonCreated.keySet())
+			{
+				String sMappedKey = mapCrudCol2Json.get(sColName);
+				if(sMappedKey==null)
+					sMappedKey = sColName;
+				aDataJson.put(sMappedKey, jsonCreated.get(sColName));
+				
+				if(sbRollbackParentSQL.length()==0)
+				{
+					sbRollbackParentSQL.append("DELETE FROM ").append(sTableName).append(" WHERE 1=1 ");					
+				}
+				sbRollbackParentSQL.append(" AND ").append(sColName).append(" = ? ");
+			}
+			
+			
 			//child create
 			if(listUnmatchedJsonName.size()>0)
 			{
@@ -288,10 +298,7 @@ public class CRUDMgr {
 					//merging json obj
 					for(String sDataJsonKey : aDataJson.keySet())
 					{
-						if(jsonReturn.has(sDataJsonKey))
-						{
-							jsonReturn.put(sDataJsonKey, aDataJson.get(sDataJsonKey));
-						}
+						jsonReturn.put(sDataJsonKey, aDataJson.get(sDataJsonKey));
 					}
 					
 					for(String sJsonName2 : listUnmatchedJsonName)
@@ -308,8 +315,8 @@ public class CRUDMgr {
 						{
 							try {
 								//rollback parent
-								long lRollbackRow = dbmgr.executeUpdate(sbRollbackParentSQL.toString(), listValues);
-								if(lAffectedRow!=lRollbackRow)
+								JSONArray jArrRollbackRows = dbmgr.executeUpdate(sbRollbackParentSQL.toString(), listValues);
+								if(jArrCreated.length() != jArrRollbackRows.length())
 								{
 									throw new Exception("Record fail to Rollback!");
 								}
@@ -355,126 +362,14 @@ public class CRUDMgr {
 		return (JSONArray) json.get(_LIST_RESULT);
 	}
 	
-	public JSONObject retrieve(String aCrudKey, JSONObject aWhereJson, 
-			int aStartFrom, int aFetchSize, String[] aOrderBy, boolean isOrderDesc) throws Exception
+	public JSONObject retrieve(String aCrudKey, String aSQL, Object[] aObjParams,
+			int aStartFrom, int aFetchSize) throws Exception
 	{
 		JSONObject jsonReturn 		= null;
-
-		aWhereJson = castJson2DBVal(aCrudKey, aWhereJson);
+		Map<String, String> map 	= jsoncrudConfig.getConfig(aCrudKey);
 		
-		Map<String, String> map = jsoncrudConfig.getConfig(aCrudKey);
-		if(map==null || map.size()==0)
-			throw new Exception("Invalid crud configuration key ! - "+aCrudKey);
-		
-		List<Object> listValues 			= new ArrayList<Object>();		
-		Map<String, String> mapCrudJsonCol 	= mapJson2ColName.get(aCrudKey);
-
-		// WHERE
-		StringBuffer sbWhere 	= new StringBuffer();
-		for(String sOrgJsonName : aWhereJson.keySet())
-		{
-			boolean isCaseInSensitive = false;
-			String sOperator 	= " = ";
-			String sJsonName 	= sOrgJsonName;
-			Object oJsonValue 	= aWhereJson.get(sOrgJsonName);
-			
-			if(sJsonName.indexOf(".")>-1)
-			{
-				Matcher m = pattJsonNameFilter.matcher(sJsonName);
-				if(m.find())
-				{
-					sJsonName = m.group(1);
-					String sJsonOperator = m.group(2);
-					String sJsonCI = m.group(3);
-					
-					if(sJsonCI!=null || JSONFILTER_CASE_INSENSITIVE.equals(sJsonOperator))
-					{
-						isCaseInSensitive = true;
-					}
-					
-					if(JSONFILTER_FROM.equals(sJsonOperator))
-					{
-						sOperator = " >= ";
-					}
-					else if(JSONFILTER_TO.equals(sJsonOperator))
-					{
-						sOperator = " <= ";
-					}
-					else if(oJsonValue!=null && oJsonValue instanceof String)
-					{
-						if(JSONFILTER_STARTWITH.equals(sJsonOperator))
-						{
-							sOperator = " like ";
-							oJsonValue = oJsonValue+SQLLIKE_WILDCARD;
-						}
-						else if (JSONFILTER_ENDWITH.equals(sJsonOperator))
-						{
-							sOperator = " like ";
-							oJsonValue = SQLLIKE_WILDCARD+oJsonValue;
-						}
-						else if (JSONFILTER_CONTAIN.equals(sJsonOperator))
-						{
-							sOperator = " like ";
-							oJsonValue = SQLLIKE_WILDCARD+oJsonValue+SQLLIKE_WILDCARD;
-						}
-					}
-				}
-			}
-			
-			if(oJsonValue!=null && (oJsonValue instanceof String) && (oJsonValue.toString().indexOf(JSONVAL_WILDCARD)>-1))
-			{
-				sOperator = " like ";
-				oJsonValue = oJsonValue.toString().replaceAll(Pattern.quote(JSONVAL_WILDCARD), SQLLIKE_WILDCARD);
-				
-			}
-			
-			String sColName = mapCrudJsonCol.get(sJsonName);
-			//
-			if(sColName!=null)
-			{
-				if(isCaseInSensitive && (oJsonValue instanceof String))
-				{
-					sbWhere.append(" AND UPPER(").append(sColName).append(") ").append(sOperator).append(" UPPER(?) ");
-				}
-				else
-				{
-					sbWhere.append(" AND ").append(sColName).append(sOperator).append(" ? ");
-				}
-				// 
-				oJsonValue = castJson2DBVal(aCrudKey, sJsonName, oJsonValue);
-				listValues.add(oJsonValue);
-			}
-		}
-		
-		StringBuffer sbOrderBy = new StringBuffer();
-		if(aOrderBy!=null && aOrderBy.length>0)
-		{
-			for(String sJsonAttr : aOrderBy)
-			{
-				String sOrderColName = mapCrudJsonCol.get(sJsonAttr);
-				
-				if(sOrderColName!=null)
-				{
-					if(sbOrderBy.length()>0)
-					{
-						sbOrderBy.append(",");
-					}
-					sbOrderBy.append(sOrderColName);
-				}
-			}
-			if(sbOrderBy.length()>0)
-			{
-				sbWhere.append(" ORDER BY ").append(sbOrderBy.toString());
-				if(isOrderDesc)
-				{
-					sbWhere.append(" DESC ");
-				}
-			}
-		}
-
-		String sTableName 	= map.get(JsonCrudConfig._PROP_KEY_TABLENAME);
 		boolean isDebug		= "true".equalsIgnoreCase(map.get(JsonCrudConfig._PROP_KEY_DEBUG)); 
-		String sSQL 		= "SELECT * FROM "+sTableName+" WHERE 1=1 "+sbWhere.toString();
+		String sSQL 		= aSQL;
 		
 		String sJdbcName 	= map.get(JsonCrudConfig._PROP_KEY_DBCONFIG);
 		JdbcDBMgr dbmgr 	= mapDBMgr.get(sJdbcName);
@@ -483,7 +378,6 @@ public class CRUDMgr {
 		PreparedStatement stmt	= null;
 		ResultSet rs = null;
 		
-
 		JSONArray jsonArr = new JSONArray();
 		try{
 			
@@ -492,7 +386,7 @@ public class CRUDMgr {
 			
 			conn = dbmgr.getConnection();
 			stmt = conn.prepareStatement(sSQL);
-			stmt = JdbcDBMgr.setParams(stmt, listValues);
+			stmt = JdbcDBMgr.setParams(stmt, aObjParams);
 			rs   = stmt.executeQuery();
 			
 			ResultSetMetaData meta 	= rs.getMetaData();
@@ -614,35 +508,166 @@ public class CRUDMgr {
 				if(aFetchSize>0)
 					jsonMeta.put(_LIST_FETCHSIZE, aFetchSize);
 				//
-				if(aOrderBy!=null)
-				{
-					StringBuffer sbOrderBys = new StringBuffer();
-					for(String sOrderBy : aOrderBy)
-					{
-						if(sbOrderBys.length()>0)
-							sbOrderBys.append(",");
-						sbOrderBys.append(sOrderBy);
-					}
-					if(sbOrderBys.length()>0)
-						jsonMeta.put(_LIST_ORDERBY, sbOrderBys.toString());
-				}
-				//
-				jsonMeta.put(_LIST_ORDERDESC, isOrderDesc);
-				//
 				jsonReturn.put(_LIST_META, jsonMeta);
 			}
 			
 		}
 		catch(SQLException sqlEx)
 		{
-			throw new Exception("sql:"+sSQL+", params:"+listParamsToString(listValues), sqlEx);
+			throw new Exception("sql:"+sSQL+", params:"+listParamsToString(aObjParams), sqlEx);
 		}
 		finally
 		{
 			dbmgr.closeQuietly(conn, stmt, rs);
 		}
 		
+		return jsonReturn;		
+	}
+	
+	public JSONObject retrieve(String aCrudKey, JSONObject aWhereJson, 
+			int aStartFrom, int aFetchSize, String[] aOrderBy, boolean isOrderDesc) throws Exception
+	{
+		aWhereJson = castJson2DBVal(aCrudKey, aWhereJson);
+		
+		Map<String, String> map = jsoncrudConfig.getConfig(aCrudKey);
+		if(map==null || map.size()==0)
+			throw new Exception("Invalid crud configuration key ! - "+aCrudKey);
+		
+		List<Object> listValues 			= new ArrayList<Object>();		
+		Map<String, String> mapCrudJsonCol 	= mapJson2ColName.get(aCrudKey);
+
+		String sTableName 	= map.get(JsonCrudConfig._PROP_KEY_TABLENAME);
+
+		// WHERE
+		StringBuffer sbWhere 	= new StringBuffer();
+		for(String sOrgJsonName : aWhereJson.keySet())
+		{
+			boolean isCaseInSensitive = false;
+			String sOperator 	= " = ";
+			String sJsonName 	= sOrgJsonName;
+			Object oJsonValue 	= aWhereJson.get(sOrgJsonName);
+			
+			if(sJsonName.indexOf(".")>-1)
+			{
+				Matcher m = pattJsonNameFilter.matcher(sJsonName);
+				if(m.find())
+				{
+					sJsonName = m.group(1);
+					String sJsonOperator = m.group(2);
+					String sJsonCI = m.group(3);
+					
+					if(sJsonCI!=null || JSONFILTER_CASE_INSENSITIVE.equals(sJsonOperator))
+					{
+						isCaseInSensitive = true;
+					}
+					
+					if(JSONFILTER_FROM.equals(sJsonOperator))
+					{
+						sOperator = " >= ";
+					}
+					else if(JSONFILTER_TO.equals(sJsonOperator))
+					{
+						sOperator = " <= ";
+					}
+					else if(oJsonValue!=null && oJsonValue instanceof String)
+					{
+						if(JSONFILTER_STARTWITH.equals(sJsonOperator))
+						{
+							sOperator = " like ";
+							oJsonValue = oJsonValue+SQLLIKE_WILDCARD;
+						}
+						else if (JSONFILTER_ENDWITH.equals(sJsonOperator))
+						{
+							sOperator = " like ";
+							oJsonValue = SQLLIKE_WILDCARD+oJsonValue;
+						}
+						else if (JSONFILTER_CONTAIN.equals(sJsonOperator))
+						{
+							sOperator = " like ";
+							oJsonValue = SQLLIKE_WILDCARD+oJsonValue+SQLLIKE_WILDCARD;
+						}
+					}
+				}
+			}
+			
+			if(oJsonValue!=null && (oJsonValue instanceof String) && (oJsonValue.toString().indexOf(JSONVAL_WILDCARD)>-1))
+			{
+				sOperator = " like ";
+				oJsonValue = oJsonValue.toString().replaceAll(Pattern.quote(JSONVAL_WILDCARD), SQLLIKE_WILDCARD);
+				
+			}
+			
+			String sColName = mapCrudJsonCol.get(sJsonName);
+			//
+			if(sColName!=null)
+			{
+				if(isCaseInSensitive && (oJsonValue instanceof String))
+				{
+					sbWhere.append(" AND UPPER(").append(sColName).append(") ").append(sOperator).append(" UPPER(?) ");
+				}
+				else
+				{
+					sbWhere.append(" AND ").append(sColName).append(sOperator).append(" ? ");
+				}
+				// 
+				oJsonValue = castJson2DBVal(aCrudKey, sJsonName, oJsonValue);
+				listValues.add(oJsonValue);
+			}
+		}
+		
+		StringBuffer sbOrderBy = new StringBuffer();
+		if(aOrderBy!=null && aOrderBy.length>0)
+		{
+			for(String sJsonAttr : aOrderBy)
+			{
+				String sOrderColName = mapCrudJsonCol.get(sJsonAttr);
+				
+				if(sOrderColName!=null)
+				{
+					if(sbOrderBy.length()>0)
+					{
+						sbOrderBy.append(",");
+					}
+					sbOrderBy.append(sOrderColName);
+				}
+			}
+			if(sbOrderBy.length()>0)
+			{
+				sbWhere.append(" ORDER BY ").append(sbOrderBy.toString());
+				if(isOrderDesc)
+				{
+					sbWhere.append(" DESC ");
+				}
+			}
+		}
+
+		String sSQL 			= "SELECT * FROM "+sTableName+" WHERE 1=1 "+sbWhere.toString();
+		JSONObject jsonReturn 	= retrieve(aCrudKey, sSQL, listValues.toArray(new Object[listValues.size()]), aStartFrom, aFetchSize);
+		
+		if(jsonReturn.has(_LIST_META))
+		{
+			JSONObject jsonMeta 	= jsonReturn.getJSONObject(_LIST_META);
+			
+			if(aOrderBy!=null)
+			{
+				StringBuffer sbOrderBys = new StringBuffer();
+				for(String sOrderBy : aOrderBy)
+				{
+					if(sbOrderBys.length()>0)
+						sbOrderBys.append(",");
+					sbOrderBys.append(sOrderBy);
+				}
+				if(sbOrderBys.length()>0)
+					jsonMeta.put(_LIST_ORDERBY, sbOrderBys.toString());
+			}
+			//
+			jsonMeta.put(_LIST_ORDERDESC, isOrderDesc);
+			//
+			jsonReturn.put(_LIST_META, jsonMeta);
+		}
+		
 		return jsonReturn;
+//
 	}	
 	
 	public JSONArray update(String aCrudKey, JSONObject aDataJson, JSONObject aWhereJson) throws Exception
@@ -700,17 +725,17 @@ public class CRUDMgr {
 		
 		String sJdbcName 	= map.get(JsonCrudConfig._PROP_KEY_DBCONFIG);
 		JdbcDBMgr dbmgr 	= mapDBMgr.get(sJdbcName);
-		long lAffectedRow 	= 0;
+		JSONArray jArrUpdated = new JSONArray();
 		long lAffectedRow2 	= 0;
 		
 		try{
 			
 			if(sbSets.length()>0)
 			{
-				lAffectedRow = dbmgr.executeUpdate(sSQL, listValues);
+				jArrUpdated = dbmgr.executeUpdate(sSQL, listValues);
 			}
 			
-			if(lAffectedRow>0 || sbSets.length()==0)
+			if(jArrUpdated.length()>0 || sbSets.length()==0)
 			{
 				//child update
 				
@@ -723,10 +748,7 @@ public class CRUDMgr {
 					//merging json obj
 					for(String sDataJsonKey : aDataJson.keySet())
 					{
-						if(jsonReturn.has(sDataJsonKey))
-						{
-							jsonReturn.put(sDataJsonKey, aDataJson.get(sDataJsonKey));
-						}
+						jsonReturn.put(sDataJsonKey, aDataJson.get(sDataJsonKey));
 					}
 					
 					for(String sJsonName2 : listUnmatchedJsonName)
@@ -744,7 +766,7 @@ public class CRUDMgr {
 			throw new Exception("sql:"+sSQL+", params:"+listParamsToString(listValues), sqlEx);
 		}
 		
-		if(lAffectedRow>0 || lAffectedRow2>0)
+		if(jArrUpdated.length()>0 || lAffectedRow2>0)
 		{
 			JSONArray jsonArray = retrieve(aCrudKey, aWhereJson);
 			return jsonArray;
@@ -785,21 +807,20 @@ public class CRUDMgr {
 		
 		JSONArray jsonArray = null;
 		
-
 		jsonArray = retrieve(aCrudKey, aWhereJson);
 		
 		if(jsonArray.length()>0)
 		{
-			long lAffectedRow = 0;
+			JSONArray jArrAffectedRow = new JSONArray();
 			try {
-				lAffectedRow = dbmgr.executeUpdate(sSQL, listValues);
+				jArrAffectedRow = dbmgr.executeUpdate(sSQL, listValues);
 			}
 			catch(SQLException sqlEx)
 			{
 				throw new Exception("sql:"+sSQL+", params:"+listParamsToString(listValues), sqlEx);
 			}
 			
-			if(lAffectedRow>0)
+			if(jArrAffectedRow.length()>0)
 			{
 				return jsonArray;
 			}
@@ -1179,13 +1200,21 @@ public class CRUDMgr {
 	
 	private String listParamsToString(List listParams)
 	{
+		if(listParams!=null)
+			return listParamsToString(listParams.toArray(new Object[listParams.size()]));
+		else
+			return null;
+	}
+	
+	private String listParamsToString(Object[] aObjParams)
+	{
 		JSONArray jsonArr   = new JSONArray();
 		
-		if(listParams!=null && listParams.size()>0)
+		if(aObjParams!=null && aObjParams.length>0)
 		{
-			for(int i=0; i<listParams.size(); i++)
+			for(int i=0; i<aObjParams.length; i++)
 			{
-				Object o = listParams.get(i);
+				Object o = aObjParams[i];
 				
 				if(o.getClass().isArray())
 				{
@@ -1239,15 +1268,8 @@ public class CRUDMgr {
 		if(aListParams!=null && aListParams.size()>0)
 		{
 			/////
+			
 			List<Object> listFlattenParam = new ArrayList<Object>();
-			StringBuffer sbObjDel = new StringBuffer();
-			sbObjDel.append(" DELETE FROM ").append(sChildTableName);
-			sbObjDel.append(" WHERE (").append(sChildTableFields).append(") ");
-			sbObjDel.append(" NOT IN ( ");
-			sbObjDel.append(" 	SELECT ").append(sChildTableFields);
-			sbObjDel.append("  FROM ").append(sChildTableName);
-			sbObjDel.append("  WHERE 1=2 ");
-
 			//
 			StringBuffer sbObjSQL2 	= new StringBuffer();
 			sbObjSQL2.append("SELECT * FROM ").append(sChildTableName).append(" WHERE 1=1 ");
@@ -1256,7 +1278,6 @@ public class CRUDMgr {
 			List<Object[]> listParams_new = new ArrayList<Object[]>(); 
 			for(Object[] obj2 : aListParams)
 			{
-				sbObjDel.append(" OR ").append(sbWhere);
 				for(Object o : obj2)
 				{
 					if((o instanceof String) && o.toString().equals(""))
@@ -1266,25 +1287,14 @@ public class CRUDMgr {
 					listFlattenParam.add(o);
 				}
 				
-				if(aDBMgr.getExecuteQueryCount(sbObjSQL2.toString(), obj2)==0)
+				if(aDBMgr.getQueryCount(sbObjSQL2.toString(), obj2)==0)
 				{
 					listParams_new.add(obj2);
 				}
 			}
-			sbObjDel.append(" ) ");
 			aListParams.clear();
 			aListParams.addAll(listParams_new);
 			listParams_new.clear();
-								
-			try {
-				lAffectedRow += aDBMgr.executeUpdate(sbObjDel.toString(), listFlattenParam);
-			}
-			catch(SQLException sqlEx)
-			{
-				throw new Exception("sql:"+aObjInsertSQL+", params:"+listParamsToString(aListParams), sqlEx);
-			}
-			
-			
 			
 			aObjInsertSQL = aObjInsertSQL.replaceAll("\\{.+?\\}", "?");
 			try{

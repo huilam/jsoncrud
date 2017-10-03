@@ -210,7 +210,21 @@ public class CRUDMgrTest {
 				System.out.println("  - "+sColName+" : "+mapErr.get(sColName));
 			}
 			
+			//////////////////////////
+			json = m.retrieve("crud.sample_users", 
+					" SELECT u.*, count(a.attrkey) as totalAttrs "+
+					" FROM jsoncrud_sample_users u, jsoncrud_sample_user_attrs a "+
+					" WHERE a.user_id = u.id GROUP BY u.id", 
+					null, 0 ,3);
+			System.out.println("17. Custom SQL");
+			System.out.println("  - "+m._LIST_META+" = "+json.get(m._LIST_META));
 			
+			jarr = json.getJSONArray(m._LIST_RESULT);
+			System.out.println("  - "+m._LIST_RESULT+" = "+jarr.length());
+			for(int i=0; i<jarr.length(); i++)
+			{
+				System.out.println("       17."+(i+1)+" - "+jarr.getJSONObject(i).toString());
+			}
 			//////////////////////////
 		}
 		finally

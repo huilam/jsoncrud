@@ -42,6 +42,9 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Stack;
 
+import org.json.JSONArray;
+import org.json.JSONObject;
+
 public class JdbcDBMgr {
 
 	public static String KEY_DB_CLASSNAME 	= "db.jdbc.classname";
@@ -212,7 +215,10 @@ public class JdbcDBMgr {
 	
 	public static PreparedStatement setParams(PreparedStatement aStatement, List<Object> aParamList ) throws NumberFormatException, SQLException
 	{
-		return setParams(aStatement, aParamList.toArray(new Object[aParamList.size()]));
+		if(aParamList!=null)
+			return setParams(aStatement, aParamList.toArray(new Object[aParamList.size()]));
+		else
+			return setParams(aStatement, new Object[]{});
 	}
 	public static PreparedStatement setParams(PreparedStatement aStatement, Object[] aParams ) throws NumberFormatException, SQLException
 	{
@@ -252,27 +258,43 @@ public class JdbcDBMgr {
 		return aStatement;
 	}
 
-	public long executeUpdate(String aSQL, List<Object> aParamList) throws SQLException
+	public JSONArray executeUpdate(String aSQL, List<Object> aParamList) throws SQLException
 	{
 		return executeUpdate(aSQL, aParamList.toArray(new Object[aParamList.size()]));
 	}
-	public long executeUpdate(String aSQL, Object[] aParams ) throws SQLException
+	public JSONArray executeUpdate(String aSQL, Object[] aParams ) throws SQLException
 	{
+		JSONArray jArrReturn 	= new JSONArray();
 		Connection conn 		= null;
 		PreparedStatement stmt	= null;
 		
 		long lAffectedRows 		= 0;
 		try{
 			conn 	= getConnection();
-			stmt 	= conn.prepareStatement(aSQL);
+			stmt 	= conn.prepareStatement(aSQL, 1);
 			stmt 	= setParams(stmt, aParams);
 			
 			lAffectedRows = stmt.executeUpdate();
+			
+			if(lAffectedRows>0)
+			{
+				ResultSet rs = stmt.getGeneratedKeys();
+				ResultSetMetaData meta = rs.getMetaData();
+				while(rs.next())
+				{
+					JSONObject json = new JSONObject();
+					for(int i=1; i<=meta.getColumnCount(); i++)
+					{
+						json.put(meta.getColumnName(i), rs.getObject(i));
+					}
+					jArrReturn.put(json);
+				}
+			}
 		}finally
 		{
 			closeQuietly(conn, stmt, null);
 		}
-		return lAffectedRows;
+		return jArrReturn;
 	}
 	
 	public long executeBatchUpdate(String aSQL, List<Object[]> aParamsList) throws SQLException
@@ -298,30 +320,9 @@ public class JdbcDBMgr {
 		return lAffectedRows;
 	}	
 
-	public List<List<String>> executeQuery(String aSQL, List<Object> aParamList) throws SQLException
+	public long getQueryCount(String aSQL, Object[] aParams) throws SQLException
 	{
-		return executeQuery(aSQL, aParamList.toArray(new Object[aParamList.size()]));
-	}
-
-	public List<List<String>> executeQuery(String aSQL, Object[] aParams) throws SQLException
-	{
-		List<Object[]> listParams = new ArrayList<Object[]>();
-		listParams.add(aParams);
-		return executeBatchQuery(aSQL, listParams);
-	}
-	
-	public long getExecuteQueryCount(String aSQL, Object[] aParams) throws SQLException
-	{
-		List<Object[]> listParams = new ArrayList<Object[]>();
-		listParams.add(aParams);
-		List<List<String>> listResult = executeBatchQuery(aSQL, listParams);
-		return listResult.size()-1;
-	}
-	
-	public List<List<String>> executeBatchQuery(String aSQL, List<Object[]> aParamsList) throws SQLException
-	{
-		List<List<String>> listData = new ArrayList<List<String>>();
-		List<String> listCols = null;
+		long lCount = 0;
 		
 		Connection conn 		= null;
 		PreparedStatement stmt	= null;
@@ -329,45 +330,20 @@ public class JdbcDBMgr {
 		try{
 			conn 	= getConnection();
 			stmt 	= conn.prepareStatement(aSQL);
+			stmt 	= setParams(stmt, aParams);
+			rs 		= stmt.executeQuery();
 			
-			for(Object[] oParams : aParamsList)
+			//Result
+			while(rs.next())
 			{
-				try {
-					stmt 	= setParams(stmt, oParams);
-					rs 		= stmt.executeQuery();
-					
-					//Column Name
-					ResultSetMetaData meta = rs.getMetaData();
-					int iTotalCols = meta.getColumnCount();
-					listCols = new ArrayList<String>();
-					for(int i=0; i<iTotalCols; i++)
-					{
-						listCols.add(meta.getColumnName(i+1));
-					}
-					listData.add(listCols);
-		
-					//Result
-					while(rs.next())
-					{
-						listCols = new ArrayList<String>();
-						for(int i=0; i<iTotalCols; i++)
-						{
-							listCols.add(rs.getString(i+1));
-						}
-						listData.add(listCols);
-					}
-				}
-				finally
-				{
-					closeQuietly(null, stmt, rs);
-				}
+				lCount++;
 			}
 		}finally
 		{
 			closeQuietly(conn, stmt, rs);
 		}
 		
-		return listData;
+		return lCount;
 	}
 	
 	public void closeQuietly(Connection aConn, PreparedStatement aStmt, ResultSet aResultSet ) throws SQLException
