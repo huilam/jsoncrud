@@ -171,7 +171,17 @@ public class JsonCrudRestUtil {
 	
 	public static boolean isDebugEnabled(String aCrudKey)
 	{
-		String sConfigKey 	= JsonCrudConfig._PROP_KEY_CRUD+"."+aCrudKey;
+		String sConfigKey = null;
+		
+		if(!aCrudKey.startsWith(JsonCrudConfig._PROP_KEY_CRUD+"."))
+		{
+			sConfigKey = JsonCrudConfig._PROP_KEY_CRUD+"."+aCrudKey;
+		}
+		else
+		{
+			sConfigKey = aCrudKey;
+		}
+		
 		return crudmgr.isDebugMode(sConfigKey);
 	}
 
