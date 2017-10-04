@@ -93,7 +93,7 @@ public class CRUDMgr {
 	{
 		JSONObject jsonVer = new JSONObject();
 		jsonVer.put("framework", "jsoncrud");
-		jsonVer.put("version", "0.0.8 beta");
+		jsonVer.put("version", "0.1.0 beta");
 		return jsonVer.toString();
 	}
 	
@@ -135,7 +135,7 @@ public class CRUDMgr {
 		try {
 			reloadProps();
 		} catch (Exception e) {
-			throw new RuntimeException(e);
+			throw new RuntimeException(e.getMessage(), e);
 		}
 		
 		initPaginationConfig();
@@ -842,7 +842,7 @@ public class CRUDMgr {
 		return jsoncrudConfig.getAllConfig();
 	}
 	
-	public void reloadProps() throws Exception
+	public void reloadProps() throws Exception 
 	{
 		clearAll();
 		

@@ -22,6 +22,7 @@
 
 package hl.jsoncrud;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -31,9 +32,9 @@ import org.json.JSONObject;
 
 public class JsonCrudRestUtil {
 	
-	private static CRUDMgr crudmgr 				= new CRUDMgr();
+	private static CRUDMgr crudmgr 	= null;
 	
-	public static JSONObject create(String aCrudKey, JSONObject aJSONObject) throws Throwable
+	public static JSONObject create(String aCrudKey, JSONObject aJSONObject) throws Exception
 	{
     	if(aJSONObject==null)
     		return aJSONObject;
@@ -48,12 +49,12 @@ public class JsonCrudRestUtil {
     		return null;
 	}
 	
-	public static JSONArray create(String aCrudKey, JSONArray aJsonInputArray) throws Throwable
+	public static JSONArray create(String aCrudKey, JSONArray aJsonInputArray) throws Exception
 	{
 		JSONArray jsonOutputArray = new JSONArray();
 		
 		String sConfigKey = JsonCrudConfig._PROP_KEY_CRUD+"."+aCrudKey;
-		boolean debug = crudmgr.isDebugMode(sConfigKey);
+		boolean debug = getCRUDMgr().isDebugMode(sConfigKey);
 		
 		if(aJsonInputArray==null || aJsonInputArray.length()==0)
 		{
@@ -64,7 +65,7 @@ public class JsonCrudRestUtil {
 		{
 			JSONObject jsonInput = (JSONObject) obj;
 			
-    		JSONObject jsonOutput = crudmgr.create(sConfigKey, jsonInput);
+    		JSONObject jsonOutput = getCRUDMgr().create(sConfigKey, jsonInput);
     		if(jsonOutput==null)
     		{
     			jsonOutput = new JSONObject();
@@ -81,7 +82,7 @@ public class JsonCrudRestUtil {
 	{
 		String sConfigKey = JsonCrudConfig._PROP_KEY_CRUD+"."+aCrudKey;
 		
-		JSONObject jsonOutput = crudmgr.retrieve(
+		JSONObject jsonOutput = getCRUDMgr().retrieve(
 				sConfigKey, aSQL, aObjParams, iStartFrom, iFetchSize);
 		
 		if(jsonOutput==null)
@@ -90,22 +91,29 @@ public class JsonCrudRestUtil {
 		}
 		
 		try {
-			jsonOutput.get(crudmgr._LIST_RESULT);
+			jsonOutput.get(getCRUDMgr()._LIST_RESULT);
 		}
 		catch(JSONException ex)
 		{
-			jsonOutput.put(crudmgr._LIST_RESULT, new JSONArray());
+			jsonOutput.put(getCRUDMgr()._LIST_RESULT, new JSONArray());
 		}
 		
 		try {
-			jsonOutput.get(crudmgr._LIST_META);
+			jsonOutput.get(getCRUDMgr()._LIST_META);
 		}
 		catch(JSONException ex)
 		{
-			jsonOutput.put(crudmgr._LIST_META, new JSONObject());
+			jsonOutput.put(getCRUDMgr()._LIST_META, new JSONObject());
 		}
 
 		return jsonOutput;
+	}
+	
+	public static JSONObject retrieveList(
+			String aCrudKey, JSONObject aJsonWhere,
+			int iStartFrom, int iFetchSize) throws Exception
+	{
+		return retrieveList(aCrudKey, aJsonWhere, iStartFrom, iFetchSize);
 	}
 	
 	public static JSONObject retrieveList(
@@ -114,9 +122,12 @@ public class JsonCrudRestUtil {
 	{
 
 		String sConfigKey = JsonCrudConfig._PROP_KEY_CRUD+"."+aCrudKey;
-		boolean debug = crudmgr.isDebugMode(sConfigKey);
+		boolean debug = getCRUDMgr().isDebugMode(sConfigKey);
+		
+		if(listOrderBy==null)
+			listOrderBy = new ArrayList<String>();
 
-		JSONObject jsonOutput = crudmgr.retrieve(
+		JSONObject jsonOutput = getCRUDMgr().retrieve(
 				sConfigKey, aJsonWhere, iStartFrom, iFetchSize, 
 				listOrderBy.toArray(new String[listOrderBy.size()]), isOrderDesc);
 		
@@ -126,47 +137,47 @@ public class JsonCrudRestUtil {
 		}
 		
 		try {
-			jsonOutput.get(crudmgr._LIST_RESULT);
+			jsonOutput.get(getCRUDMgr()._LIST_RESULT);
 		}
 		catch(JSONException ex)
 		{
-			jsonOutput.put(crudmgr._LIST_RESULT, new JSONArray());
+			jsonOutput.put(getCRUDMgr()._LIST_RESULT, new JSONArray());
 		}
 		
 		try {
-			jsonOutput.get(crudmgr._LIST_META);
+			jsonOutput.get(getCRUDMgr()._LIST_META);
 		}
 		catch(JSONException ex)
 		{
-			jsonOutput.put(crudmgr._LIST_META, new JSONObject());
+			jsonOutput.put(getCRUDMgr()._LIST_META, new JSONObject());
 		}
 
 		return jsonOutput;
 	}
     
-	public static JSONObject retrieve(String aCrudKey, JSONObject aJsonWhere) throws Exception
+	public static JSONObject retrieveFirst(String aCrudKey, JSONObject aJsonWhere) throws Exception
 	{
     	
 		String sConfigKey = JsonCrudConfig._PROP_KEY_CRUD+"."+aCrudKey;
-		boolean debug = crudmgr.isDebugMode(sConfigKey);
+		boolean debug = getCRUDMgr().isDebugMode(sConfigKey);
    		
-		return crudmgr.retrieveFirst(sConfigKey, aJsonWhere);
+		return getCRUDMgr().retrieveFirst(sConfigKey, aJsonWhere);
 	}
 
 	public static JSONArray update(String aCrudKey,	JSONObject aJsonData, JSONObject aJsonWhere) throws Exception
 	{
    		String sConfigKey 	= JsonCrudConfig._PROP_KEY_CRUD+"."+aCrudKey;
-		boolean debug 		= crudmgr.isDebugMode(sConfigKey);
+		boolean debug 		= getCRUDMgr().isDebugMode(sConfigKey);
 		
-		return  crudmgr.update(sConfigKey, aJsonData, aJsonWhere);
+		return  getCRUDMgr().update(sConfigKey, aJsonData, aJsonWhere);
 	}
     
 	public static JSONArray delete(String aCrudKey, JSONObject aJsonWhere) throws Exception
 	{
 		String sConfigKey 	= JsonCrudConfig._PROP_KEY_CRUD+"."+aCrudKey;
-		boolean debug 		= crudmgr.isDebugMode(sConfigKey);
+		boolean debug 		= getCRUDMgr().isDebugMode(sConfigKey);
 		
-		return crudmgr.delete(sConfigKey, aJsonWhere);
+		return getCRUDMgr().delete(sConfigKey, aJsonWhere);
 	}
 	
 	public static boolean isDebugEnabled(String aCrudKey)
@@ -182,13 +193,13 @@ public class JsonCrudRestUtil {
 			sConfigKey = aCrudKey;
 		}
 		
-		return crudmgr.isDebugMode(sConfigKey);
+		return getCRUDMgr().isDebugMode(sConfigKey);
 	}
 
 	public static JSONObject getCrudConfigJson(String aPrefix)
     {
    		JSONObject jsonCfg = new JSONObject();
-   	    Map<String,String> map = crudmgr.getAllConfig();
+   	    Map<String,String> map = getCRUDMgr().getAllConfig();
    	    if(map!=null)
    	    {
    	    	for(String sKey : map.keySet())
@@ -206,11 +217,15 @@ public class JsonCrudRestUtil {
 	
 	public static String getJsonCrudVersion()
 	{
-		return crudmgr.getVersionInfo();
+		return getCRUDMgr().getVersionInfo();
 	}
 	
 	public static CRUDMgr getCRUDMgr()
 	{
+		if(crudmgr==null)
+		{
+			crudmgr = new CRUDMgr();
+		}
 		return crudmgr;
 	}
     
