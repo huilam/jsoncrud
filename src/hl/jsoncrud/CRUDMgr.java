@@ -1395,4 +1395,9 @@ public class CRUDMgr {
 		
 	}
 	
+	public JdbcDBMgr getJdbcMgr(String aJdbcConfigName)
+	{
+		return mapDBMgr.get(aJdbcConfigName);		
+	}
+	
 }

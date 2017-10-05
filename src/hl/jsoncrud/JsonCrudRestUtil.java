@@ -32,7 +32,7 @@ import org.json.JSONObject;
 
 public class JsonCrudRestUtil {
 	
-	private static CRUDMgr crudmgr 	= null;
+	private static CRUDMgr _crudmgr 	= null;
 	
 	public static JSONObject create(String aCrudKey, JSONObject aJSONObject) throws Exception
 	{
@@ -113,21 +113,22 @@ public class JsonCrudRestUtil {
 			String aCrudKey, JSONObject aJsonWhere,
 			int iStartFrom, int iFetchSize) throws Exception
 	{
-		return retrieveList(aCrudKey, aJsonWhere, iStartFrom, iFetchSize);
+		return retrieveList(aCrudKey, aJsonWhere, iStartFrom, iFetchSize, null, false);
 	}
 	
 	public static JSONObject retrieveList(
 			String aCrudKey, JSONObject aJsonWhere,
 			int iStartFrom, int iFetchSize, List<String> listOrderBy, boolean isOrderDesc) throws Exception
 	{
-
+		CRUDMgr crudMgr = getCRUDMgr();
+		
 		String sConfigKey = JsonCrudConfig._PROP_KEY_CRUD+"."+aCrudKey;
-		boolean debug = getCRUDMgr().isDebugMode(sConfigKey);
+		boolean debug = crudMgr.isDebugMode(sConfigKey);
 		
 		if(listOrderBy==null)
 			listOrderBy = new ArrayList<String>();
 
-		JSONObject jsonOutput = getCRUDMgr().retrieve(
+		JSONObject jsonOutput = crudMgr.retrieve(
 				sConfigKey, aJsonWhere, iStartFrom, iFetchSize, 
 				listOrderBy.toArray(new String[listOrderBy.size()]), isOrderDesc);
 		
@@ -136,23 +137,45 @@ public class JsonCrudRestUtil {
 			jsonOutput = new JSONObject();
 		}
 		
-		try {
-			jsonOutput.get(getCRUDMgr()._LIST_RESULT);
-		}
-		catch(JSONException ex)
+		if(!jsonOutput.has(crudMgr._LIST_RESULT))
 		{
-			jsonOutput.put(getCRUDMgr()._LIST_RESULT, new JSONArray());
+			jsonOutput.put(crudMgr._LIST_RESULT, new JSONArray());
 		}
 		
-		try {
-			jsonOutput.get(getCRUDMgr()._LIST_META);
-		}
-		catch(JSONException ex)
+		if(!jsonOutput.has(crudMgr._LIST_META))
 		{
-			jsonOutput.put(getCRUDMgr()._LIST_META, new JSONObject());
+			jsonOutput.put(crudMgr._LIST_META, new JSONObject());
 		}
 
 		return jsonOutput;
+	}
+	
+	public static JSONObject getListMeta(JSONObject aJsonObject)
+	{
+		CRUDMgr crudMgr = getCRUDMgr();
+		
+		if(aJsonObject.has(crudMgr._LIST_META))
+		{
+			return aJsonObject.getJSONObject(crudMgr._LIST_META);
+		}
+		else
+		{
+			return null;
+		}
+	}
+	
+	public static JSONArray getListResult(JSONObject aJsonObject)
+	{
+		CRUDMgr crudMgr = getCRUDMgr();
+		
+		if(aJsonObject.has(crudMgr._LIST_RESULT))
+		{
+			return aJsonObject.getJSONArray(crudMgr._LIST_RESULT);
+		}
+		else
+		{
+			return null;
+		}
 	}
     
 	public static JSONObject retrieveFirst(String aCrudKey, JSONObject aJsonWhere) throws Exception
@@ -222,11 +245,11 @@ public class JsonCrudRestUtil {
 	
 	public static CRUDMgr getCRUDMgr()
 	{
-		if(crudmgr==null)
+		if(_crudmgr==null)
 		{
-			crudmgr = new CRUDMgr();
+			_crudmgr = new CRUDMgr();
 		}
-		return crudmgr;
+		return _crudmgr;
 	}
     
 }
