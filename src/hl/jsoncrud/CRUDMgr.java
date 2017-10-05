@@ -430,56 +430,60 @@ public class CRUDMgr {
 							}
 							sSQL2 = sSQL2.replaceAll("\\{.+?\\}", "?");
 							
-							Connection conn2 	= null;
-							PreparedStatement stmt2	= null;
-							ResultSet rs2 = null;
-							
-							JSONArray jsonArr2 	= new JSONArray();
-							JSONObject json2 	= null;
-							try{
-								conn2 = dbmgr.getConnection();
-								stmt2 = conn2.prepareStatement(sSQL2);
-								stmt2 = JdbcDBMgr.setParams(stmt2, listParams2);
-								rs2   = stmt2.executeQuery();
-								iTotalCols = rs2.getMetaData().getColumnCount();
-								while(rs2.next())
-								{
-									Object o = null;
-									String s = null;
-									
-									switch(iTotalCols)
-									{
-										case 1 : 
-											o = rs2.getObject(1);
-											if(o!=null)
-												jsonArr2.put(o);
-											break;
-										case 2 : 
-											s = rs2.getString(1);
-											o = rs2.getObject(2);
-											if(o!=null)
-											{
-												if(json2==null)
-													json2 = new JSONObject();
-												json2.put(s, o);
-											}
-											break;
-										default :
-											throw new Exception("Only 1 or 2 return columns from subquery are supported !");
-									}
-								}
-							}catch(SQLException sqlEx)
+							if(sSQL2.indexOf("?")>-1 && listParams2.size()>0)
 							{
-								throw new Exception("sql:"+sSQL2+", params:"+listParamsToString(listParams2), sqlEx);
+								
+								Connection conn2 	= null;
+								PreparedStatement stmt2	= null;
+								ResultSet rs2 = null;
+								
+								JSONArray jsonArr2 	= new JSONArray();
+								JSONObject json2 	= null;
+								try{
+									conn2 = dbmgr.getConnection();
+									stmt2 = conn2.prepareStatement(sSQL2);
+									stmt2 = JdbcDBMgr.setParams(stmt2, listParams2);
+									rs2   = stmt2.executeQuery();
+									iTotalCols = rs2.getMetaData().getColumnCount();
+									while(rs2.next())
+									{
+										Object o = null;
+										String s = null;
+										
+										switch(iTotalCols)
+										{
+											case 1 : 
+												o = rs2.getObject(1);
+												if(o!=null)
+													jsonArr2.put(o);
+												break;
+											case 2 : 
+												s = rs2.getString(1);
+												o = rs2.getObject(2);
+												if(o!=null)
+												{
+													if(json2==null)
+														json2 = new JSONObject();
+													json2.put(s, o);
+												}
+												break;
+											default :
+												throw new Exception("Only 1 or 2 return columns from subquery are supported !");
+										}
+									}
+								}catch(SQLException sqlEx)
+								{
+									throw new Exception("sql:"+sSQL2+", params:"+listParamsToString(listParams2), sqlEx);
+								}
+								finally{
+									dbmgr.closeQuietly(conn2, stmt2, rs2);
+								}
+								
+								if(json2!=null)
+									jsonOnbj.put(sJsonName, json2);
+								else
+									jsonOnbj.put(sJsonName, jsonArr2);								
 							}
-							finally{
-								dbmgr.closeQuietly(conn2, stmt2, rs2);
-							}
-							
-							if(json2!=null)
-								jsonOnbj.put(sJsonName, json2);
-							else
-								jsonOnbj.put(sJsonName, jsonArr2);
 						}
 					}
 				}
@@ -644,7 +648,7 @@ public class CRUDMgr {
 		String sSQL 			= "SELECT * FROM "+sTableName+" WHERE 1=1 "+sbWhere.toString();
 		JSONObject jsonReturn 	= retrieve(aCrudKey, sSQL, listValues.toArray(new Object[listValues.size()]), aStartFrom, aFetchSize);
 		
-		if(jsonReturn.has(_LIST_META))
+		if(jsonReturn!=null && jsonReturn.has(_LIST_META))
 		{
 			JSONObject jsonMeta 	= jsonReturn.getJSONObject(_LIST_META);
 			
@@ -1397,6 +1401,7 @@ public class CRUDMgr {
 	
 	public JdbcDBMgr getJdbcMgr(String aJdbcConfigName)
 	{
+		
 		return mapDBMgr.get(aJdbcConfigName);		
 	}
 	
