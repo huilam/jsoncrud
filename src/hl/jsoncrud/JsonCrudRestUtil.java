@@ -243,6 +243,24 @@ public class JsonCrudRestUtil {
 		return getCRUDMgr().getVersionInfo();
 	}
 	
+	public static boolean isJsonArray(String aJsonString)
+	{
+		if(aJsonString==null)
+			return false;
+		
+		aJsonString = aJsonString.trim();
+		return (aJsonString.startsWith("[") && aJsonString.startsWith("]"));
+	}
+	
+	public static boolean isJsonObject(String aJsonString)
+	{
+		if(aJsonString==null)
+			return false;
+		
+		aJsonString = aJsonString.trim();
+		return (aJsonString.startsWith("{") && aJsonString.startsWith("}"));
+	}
+	
 	public static CRUDMgr getCRUDMgr()
 	{
 		if(_crudmgr==null)

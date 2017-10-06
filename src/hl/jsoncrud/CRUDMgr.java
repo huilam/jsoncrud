@@ -134,6 +134,13 @@ public class CRUDMgr {
 		
 		try {
 			reloadProps();
+			
+			if(jsoncrudConfig.getAllConfig().size()==0)
+			{
+				throw new IOException("Fail to load properties file - "+config_prop_filename);
+			}
+			
+			
 		} catch (Exception e) {
 			throw new RuntimeException(e.getMessage(), e);
 		}
@@ -846,6 +853,42 @@ public class CRUDMgr {
 		return jsoncrudConfig.getAllConfig();
 	}
 	
+	private JdbcDBMgr initNRegJdbcDBMgr(String aJdbcConfigKey, Map<String, String> mapJdbcConfig) throws InstantiationException, IllegalAccessException, ClassNotFoundException, SQLException
+	{
+		JdbcDBMgr dbmgr = mapDBMgr.get(aJdbcConfigKey);
+		
+		
+		if(dbmgr==null)
+		{
+			String sJdbcClassName 	= mapJdbcConfig.get(JsonCrudConfig._PROP_KEY_JDBC_CLASSNAME);
+			String sJdbcUrl 		= mapJdbcConfig.get(JsonCrudConfig._PROP_KEY_JDBC_URL);
+			String sJdbcUid 		= mapJdbcConfig.get(JsonCrudConfig._PROP_KEY_JDBC_UID);
+			String sJdbcPwd 		= mapJdbcConfig.get(JsonCrudConfig._PROP_KEY_JDBC_PWD);
+
+			dbmgr = new JdbcDBMgr(sJdbcClassName, sJdbcUrl, sJdbcUid, sJdbcPwd);
+			//
+			int lconnpoolsize 		= -1;
+			String sConnPoolSize 	= mapJdbcConfig.get(JsonCrudConfig._PROP_KEY_JDBC_CONNPOOL);
+			if(sConnPoolSize!=null)
+			{
+				try{
+					lconnpoolsize = Integer.parseInt(sConnPoolSize);
+					if(lconnpoolsize>-1)
+					{
+						dbmgr.setDBConnPoolSize(lconnpoolsize);
+					}
+				}
+				catch(NumberFormatException ex){}
+			}
+			
+			if(dbmgr!=null)
+			{
+				mapDBMgr.put(aJdbcConfigKey, dbmgr);
+			}
+		}
+		return dbmgr;
+	}
+	
 	public void reloadProps() throws Exception 
 	{
 		clearAll();
@@ -859,6 +902,13 @@ public class CRUDMgr {
 		{
 			if(!sKey.startsWith(JsonCrudConfig._PROP_KEY_CRUD+"."))
 			{
+				
+				if(sKey.startsWith(JsonCrudConfig._PROP_KEY_JDBC))
+				{
+					Map<String, String> map = jsoncrudConfig.getConfig(sKey);
+					initNRegJdbcDBMgr(sKey, map);
+				}
+				
 				//only process crud.xxx
 				continue;
 			}
@@ -873,31 +923,12 @@ public class CRUDMgr {
 				
 				if(mapDBConfig==null)
 					throw new Exception("Invalid "+JsonCrudConfig._PROP_KEY_DBCONFIG+" - "+sDBConfigName);
-				
+								
 				String sJdbcClassname = mapDBConfig.get(JsonCrudConfig._PROP_KEY_JDBC_CLASSNAME);
 				
 				if(sJdbcClassname!=null)
 				{
-					dbmgr = new JdbcDBMgr(
-							sJdbcClassname,
-							mapDBConfig.get(JsonCrudConfig._PROP_KEY_JDBC_URL),
-							mapDBConfig.get(JsonCrudConfig._PROP_KEY_JDBC_UID),
-							mapDBConfig.get(JsonCrudConfig._PROP_KEY_JDBC_PWD));
-					//
-					int lconnpoolsize 		= -1;
-					String sConnPoolSize 	= mapDBConfig.get(JsonCrudConfig._PROP_KEY_JDBC_CONNPOOL);
-					if(sConnPoolSize!=null)
-					{
-						try{
-							lconnpoolsize = Integer.parseInt(sConnPoolSize);
-							if(lconnpoolsize>-1)
-							{
-								dbmgr.setDBConnPoolSize(lconnpoolsize);
-							}
-						}
-						catch(NumberFormatException ex){}
-					}
-					mapDBMgr.put(sDBConfigName, dbmgr);
+					dbmgr = initNRegJdbcDBMgr(sDBConfigName, mapDBConfig);
 				}
 				else
 				{
