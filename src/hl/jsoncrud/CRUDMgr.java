@@ -250,6 +250,10 @@ public class CRUDMgr {
 				sbColName.append(sColName);
 				sbParams.append("?");
 				//
+
+				//
+				sbRollbackParentSQL.append(" AND ").append(sColName).append(" = ? ");
+				//
 				listValues.add(aDataJson.get(sJsonName));
 			}
 			else
@@ -284,14 +288,7 @@ public class CRUDMgr {
 				if(sMappedKey==null)
 					sMappedKey = sColName;
 				aDataJson.put(sMappedKey, jsonCreated.get(sColName));
-				
-				if(sbRollbackParentSQL.length()==0)
-				{
-					sbRollbackParentSQL.append("DELETE FROM ").append(sTableName).append(" WHERE 1=1 ");					
-				}
-				sbRollbackParentSQL.append(" AND ").append(sColName).append(" = ? ");
 			}
-			
 			
 			//child create
 			if(listUnmatchedJsonName.size()>0)
@@ -322,6 +319,8 @@ public class CRUDMgr {
 						{
 							try {
 								//rollback parent
+								sbRollbackParentSQL.insert(0, "DELETE FROM "+sTableName+" WHERE 1=1 ");
+
 								JSONArray jArrRollbackRows = dbmgr.executeUpdate(sbRollbackParentSQL.toString(), listValues);
 								if(jArrCreated.length() != jArrRollbackRows.length())
 								{
@@ -419,7 +418,6 @@ public class CRUDMgr {
 				
 				if(mapCrudSql.size()>0)
 				{
-					int iTotalCols = 0;
 					for(String sJsonName : mapCrudSql.keySet())
 					{
 						if(!jsonOnbj.has(sJsonName))
@@ -439,57 +437,53 @@ public class CRUDMgr {
 							
 							if(sSQL2.indexOf("?")>-1 && listParams2.size()>0)
 							{
+								JSONArray jsonArrayChild = retrieveChild(dbmgr, sSQL2, listParams2);
 								
-								Connection conn2 	= null;
-								PreparedStatement stmt2	= null;
-								ResultSet rs2 = null;
-								
-								JSONArray jsonArr2 	= new JSONArray();
-								JSONObject json2 	= null;
-								try{
-									conn2 = dbmgr.getConnection();
-									stmt2 = conn2.prepareStatement(sSQL2);
-									stmt2 = JdbcDBMgr.setParams(stmt2, listParams2);
-									rs2   = stmt2.executeQuery();
-									iTotalCols = rs2.getMetaData().getColumnCount();
-									while(rs2.next())
+								if(jsonArrayChild!=null && jsonArrayChild.length()>0)
+								{
+									String sChildFormat = map.get(
+											"jsonattr."+sJsonName+"."+JsonCrudConfig._PROP_KEY_FORMAT);
+									
+									Object o 	= jsonArrayChild.get(0);
+									if(o!=null && !isEmptyJson(o.toString()))
 									{
-										Object o = null;
-										String s = null;
-										
-										switch(iTotalCols)
+										if(sChildFormat!=null)
 										{
-											case 1 : 
-												o = rs2.getObject(1);
-												if(o!=null)
-													jsonArr2.put(o);
-												break;
-											case 2 : 
-												s = rs2.getString(1);
-												o = rs2.getObject(2);
-												if(o!=null)
+											if(sChildFormat.trim().equals("[]"))
+											{
+												jsonOnbj.put(sJsonName, jsonArrayChild);
+											}
+											else if(sChildFormat.trim().equals("{}"))
+											{
+												jsonOnbj.put(sJsonName, jsonArrayChild.getJSONObject(0));
+											}
+										}
+										else
+										{
+											if(o instanceof JSONArray)
+											{
+												String sJsonArray = ((JSONArray)o).toString();
+												if(sJsonArray.length()>2)
 												{
-													if(json2==null)
-														json2 = new JSONObject();
-													json2.put(s, o);
+													o = sJsonArray.substring(1, sJsonArray.length()-2);
 												}
-												break;
-											default :
-												throw new Exception("Only 1 or 2 return columns from subquery are supported !");
+												else o = "";
+											}
+											
+											if(o instanceof JSONObject)
+											{
+												String sJsonObj = ((JSONObject)o).toString();
+												if(sJsonObj.length()>2)
+												{
+													o = sJsonObj.substring(1, sJsonObj.length()-2);
+												}
+												else o = "";
+											}
+											jsonOnbj.put(sJsonName, o.toString());											
 										}
 									}
-								}catch(SQLException sqlEx)
-								{
-									throw new Exception("sql:"+sSQL2+", params:"+listParamsToString(listParams2), sqlEx);
-								}
-								finally{
-									dbmgr.closeQuietly(conn2, stmt2, rs2);
-								}
-								
-								if(json2!=null)
-									jsonOnbj.put(sJsonName, json2);
-								else
-									jsonOnbj.put(sJsonName, jsonArr2);								
+									
+								}						
 							}
 						}
 					}
@@ -534,6 +528,62 @@ public class CRUDMgr {
 		
 		return jsonReturn;		
 	}
+	
+	private JSONArray retrieveChild(JdbcDBMgr aJdbcMgr, String aSQL, List<Object> aObjParamList) throws SQLException
+	{
+		Connection conn2 	= null;
+		PreparedStatement stmt2	= null;
+		ResultSet rs2 = null;
+		
+		JSONArray jsonArr2 	= new JSONArray();
+		JSONObject json2 	= new JSONObject();
+		try{
+			conn2 = aJdbcMgr.getConnection();
+			stmt2 = conn2.prepareStatement(aSQL);
+			stmt2 = JdbcDBMgr.setParams(stmt2, aObjParamList);
+			rs2   = stmt2.executeQuery();
+			int iTotalCols = rs2.getMetaData().getColumnCount();
+			
+			if(iTotalCols<1 || iTotalCols>2)
+			{
+				throw new SQLException("Only 1 or 2 return columns from subquery are supported !");				
+			}
+			
+			while(rs2.next())
+			{
+				String s = rs2.getString(1);
+				if(iTotalCols==1)
+				{
+					//["1"]
+					jsonArr2.put(s);
+				}
+				else if(iTotalCols==2)
+				{
+					//{"key1":"val1", "key2":"val2"}
+					Object o = rs2.getObject(2);
+					if(o!=null)
+					{
+						json2.put(s, o);
+					}
+				}
+			}
+			
+			if(iTotalCols==2)
+			{
+				//[{"key1":"val1", "key2":"val2"}]
+				jsonArr2.put(json2);
+			}
+			
+		}catch(SQLException sqlEx)
+		{
+			throw new SQLException("sql:"+aSQL+", params:"+listParamsToString(aObjParamList), sqlEx);
+		}
+		finally{
+			aJdbcMgr.closeQuietly(conn2, stmt2, rs2);
+		}
+		return jsonArr2;
+	}
+	
 	
 	public JSONObject retrieve(String aCrudKey, JSONObject aWhereJson, 
 			int aStartFrom, int aFetchSize, String[] aOrderBy, boolean isOrderDesc) throws Exception
@@ -853,7 +903,7 @@ public class CRUDMgr {
 		return jsoncrudConfig.getAllConfig();
 	}
 	
-	private JdbcDBMgr initNRegJdbcDBMgr(String aJdbcConfigKey, Map<String, String> mapJdbcConfig) throws InstantiationException, IllegalAccessException, ClassNotFoundException, SQLException
+	private JdbcDBMgr initNRegJdbcDBMgr(String aJdbcConfigKey, Map<String, String> mapJdbcConfig) throws SQLException
 	{
 		JdbcDBMgr dbmgr = mapDBMgr.get(aJdbcConfigKey);
 		
@@ -865,20 +915,28 @@ public class CRUDMgr {
 			String sJdbcUid 		= mapJdbcConfig.get(JsonCrudConfig._PROP_KEY_JDBC_UID);
 			String sJdbcPwd 		= mapJdbcConfig.get(JsonCrudConfig._PROP_KEY_JDBC_PWD);
 
-			dbmgr = new JdbcDBMgr(sJdbcClassName, sJdbcUrl, sJdbcUid, sJdbcPwd);
-			//
-			int lconnpoolsize 		= -1;
-			String sConnPoolSize 	= mapJdbcConfig.get(JsonCrudConfig._PROP_KEY_JDBC_CONNPOOL);
-			if(sConnPoolSize!=null)
+			if(sJdbcClassName!=null && sJdbcUrl!=null)
 			{
-				try{
-					lconnpoolsize = Integer.parseInt(sConnPoolSize);
-					if(lconnpoolsize>-1)
-					{
-						dbmgr.setDBConnPoolSize(lconnpoolsize);
-					}
+				try {
+					dbmgr = new JdbcDBMgr(sJdbcClassName, sJdbcUrl, sJdbcUid, sJdbcPwd);
+				}catch(Exception ex)
+				{
+					throw new SQLException("Error initialize JDBC - "+aJdbcConfigKey, ex);
 				}
-				catch(NumberFormatException ex){}
+				//
+				int lconnpoolsize 		= -1;
+				String sConnPoolSize 	= mapJdbcConfig.get(JsonCrudConfig._PROP_KEY_JDBC_CONNPOOL);
+				if(sConnPoolSize!=null)
+				{
+					try{
+						lconnpoolsize = Integer.parseInt(sConnPoolSize);
+						if(lconnpoolsize>-1)
+						{
+							dbmgr.setDBConnPoolSize(lconnpoolsize);
+						}
+					}
+					catch(NumberFormatException ex){}
+				}
 			}
 			
 			if(dbmgr!=null)
@@ -1417,6 +1475,28 @@ public class CRUDMgr {
 		///		
 		
 		return listAllParams;
+	}
+	
+	private boolean isEmptyJson(String aJsonString)
+	{
+		if(aJsonString==null || aJsonString.trim().length()==0)
+			return true;
+		aJsonString = aJsonString.trim();
+		
+		while(aJsonString.startsWith("{") || aJsonString.startsWith("["))
+		{
+			if(aJsonString.length()==2)
+				return true;
+			
+			if("{\"\":\"\"}".equalsIgnoreCase(aJsonString))
+			{
+				return true;
+			}
+			
+			aJsonString = aJsonString.substring(1, aJsonString.length()-1);
+		}
+				
+		return false;
 	}
 	
 	private String getJsonNameNoFilter(String aJsonName)

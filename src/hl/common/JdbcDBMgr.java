@@ -267,6 +267,7 @@ public class JdbcDBMgr {
 		JSONArray jArrReturn 	= new JSONArray();
 		Connection conn 		= null;
 		PreparedStatement stmt	= null;
+		ResultSet rs			= null;
 		
 		long lAffectedRows 		= 0;
 		try{
@@ -278,7 +279,7 @@ public class JdbcDBMgr {
 			
 			if(lAffectedRows>0)
 			{
-				ResultSet rs = stmt.getGeneratedKeys();
+				rs = stmt.getGeneratedKeys();
 				ResultSetMetaData meta = rs.getMetaData();
 				while(rs.next())
 				{
@@ -290,9 +291,14 @@ public class JdbcDBMgr {
 					jArrReturn.put(json);
 				}
 			}
-		}finally
+		}
+		catch(SQLException sqlEx)
 		{
-			closeQuietly(conn, stmt, null);
+			throw new SQLException(sqlEx);
+		}
+		finally
+		{
+			closeQuietly(conn, stmt, rs);
 		}
 		return jArrReturn;
 	}

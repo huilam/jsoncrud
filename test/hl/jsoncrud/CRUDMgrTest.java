@@ -137,11 +137,12 @@ public class CRUDMgrTest {
 				jsonUser.put("age", 1);
 				
 				jsonUserAttrs = new JSONObject();
-				jsonUserAttrs.put("","");
+				jsonUserAttrs.put("1234567890123456789012345678901234567890123456789012345678901234567890","");
 				jsonUser.put("attrs", jsonUserAttrs);
 			
 				jsonUser = m.create("crud.sample_users", jsonUser);
-			}catch(Exception ex) { }
+			}catch(Exception ex) {
+			}
 			
 			jsonUser = new JSONObject(); 
 			jsonUser.put("uid", "rollback_uid");
