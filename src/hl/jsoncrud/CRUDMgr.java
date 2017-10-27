@@ -1481,7 +1481,7 @@ public class CRUDMgr {
 	{
 		if(aJsonString==null || aJsonString.trim().length()==0)
 			return true;
-		aJsonString = aJsonString.trim();
+		aJsonString = aJsonString.replaceAll("\\s", "");
 		
 		while(aJsonString.startsWith("{") || aJsonString.startsWith("["))
 		{
