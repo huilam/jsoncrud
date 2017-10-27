@@ -202,7 +202,12 @@ public class JdbcDBMgr {
 		if(isGetFromConnPool)
 		{
 			try{
-				conn = stackConns.pop();
+				while(stackConns.size()>0 && conn==null)
+				{
+					conn = stackConns.pop();
+					if(conn.isClosed())
+						conn = null;
+				}
 			}catch(EmptyStackException ex){}
 		}
 		
@@ -210,6 +215,7 @@ public class JdbcDBMgr {
 		{
 			conn = DriverManager.getConnection (db_url, db_uid, db_pwd);
 		}
+		
 		return conn;
 	}
 	
@@ -352,6 +358,7 @@ public class JdbcDBMgr {
 		return lCount;
 	}
 	
+	
 	public void closeQuietly(Connection aConn, PreparedStatement aStmt, ResultSet aResultSet ) throws SQLException
 	{
 		try{
@@ -373,6 +380,7 @@ public class JdbcDBMgr {
 			else
 			{
 				aConn.close();
+				stackConns.remove(aConn);
 			}
 		}
 	}

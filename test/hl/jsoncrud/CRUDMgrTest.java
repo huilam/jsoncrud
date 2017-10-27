@@ -22,11 +22,13 @@
 
 package hl.jsoncrud;
 
+import java.sql.Connection;
 import java.util.Map;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
 
+import hl.common.JdbcDBMgr;
 import hl.jsoncrud.CRUDMgr;
 
 public class CRUDMgrTest {
@@ -227,6 +229,25 @@ public class CRUDMgrTest {
 				System.out.println("       17."+(i+1)+" - "+jarr.getJSONObject(i).toString());
 			}
 			//////////////////////////
+			
+			jsonWhere = new JSONObject();
+			jsonUser = new JSONObject();
+			jsonUser.put("uid", "huilam_ong");
+			jsonUser = m.retrieveFirst("crud.sample_users", jsonUser);
+			jsonWhere.put("uid", jsonUser.getString("uid"));
+			jsonUserAttrs = new JSONObject();
+			jsonUserAttrs.put("race", "alien"); //update existing
+			jsonUserAttrs.put("company", "nls"); //remain existing
+			jsonUserAttrs.put("weight", "1kg"); //adding new attribute
+			jsonUserAttrs.put("height", ""); //try to delete
+			jsonUser.put("attrs", jsonUserAttrs);
+			
+			//
+			jsonUser.remove("roles");
+			
+			jarr = m.update("crud.sample_users", jsonUser, jsonWhere);
+			System.out.println("18. Update child record keyvalue pair :"+jarr.getJSONObject(0));
+			
 		}
 		finally
 		{
