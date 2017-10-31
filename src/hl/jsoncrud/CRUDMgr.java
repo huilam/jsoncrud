@@ -93,7 +93,7 @@ public class CRUDMgr {
 	{
 		JSONObject jsonVer = new JSONObject();
 		jsonVer.put("framework", "jsoncrud");
-		jsonVer.put("version", "0.1.3 beta");
+		jsonVer.put("version", "0.1.4 beta");
 		return jsonVer.toString();
 	}
 	
@@ -340,7 +340,10 @@ public class CRUDMgr {
 			}			
 			
 			JSONArray jsonArray = retrieve(aCrudKey, aDataJson);
-			return (JSONObject) jsonArray.get(0);
+			if(jsonArray==null || jsonArray.length()==0)
+				return null;
+			else
+				return (JSONObject) jsonArray.get(0);
 		}
 		else
 		{
@@ -384,6 +387,9 @@ public class CRUDMgr {
 		PreparedStatement stmt	= null;
 		ResultSet rs = null;
 		
+		if(aStartFrom<=0)
+			aStartFrom = 1;
+		
 		JSONArray jsonArr = new JSONArray();
 		try{
 			
@@ -401,7 +407,7 @@ public class CRUDMgr {
 			{	
 				lTotalResult++;
 				
-				if(lTotalResult-1 < aStartFrom)
+				if(lTotalResult < aStartFrom)
 					continue;
 				
 				JSONObject jsonOnbj = new JSONObject();
