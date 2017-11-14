@@ -135,7 +135,6 @@ public class JsonCrudConfig {
 				{
 					mapAlls.put(sKey+"."+sKey2, map2.get(sKey2));
 				}
-				
 			}
 		}
 		

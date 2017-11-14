@@ -54,7 +54,7 @@ public class JsonCrudRestUtil {
 		JSONArray jsonOutputArray = new JSONArray();
 		
 		String sConfigKey = JsonCrudConfig._PROP_KEY_CRUD+"."+aCrudKey;
-		boolean debug = getCRUDMgr().isDebugMode(sConfigKey);
+		//boolean debug = getCRUDMgr().isDebugMode(sConfigKey);
 		
 		if(aJsonInputArray==null || aJsonInputArray.length()==0)
 		{
@@ -78,7 +78,7 @@ public class JsonCrudRestUtil {
         
 	public static JSONObject retrieveList(
 			String aCrudKey, String aSQL, Object[] aObjParams,
-			int iStartFrom, int iFetchSize) throws Exception
+			long iStartFrom, long iFetchSize) throws Exception
 	{
 		String sConfigKey = JsonCrudConfig._PROP_KEY_CRUD+"."+aCrudKey;
 		
@@ -111,19 +111,19 @@ public class JsonCrudRestUtil {
 	
 	public static JSONObject retrieveList(
 			String aCrudKey, JSONObject aJsonWhere,
-			int iStartFrom, int iFetchSize) throws Exception
+			long iStartFrom, long iFetchSize) throws Exception
 	{
 		return retrieveList(aCrudKey, aJsonWhere, iStartFrom, iFetchSize, null, false);
 	}
 	
 	public static JSONObject retrieveList(
 			String aCrudKey, JSONObject aJsonWhere,
-			int iStartFrom, int iFetchSize, List<String> listOrderBy, boolean isOrderDesc) throws Exception
+			long iStartFrom, long iFetchSize, List<String> listOrderBy, boolean isOrderDesc) throws Exception
 	{
 		CRUDMgr crudMgr = getCRUDMgr();
 		
 		String sConfigKey = JsonCrudConfig._PROP_KEY_CRUD+"."+aCrudKey;
-		boolean debug = crudMgr.isDebugMode(sConfigKey);
+		//boolean debug = crudMgr.isDebugMode(sConfigKey);
 		
 		if(listOrderBy==null)
 			listOrderBy = new ArrayList<String>();
@@ -182,7 +182,7 @@ public class JsonCrudRestUtil {
 	{
     	
 		String sConfigKey = JsonCrudConfig._PROP_KEY_CRUD+"."+aCrudKey;
-		boolean debug = getCRUDMgr().isDebugMode(sConfigKey);
+		//boolean debug = getCRUDMgr().isDebugMode(sConfigKey);
    		
 		return getCRUDMgr().retrieveFirst(sConfigKey, aJsonWhere);
 	}
@@ -190,7 +190,7 @@ public class JsonCrudRestUtil {
 	public static JSONArray update(String aCrudKey,	JSONObject aJsonData, JSONObject aJsonWhere) throws Exception
 	{
    		String sConfigKey 	= JsonCrudConfig._PROP_KEY_CRUD+"."+aCrudKey;
-		boolean debug 		= getCRUDMgr().isDebugMode(sConfigKey);
+		//boolean debug 		= getCRUDMgr().isDebugMode(sConfigKey);
 		
 		return  getCRUDMgr().update(sConfigKey, aJsonData, aJsonWhere);
 	}
@@ -198,7 +198,7 @@ public class JsonCrudRestUtil {
 	public static JSONArray delete(String aCrudKey, JSONObject aJsonWhere) throws Exception
 	{
 		String sConfigKey 	= JsonCrudConfig._PROP_KEY_CRUD+"."+aCrudKey;
-		boolean debug 		= getCRUDMgr().isDebugMode(sConfigKey);
+		//boolean debug 		= getCRUDMgr().isDebugMode(sConfigKey);
 		
 		return getCRUDMgr().delete(sConfigKey, aJsonWhere);
 	}

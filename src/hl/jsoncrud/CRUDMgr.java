@@ -93,7 +93,7 @@ public class CRUDMgr {
 	{
 		JSONObject jsonVer = new JSONObject();
 		jsonVer.put("framework", "jsoncrud");
-		jsonVer.put("version", "0.1.4 beta");
+		jsonVer.put("version", "0.1.5 beta");
 		return jsonVer.toString();
 	}
 	
@@ -233,7 +233,7 @@ public class CRUDMgr {
 		List<String> listUnmatchedJsonName = new ArrayList<String>();
 		
 		String sTableName 	= map.get(JsonCrudConfig._PROP_KEY_TABLENAME);
-		boolean isDebug		= "true".equalsIgnoreCase(map.get(JsonCrudConfig._PROP_KEY_DEBUG)); 
+		//boolean isDebug		= "true".equalsIgnoreCase(map.get(JsonCrudConfig._PROP_KEY_DEBUG)); 
 		
 		Map<String, String> mapCrudJsonCol = mapJson2ColName.get(aCrudKey);
 		for(String sJsonName : aDataJson.keySet())
@@ -372,12 +372,12 @@ public class CRUDMgr {
 	}
 	
 	public JSONObject retrieve(String aCrudKey, String aSQL, Object[] aObjParams,
-			int aStartFrom, int aFetchSize) throws Exception
+			long aStartFrom, long aFetchSize) throws Exception
 	{
 		JSONObject jsonReturn 		= null;
 		Map<String, String> map 	= jsoncrudConfig.getConfig(aCrudKey);
 		
-		boolean isDebug		= "true".equalsIgnoreCase(map.get(JsonCrudConfig._PROP_KEY_DEBUG)); 
+		//boolean isDebug		= "true".equalsIgnoreCase(map.get(JsonCrudConfig._PROP_KEY_DEBUG)); 
 		String sSQL 		= aSQL;
 		
 		String sJdbcName 	= map.get(JsonCrudConfig._PROP_KEY_DBCONFIG);
@@ -592,7 +592,7 @@ public class CRUDMgr {
 	
 	
 	public JSONObject retrieve(String aCrudKey, JSONObject aWhereJson, 
-			int aStartFrom, int aFetchSize, String[] aOrderBy, boolean isOrderDesc) throws Exception
+			long aStartFrom, long aFetchSize, String[] aOrderBy, boolean isOrderDesc) throws Exception
 	{
 		aWhereJson = castJson2DBVal(aCrudKey, aWhereJson);
 		
@@ -787,7 +787,7 @@ public class CRUDMgr {
 		}
 		
 		String sTableName 	= map.get(JsonCrudConfig._PROP_KEY_TABLENAME);
-		boolean isDebug		= "true".equalsIgnoreCase(map.get(JsonCrudConfig._PROP_KEY_DEBUG)); 
+		//boolean isDebug		= "true".equalsIgnoreCase(map.get(JsonCrudConfig._PROP_KEY_DEBUG)); 
 		String sSQL			= "UPDATE "+sTableName+" SET "+sbSets.toString()+" WHERE 1=1 "+sbWhere.toString();
 		
 		String sJdbcName 	= map.get(JsonCrudConfig._PROP_KEY_DBCONFIG);
@@ -866,7 +866,7 @@ public class CRUDMgr {
 		}
 		
 		String sTableName 	= map.get(JsonCrudConfig._PROP_KEY_TABLENAME);
-		boolean isDebug		= "true".equalsIgnoreCase(map.get(JsonCrudConfig._PROP_KEY_DEBUG)); 
+		//boolean isDebug		= "true".equalsIgnoreCase(map.get(JsonCrudConfig._PROP_KEY_DEBUG)); 
 		String sSQL 		= "DELETE FROM "+sTableName+" WHERE 1=1 "+sbWhere.toString();
 		
 		String sJdbcName = map.get(JsonCrudConfig._PROP_KEY_DBCONFIG);
