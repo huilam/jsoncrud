@@ -131,6 +131,7 @@ public class CRUDMgr {
 					+JSONFILTER_FROM+"|"+JSONFILTER_TO+"|"
 					+JSONFILTER_STARTWITH+"|"+JSONFILTER_ENDWITH+"|"+JSONFILTER_CONTAIN+"|"+JSONFILTER_NOT+"|"
 					+JSONFILTER_CASE_INSENSITIVE+")"
+					+"(?:\\.("+JSONFILTER_CASE_INSENSITIVE+"|"+JSONFILTER_NOT+"))?"
 					+"(?:\\.("+JSONFILTER_CASE_INSENSITIVE+"|"+JSONFILTER_NOT+"))?");
 		
 		try {
@@ -623,15 +624,17 @@ public class CRUDMgr {
 				{
 					sJsonName = m.group(1);
 					String sJsonOperator = m.group(2);
-					String sJsonCIorNOT = m.group(3);
-					
+					String sJsonCIorNOT_1 = m.group(3);
+					String sJsonCIorNOT_2 = m.group(4);
 
-					if(JSONFILTER_CASE_INSENSITIVE.equalsIgnoreCase(sJsonCIorNOT) || JSONFILTER_CASE_INSENSITIVE.equals(sJsonOperator))
+					if(JSONFILTER_CASE_INSENSITIVE.equalsIgnoreCase(sJsonCIorNOT_1) || JSONFILTER_CASE_INSENSITIVE.equalsIgnoreCase(sJsonCIorNOT_2) 
+							|| JSONFILTER_CASE_INSENSITIVE.equals(sJsonOperator))
 					{
 						isCaseInSensitive = true;
 					}
 					
-					if(JSONFILTER_NOT.equalsIgnoreCase(sJsonCIorNOT) || JSONFILTER_NOT.equals(sJsonOperator))
+					if(JSONFILTER_NOT.equalsIgnoreCase(sJsonCIorNOT_1) || JSONFILTER_NOT.equalsIgnoreCase(sJsonCIorNOT_2) 
+							|| JSONFILTER_NOT.equals(sJsonOperator))
 					{
 						isNotCondition = true;
 					}

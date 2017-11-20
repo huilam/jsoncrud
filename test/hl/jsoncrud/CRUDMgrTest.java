@@ -174,7 +174,8 @@ public class CRUDMgrTest {
 
 			/////
 			jsonUser = new JSONObject();
-			jsonUser.put("displayname.ci", "NAME_5*");
+			jsonUser.put("displayname.ci.not", "NAME_32");
+			jsonUser.put("displayname.ci", "NAME_*");
 			jsonUser.put("uid.startwith.ci", "uiD_");
 			jsonUser.put("uid.endwith", "2");
 			jArr = m.retrieve("crud.sample_users", jsonUser);
