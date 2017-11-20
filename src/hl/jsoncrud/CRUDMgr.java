@@ -52,6 +52,7 @@ public class CRUDMgr {
 	private final static String SQLLIKE_WILDCARD				= "%";
 	private final static String JSONVAL_WILDCARD				= "*";
 	private final static String JSONFILTER_CASE_INSENSITIVE		= "ci";
+	private final static String JSONFILTER_NOT					= "not";
 	
 	private Map<String, JdbcDBMgr> mapDBMgr 					= null;
 	private Map<String, Map<String, String>> mapJson2ColName 	= null;
@@ -128,9 +129,9 @@ public class CRUDMgr {
 		//
 		pattJsonNameFilter 	= Pattern.compile("([a-zA-Z_-]+?)\\.("
 					+JSONFILTER_FROM+"|"+JSONFILTER_TO+"|"
-					+JSONFILTER_STARTWITH+"|"+JSONFILTER_ENDWITH+"|"+JSONFILTER_CONTAIN+"|"
+					+JSONFILTER_STARTWITH+"|"+JSONFILTER_ENDWITH+"|"+JSONFILTER_CONTAIN+"|"+JSONFILTER_NOT+"|"
 					+JSONFILTER_CASE_INSENSITIVE+")"
-					+"(?:\\.("+JSONFILTER_CASE_INSENSITIVE+"))?");
+					+"(?:\\.("+JSONFILTER_CASE_INSENSITIVE+"|"+JSONFILTER_NOT+"))?");
 		
 		try {
 			reloadProps();
@@ -609,7 +610,8 @@ public class CRUDMgr {
 		StringBuffer sbWhere 	= new StringBuffer();
 		for(String sOrgJsonName : aWhereJson.keySet())
 		{
-			boolean isCaseInSensitive = false;
+			boolean isCaseInSensitive 	= false;
+			boolean isNotCondition		= false;
 			String sOperator 	= " = ";
 			String sJsonName 	= sOrgJsonName;
 			Object oJsonValue 	= aWhereJson.get(sOrgJsonName);
@@ -621,16 +623,26 @@ public class CRUDMgr {
 				{
 					sJsonName = m.group(1);
 					String sJsonOperator = m.group(2);
-					String sJsonCI = m.group(3);
+					String sJsonCIorNOT = m.group(3);
 					
-					if(sJsonCI!=null || JSONFILTER_CASE_INSENSITIVE.equals(sJsonOperator))
+
+					if(JSONFILTER_CASE_INSENSITIVE.equalsIgnoreCase(sJsonCIorNOT) || JSONFILTER_CASE_INSENSITIVE.equals(sJsonOperator))
 					{
 						isCaseInSensitive = true;
+					}
+					
+					if(JSONFILTER_NOT.equalsIgnoreCase(sJsonCIorNOT) || JSONFILTER_NOT.equals(sJsonOperator))
+					{
+						isNotCondition = true;
 					}
 					
 					if(JSONFILTER_FROM.equals(sJsonOperator))
 					{
 						sOperator = " >= ";
+					}
+					else if(JSONFILTER_TO.equals(sJsonOperator))
+					{
+						sOperator = " <= ";
 					}
 					else if(JSONFILTER_TO.equals(sJsonOperator))
 					{
@@ -668,13 +680,25 @@ public class CRUDMgr {
 			//
 			if(sColName!=null)
 			{
+				sbWhere.append(" AND ");
+				
+				if(isNotCondition)
+				{
+					sbWhere.append(" NOT (");
+				}
+				
 				if(isCaseInSensitive && (oJsonValue instanceof String))
 				{
-					sbWhere.append(" AND UPPER(").append(sColName).append(") ").append(sOperator).append(" UPPER(?) ");
+					sbWhere.append(" UPPER(").append(sColName).append(") ").append(sOperator).append(" UPPER(?) ");
 				}
 				else
 				{
-					sbWhere.append(" AND ").append(sColName).append(sOperator).append(" ? ");
+					sbWhere.append(sColName).append(sOperator).append(" ? ");
+				}
+				
+				if(isNotCondition)
+				{
+					sbWhere.append(" )");
 				}
 				// 
 				oJsonValue = castJson2DBVal(aCrudKey, sJsonName, oJsonValue);

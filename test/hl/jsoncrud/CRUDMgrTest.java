@@ -22,13 +22,11 @@
 
 package hl.jsoncrud;
 
-import java.sql.Connection;
 import java.util.Map;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
 
-import hl.common.JdbcDBMgr;
 import hl.jsoncrud.CRUDMgr;
 
 public class CRUDMgrTest {
@@ -165,6 +163,7 @@ public class CRUDMgrTest {
 			jsonUser = new JSONObject();
 			jsonUser.put("age.from", 5);
 			jsonUser.put("age.to", 9);
+			jsonUser.put("age.not", 8);
 			jsonUser.put("uid.from", "uid_6");
 			jArr = m.retrieve("crud.sample_users", jsonUser);
 			System.out.println("13. retrieve.sample_users (age>=5 + age<=9 + uid>='uid_6'):"+jArr.length());
@@ -228,8 +227,22 @@ public class CRUDMgrTest {
 			{
 				System.out.println("       17."+(i+1)+" - "+jarr.getJSONObject(i).toString());
 			}
-			//////////////////////////
 			
+			json = m.retrieve("crud.sample_users", 
+					" select currval('jsoncrud_sample_users_id_seq') ", 
+					null, 0 ,0);
+			System.out.println("18. Get Current Sequence with SQL");
+			System.out.println("  - "+m._LIST_META+" = "+json.get(m._LIST_META));
+			
+			jarr = json.getJSONArray(m._LIST_RESULT);
+			System.out.println("  - "+m._LIST_RESULT+" = "+jarr.length());
+			for(int i=0; i<jarr.length(); i++)
+			{
+				System.out.println("       18."+(i+1)+" - "+jarr.getJSONObject(i).toString());
+			}
+			
+			//////////////////////////
+		/**
 			jsonWhere = new JSONObject();
 			jsonUser = new JSONObject();
 			jsonUser.put("uid", "huilam_ong");
@@ -247,7 +260,7 @@ public class CRUDMgrTest {
 			
 			jarr = m.update("crud.sample_users", jsonUser, jsonWhere);
 			System.out.println("18. Update child record keyvalue pair :"+jarr.getJSONObject(0));
-			
+		**/
 		}
 		finally
 		{
