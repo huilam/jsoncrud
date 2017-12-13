@@ -205,7 +205,7 @@ public class JdbcDBMgr {
 				while(stackConns.size()>0 && conn==null)
 				{
 					conn = stackConns.pop();
-					if(conn.isClosed())
+					if(conn.isClosed() || !conn.isValid(1))
 						conn = null;
 				}
 			}catch(EmptyStackException ex){}
