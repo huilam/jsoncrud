@@ -94,7 +94,7 @@ public class CRUDMgr {
 	{
 		JSONObject jsonVer = new JSONObject();
 		jsonVer.put("framework", "jsoncrud");
-		jsonVer.put("version", "0.1.7 beta");
+		jsonVer.put("version", "0.1.8 beta");
 		return jsonVer.toString();
 	}
 	
@@ -1219,13 +1219,18 @@ public class CRUDMgr {
 		DBColMeta col = getDBColMetaByJsonName(aCrudKey, aJsonName);
 		if(col!=null)
 		{
+			String sVal = String.valueOf(aVal);
+			
 			if(col.isNumeric())
 			{
-				oVal = Long.parseLong(String.valueOf(aVal));
+				if(sVal.indexOf('.')>-1)
+					oVal = Float.parseFloat(sVal);
+				else
+					oVal = Long.parseLong(sVal);
 			}
 			else if(col.isBoolean() || col.isBit())
 			{
-				oVal = Boolean.parseBoolean(String.valueOf(aVal));
+				oVal = Boolean.parseBoolean(sVal);
 			}
 		}
 		return oVal;
