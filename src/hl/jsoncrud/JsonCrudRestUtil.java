@@ -113,12 +113,12 @@ public class JsonCrudRestUtil {
 			String aCrudKey, JSONObject aJsonWhere,
 			long iStartFrom, long iFetchSize) throws Exception
 	{
-		return retrieveList(aCrudKey, aJsonWhere, iStartFrom, iFetchSize, null, false);
+		return retrieveList(aCrudKey, aJsonWhere, iStartFrom, iFetchSize, null);
 	}
 	
 	public static JSONObject retrieveList(
 			String aCrudKey, JSONObject aJsonWhere,
-			long iStartFrom, long iFetchSize, List<String> listOrderBy, boolean isOrderDesc) throws Exception
+			long iStartFrom, long iFetchSize, List<String> listOrderBy) throws Exception
 	{
 		CRUDMgr crudMgr = getCRUDMgr();
 		
@@ -130,7 +130,7 @@ public class JsonCrudRestUtil {
 
 		JSONObject jsonOutput = crudMgr.retrieve(
 				sConfigKey, aJsonWhere, iStartFrom, iFetchSize, 
-				listOrderBy.toArray(new String[listOrderBy.size()]), isOrderDesc);
+				listOrderBy.toArray(new String[listOrderBy.size()]));
 		
 		if(jsonOutput==null)
 		{
