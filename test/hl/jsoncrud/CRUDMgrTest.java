@@ -186,7 +186,7 @@ public class CRUDMgrTest {
 			}
 			
 			//////////////////////////
-			JSONObject json = m.retrieve("crud.sample_users", new JSONObject(), 0, 3, new String[] {"id"}, false );
+			JSONObject json = m.retrieve("crud.sample_users", new JSONObject(), 0, 3, new String[] {"id"});
 			System.out.println("15. Pagination");
 			System.out.println("  - "+m._LIST_META+" = "+json.get(m._LIST_META));
 			
@@ -243,25 +243,15 @@ public class CRUDMgrTest {
 			}
 			
 			//////////////////////////
-		/**
-			jsonWhere = new JSONObject();
+			System.out.println("19. order seq");
 			jsonUser = new JSONObject();
-			jsonUser.put("uid", "huilam_ong");
-			jsonUser = m.retrieveFirst("crud.sample_users", jsonUser);
-			jsonWhere.put("uid", jsonUser.getString("uid"));
-			jsonUserAttrs = new JSONObject();
-			jsonUserAttrs.put("race", "alien"); //update existing
-			jsonUserAttrs.put("company", "nls"); //remain existing
-			jsonUserAttrs.put("weight", "1kg"); //adding new attribute
-			jsonUserAttrs.put("height", ""); //try to delete
-			jsonUser.put("attrs", jsonUserAttrs);
+			String sOrderBys[] = new String[] {"displayname.desc", "enabled", "uid.asc"};
 			
-			//
-			jsonUser.remove("roles");
-			
-			jarr = m.update("crud.sample_users", jsonUser, jsonWhere);
-			System.out.println("18. Update child record keyvalue pair :"+jarr.getJSONObject(0));
-		**/
+			jArr = m.retrieve("crud.sample_users", jsonUser, sOrderBys);
+			for(int i=0; i<jArr.length(); i++)
+			{
+				System.out.println("    19."+(i+1)+" - "+jArr.get(i));
+			}
 		}
 		finally
 		{

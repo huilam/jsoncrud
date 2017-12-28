@@ -76,7 +76,6 @@ public class CRUDMgr {
 	public String _LIST_FETCHSIZE 	= "fetchsize";
 	public String _LIST_START 		= "start";
 	public String _LIST_ORDERBY 	= "orderby";
-	public String _LIST_ORDERDESC	= "orderdesc";
 	
 	public final static String _DB_VALIDATION_ERRCODE_CONFIGKEY = "dbschema.validation_errcode";
 	public static String ERRCODE_NOT_NULLABLE 	= "not_nullable";
@@ -94,7 +93,7 @@ public class CRUDMgr {
 	{
 		JSONObject jsonVer = new JSONObject();
 		jsonVer.put("framework", "jsoncrud");
-		jsonVer.put("version", "0.1.8 beta");
+		jsonVer.put("version", "0.1.9 beta");
 		return jsonVer.toString();
 	}
 	
@@ -209,10 +208,6 @@ public class CRUDMgr {
 			sMetaKey = mapPagination.get(_LIST_ORDERBY);
 			if(sMetaKey!=null)
 				_LIST_ORDERBY = sMetaKey;
-			
-			sMetaKey = mapPagination.get(_LIST_ORDERDESC);
-			if(sMetaKey!=null)
-				_LIST_ORDERDESC = sMetaKey;
 		}		
 		
 	}
@@ -365,13 +360,24 @@ public class CRUDMgr {
 	
 	public JSONArray retrieve(String aCrudKey, JSONObject aWhereJson) throws Exception
 	{
-		JSONObject json = retrieve(aCrudKey, aWhereJson, 0, 0, null, false);
+		JSONObject json = retrieve(aCrudKey, aWhereJson, 0, 0, null);
 		if(json==null)
 		{
 			return new JSONArray();
 		}
 		return (JSONArray) json.get(_LIST_RESULT);
 	}
+	
+	public JSONArray retrieve(String aCrudKey, JSONObject aWhereJson, String[] aOrderBy) throws Exception
+	{
+		JSONObject json = retrieve(aCrudKey, aWhereJson, 0, 0, aOrderBy);
+		if(json==null)
+		{
+			return new JSONArray();
+		}
+		return (JSONArray) json.get(_LIST_RESULT);
+	}
+	
 	
 	public JSONObject retrieve(String aCrudKey, String aSQL, Object[] aObjParams,
 			long aStartFrom, long aFetchSize) throws Exception
@@ -594,7 +600,7 @@ public class CRUDMgr {
 	
 	
 	public JSONObject retrieve(String aCrudKey, JSONObject aWhereJson, 
-			long aStartFrom, long aFetchSize, String[] aOrderBy, boolean isOrderDesc) throws Exception
+			long aStartFrom, long aFetchSize, String[] aOrderBy) throws Exception
 	{
 		aWhereJson = castJson2DBVal(aCrudKey, aWhereJson);
 		
@@ -712,8 +718,20 @@ public class CRUDMgr {
 		StringBuffer sbOrderBy = new StringBuffer();
 		if(aOrderBy!=null && aOrderBy.length>0)
 		{
-			for(String sJsonAttr : aOrderBy)
+			for(String sOrderBy : aOrderBy)
 			{
+				String sOrderSeqKeyword = "";
+				int iOrderSeq = sOrderBy.indexOf('.');
+				if(iOrderSeq>-1)
+				{
+					sOrderSeqKeyword = sOrderBy.substring(iOrderSeq+1);
+				}
+				else if(iOrderSeq==-1)
+				{
+					iOrderSeq = sOrderBy.length();
+				}
+					
+				String sJsonAttr = sOrderBy.substring(0, iOrderSeq);
 				String sOrderColName = mapCrudJsonCol.get(sJsonAttr);
 				
 				if(sOrderColName!=null)
@@ -723,15 +741,13 @@ public class CRUDMgr {
 						sbOrderBy.append(",");
 					}
 					sbOrderBy.append(sOrderColName);
+					if(sOrderSeqKeyword.length()>0)
+						sbOrderBy.append(" ").append(sOrderSeqKeyword);
 				}
 			}
 			if(sbOrderBy.length()>0)
 			{
 				sbWhere.append(" ORDER BY ").append(sbOrderBy.toString());
-				if(isOrderDesc)
-				{
-					sbWhere.append(" DESC ");
-				}
 			}
 		}
 
@@ -754,8 +770,6 @@ public class CRUDMgr {
 				if(sbOrderBys.length()>0)
 					jsonMeta.put(_LIST_ORDERBY, sbOrderBys.toString());
 			}
-			//
-			jsonMeta.put(_LIST_ORDERDESC, isOrderDesc);
 			//
 			jsonReturn.put(_LIST_META, jsonMeta);
 		}
