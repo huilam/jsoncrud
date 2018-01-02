@@ -474,9 +474,11 @@ public class CRUDMgr {
 										}
 										else
 										{
+											/*
 											if(o instanceof JSONArray)
 											{
-												String sJsonArray = ((JSONArray)o).toString();
+												JSONArray jsonArrO 	= (JSONArray) o;
+												String sJsonArray 	= jsonArrO.toString();
 												if(sJsonArray.length()>2)
 												{
 													o = sJsonArray.substring(1, sJsonArray.length()-2);
@@ -486,14 +488,16 @@ public class CRUDMgr {
 											
 											if(o instanceof JSONObject)
 											{
-												String sJsonObj = ((JSONObject)o).toString();
+												JSONObject jsonO = (JSONObject) o;
+												String sJsonObj = jsonO.toString();
 												if(sJsonObj.length()>2)
 												{
 													o = sJsonObj.substring(1, sJsonObj.length()-2);
 												}
 												else o = "";
 											}
-											jsonOnbj.put(sJsonName, o.toString());											
+											 */
+											jsonOnbj.put(sJsonName, o);											
 										}
 									}
 									
