@@ -34,6 +34,29 @@ public class JsonCrudRestUtil {
 	
 	private static CRUDMgr _crudmgr 	= null;
 	
+	
+	public static JSONObject create(String aCrudKey, String aJsonContent) throws Exception
+	{
+		if(aJsonContent!=null && aJsonContent.length()>0)
+		{
+			aJsonContent = aJsonContent.trim();
+			if(aJsonContent.startsWith("{") && aJsonContent.endsWith("}"))
+			{
+				create(aCrudKey, new JSONObject(aJsonContent));
+			}
+			else if(aJsonContent.startsWith("[") && aJsonContent.endsWith("]"))
+			{
+				create(aCrudKey, new JSONArray(aJsonContent));
+			}
+			else
+			{
+				throw new Exception("Unsupported JSON content : "+aJsonContent);
+			}
+		}
+		return null;
+	}
+	
+	
 	public static JSONObject create(String aCrudKey, JSONObject aJSONObject) throws Exception
 	{
     	if(aJSONObject==null)

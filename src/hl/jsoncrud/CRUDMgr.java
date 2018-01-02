@@ -212,11 +212,11 @@ public class CRUDMgr {
 		
 	}
 	
-	public JSONObject create(String aCrudKey, JSONObject aDataJson) throws Exception
+	public JSONObject create(String aCrudKey, JSONObject aDataJson) throws JsonCrudException
 	{
 		Map<String, String> map = jsoncrudConfig.getConfig(aCrudKey);
 		if(map==null || map.size()==0)
-			throw new Exception("Invalid crud configuration key ! - "+aCrudKey);
+			throw new JsonCrudException("Invalid crud configuration key ! - "+aCrudKey);
 		
 		aDataJson = castJson2DBVal(aCrudKey, aDataJson);
 		
@@ -271,7 +271,7 @@ public class CRUDMgr {
 		}
 		catch(Throwable ex)
 		{
-			throw new Exception("sql:"+sSQL+", params:"+listParamsToString(listValues), ex);
+			throw new JsonCrudException("sql:"+sSQL+", params:"+listParamsToString(listValues), ex);
 		}
 
 		
@@ -321,15 +321,15 @@ public class CRUDMgr {
 								JSONArray jArrRollbackRows = dbmgr.executeUpdate(sbRollbackParentSQL.toString(), listValues);
 								if(jArrCreated.length() != jArrRollbackRows.length())
 								{
-									throw new Exception("Record fail to Rollback!");
+									throw new JsonCrudException("Record fail to Rollback!");
 								}
 							}
 							catch(Throwable ex2)
 							{
-								throw new Exception("[Rollback Failed], parent:[sql:"+sbRollbackParentSQL.toString()+",params:"+listParamsToString(listValues)+"], child:[sql:"+sObjInsertSQL+",params:"+listParamsToString(listParams2)+"]", ex);
+								throw new JsonCrudException("[Rollback Failed], parent:[sql:"+sbRollbackParentSQL.toString()+",params:"+listParamsToString(listValues)+"], child:[sql:"+sObjInsertSQL+",params:"+listParamsToString(listParams2)+"]", ex);
 							}
 							
-							throw new Exception("[Rollback Success] : child : sql:"+sObjInsertSQL+", params:"+listParamsToString(listParams2), ex);
+							throw new JsonCrudException("[Rollback Success] : child : sql:"+sObjInsertSQL+", params:"+listParamsToString(listParams2), ex);
 						}
 							
 					}
@@ -348,7 +348,7 @@ public class CRUDMgr {
 		}
 	}
 	
-	public JSONObject retrieveFirst(String aCrudKey, JSONObject aWhereJson) throws Exception
+	public JSONObject retrieveFirst(String aCrudKey, JSONObject aWhereJson) throws JsonCrudException
 	{
 		JSONArray jsonArr = retrieve(aCrudKey, aWhereJson);
 		if(jsonArr!=null && jsonArr.length()>0)
@@ -358,7 +358,7 @@ public class CRUDMgr {
 		return null;
 	}
 	
-	public JSONArray retrieve(String aCrudKey, JSONObject aWhereJson) throws Exception
+	public JSONArray retrieve(String aCrudKey, JSONObject aWhereJson) throws JsonCrudException
 	{
 		JSONObject json = retrieve(aCrudKey, aWhereJson, 0, 0, null);
 		if(json==null)
@@ -368,7 +368,7 @@ public class CRUDMgr {
 		return (JSONArray) json.get(_LIST_RESULT);
 	}
 	
-	public JSONArray retrieve(String aCrudKey, JSONObject aWhereJson, String[] aOrderBy) throws Exception
+	public JSONArray retrieve(String aCrudKey, JSONObject aWhereJson, String[] aOrderBy) throws JsonCrudException
 	{
 		JSONObject json = retrieve(aCrudKey, aWhereJson, 0, 0, aOrderBy);
 		if(json==null)
@@ -380,7 +380,7 @@ public class CRUDMgr {
 	
 	
 	public JSONObject retrieve(String aCrudKey, String aSQL, Object[] aObjParams,
-			long aStartFrom, long aFetchSize) throws Exception
+			long aStartFrom, long aFetchSize) throws JsonCrudException
 	{
 		JSONObject jsonReturn 		= null;
 		Map<String, String> map 	= jsoncrudConfig.getConfig(aCrudKey);
@@ -533,11 +533,16 @@ public class CRUDMgr {
 		}
 		catch(SQLException sqlEx)
 		{
-			throw new Exception("sql:"+sSQL+", params:"+listParamsToString(aObjParams), sqlEx);
+			throw new JsonCrudException("sql:"+sSQL+", params:"+listParamsToString(aObjParams), sqlEx);
 		}
 		finally
 		{
-			dbmgr.closeQuietly(conn, stmt, rs);
+			
+			try {
+				dbmgr.closeQuietly(conn, stmt, rs);
+			} catch (SQLException e) {
+				throw new JsonCrudException(e);
+			}
 		}
 		
 		return jsonReturn;		
@@ -600,13 +605,13 @@ public class CRUDMgr {
 	
 	
 	public JSONObject retrieve(String aCrudKey, JSONObject aWhereJson, 
-			long aStartFrom, long aFetchSize, String[] aOrderBy) throws Exception
+			long aStartFrom, long aFetchSize, String[] aOrderBy) throws JsonCrudException
 	{
 		aWhereJson = castJson2DBVal(aCrudKey, aWhereJson);
 		
 		Map<String, String> map = jsoncrudConfig.getConfig(aCrudKey);
 		if(map==null || map.size()==0)
-			throw new Exception("Invalid crud configuration key ! - "+aCrudKey);
+			throw new JsonCrudException("Invalid crud configuration key ! - "+aCrudKey);
 		
 		List<Object> listValues 			= new ArrayList<Object>();		
 		Map<String, String> mapCrudJsonCol 	= mapJson2ColName.get(aCrudKey);
@@ -782,7 +787,7 @@ public class CRUDMgr {
 	{
 		Map<String, String> map = jsoncrudConfig.getConfig(aCrudKey);
 		if(map.size()==0)
-			throw new Exception("Invalid crud configuration key ! - "+aCrudKey);
+			throw new JsonCrudException("Invalid crud configuration key ! - "+aCrudKey);
 
 		aDataJson 	= castJson2DBVal(aCrudKey, aDataJson);
 		aWhereJson 	= castJson2DBVal(aCrudKey, aWhereJson);
@@ -819,7 +824,7 @@ public class CRUDMgr {
 			//
 			if(sColName==null)
 			{
-				throw new Exception("Missing Json to dbcol mapping ("+sJsonName+":"+aWhereJson.get(sJsonName)+") ! - "+aCrudKey);
+				throw new JsonCrudException("Missing Json to dbcol mapping ("+sJsonName+":"+aWhereJson.get(sJsonName)+") ! - "+aCrudKey);
 			}
 			
 			sbWhere.append(" AND ").append(sColName).append(" = ? ");
@@ -871,7 +876,7 @@ public class CRUDMgr {
 		}
 		catch(SQLException sqlEx) 
 		{
-			throw new Exception("sql:"+sSQL+", params:"+listParamsToString(listValues), sqlEx);
+			throw new JsonCrudException("sql:"+sSQL+", params:"+listParamsToString(listValues), sqlEx);
 		}
 		
 		if(jArrUpdated.length()>0 || lAffectedRow2>0)
@@ -889,7 +894,7 @@ public class CRUDMgr {
 	{
 		Map<String, String> map = jsoncrudConfig.getConfig(aCrudKey);
 		if(map==null || map.size()==0)
-			throw new Exception("Invalid crud configuration key ! - "+aCrudKey);
+			throw new JsonCrudException("Invalid crud configuration key ! - "+aCrudKey);
 		
 		aWhereJson = castJson2DBVal(aCrudKey, aWhereJson);
 		
@@ -925,7 +930,7 @@ public class CRUDMgr {
 			}
 			catch(SQLException sqlEx)
 			{
-				throw new Exception("sql:"+sSQL+", params:"+listParamsToString(listValues), sqlEx);
+				throw new JsonCrudException("sql:"+sSQL+", params:"+listParamsToString(listValues), sqlEx);
 			}
 			
 			if(jArrAffectedRow.length()>0)
@@ -1027,7 +1032,7 @@ public class CRUDMgr {
 				Map<String, String> mapDBConfig = jsoncrudConfig.getConfig(sDBConfigName);
 				
 				if(mapDBConfig==null)
-					throw new Exception("Invalid "+JsonCrudConfig._PROP_KEY_DBCONFIG+" - "+sDBConfigName);
+					throw new JsonCrudException("Invalid "+JsonCrudConfig._PROP_KEY_DBCONFIG+" - "+sDBConfigName);
 								
 				String sJdbcClassname = mapDBConfig.get(JsonCrudConfig._PROP_KEY_JDBC_CLASSNAME);
 				
@@ -1037,7 +1042,7 @@ public class CRUDMgr {
 				}
 				else
 				{
-					throw new Exception("Invalid "+JsonCrudConfig._PROP_KEY_JDBC_CLASSNAME+" - "+sJdbcClassname);
+					throw new JsonCrudException("Invalid "+JsonCrudConfig._PROP_KEY_JDBC_CLASSNAME+" - "+sJdbcClassname);
 				}
 			}
 			
@@ -1447,14 +1452,14 @@ public class CRUDMgr {
 			}
 			catch(SQLException sqlEx)
 			{
-				throw new Exception("sql:"+aObjInsertSQL+", params:"+listParamsToString(aListParams), sqlEx);
+				throw new JsonCrudException("sql:"+aObjInsertSQL+", params:"+listParamsToString(aListParams), sqlEx);
 			}
 		}
 		return lAffectedRow;
 	}
 	
 	
-	private List<Object[]> getSubQueryParams(Map<String, String> aCrudCfgMap, JSONObject aJsonParentData, String aJsonName) throws Exception
+	private List<Object[]> getSubQueryParams(Map<String, String> aCrudCfgMap, JSONObject aJsonParentData, String aJsonName) throws JsonCrudException
 	{
 		String sPrefix 		= "jsonattr."+aJsonName+".";
 		String sObjSQL 		= aCrudCfgMap.get(sPrefix+JsonCrudConfig._PROP_KEY_OBJ_SQL);
@@ -1523,7 +1528,7 @@ public class CRUDMgr {
 		}
 		
 		if(sObjKeyName==null)
-			throw new Exception("No object mapping found ! - "+aJsonName);
+			throw new JsonCrudException("No object mapping found ! - "+aJsonName);
 		///		
 		
 		return listAllParams;
