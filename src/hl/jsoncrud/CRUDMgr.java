@@ -75,7 +75,7 @@ public class CRUDMgr {
 	public String _LIST_TOTAL 		= "total";
 	public String _LIST_FETCHSIZE 	= "fetchsize";
 	public String _LIST_START 		= "start";
-	public String _LIST_ORDERBY 	= "orderby";
+	public String _LIST_SORTBY 		= "sorting";
 	
 	public final static String _DB_VALIDATION_ERRCODE_CONFIGKEY = "dbschema.validation_errcode";
 	public static String ERRCODE_NOT_NULLABLE 	= "not_nullable";
@@ -93,7 +93,7 @@ public class CRUDMgr {
 	{
 		JSONObject jsonVer = new JSONObject();
 		jsonVer.put("framework", "jsoncrud");
-		jsonVer.put("version", "0.1.9 beta");
+		jsonVer.put("version", "0.2.0 beta");
 		return jsonVer.toString();
 	}
 	
@@ -205,9 +205,9 @@ public class CRUDMgr {
 			if(sMetaKey!=null)
 				_LIST_START = sMetaKey;
 					
-			sMetaKey = mapPagination.get(_LIST_ORDERBY);
+			sMetaKey = mapPagination.get(_LIST_SORTBY);
 			if(sMetaKey!=null)
-				_LIST_ORDERBY = sMetaKey;
+				_LIST_SORTBY = sMetaKey;
 		}		
 		
 	}
@@ -519,7 +519,7 @@ public class CRUDMgr {
 				lTotalResult++;
 			}
 			
-			if(jsonArr.length()>0)
+			if(jsonArr!=null)
 			{
 				jsonReturn = new JSONObject();
 				jsonReturn.put(_LIST_RESULT, jsonArr);
@@ -612,6 +612,8 @@ public class CRUDMgr {
 			long aStartFrom, long aFetchSize, String[] aOrderBy) throws JsonCrudException
 	{
 		aWhereJson = castJson2DBVal(aCrudKey, aWhereJson);
+		if(aWhereJson==null)
+			aWhereJson = new JSONObject();
 		
 		Map<String, String> map = jsoncrudConfig.getConfig(aCrudKey);
 		if(map==null || map.size()==0)
@@ -777,7 +779,7 @@ public class CRUDMgr {
 					sbOrderBys.append(sOrderBy);
 				}
 				if(sbOrderBys.length()>0)
-					jsonMeta.put(_LIST_ORDERBY, sbOrderBys.toString());
+					jsonMeta.put(_LIST_SORTBY, sbOrderBys.toString());
 			}
 			//
 			jsonReturn.put(_LIST_META, jsonMeta);
