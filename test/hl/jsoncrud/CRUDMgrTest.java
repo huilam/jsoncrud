@@ -199,18 +199,25 @@ public class CRUDMgrTest {
 			
 			//////////////////////////
 			System.out.println();
-			jsonRole = new JSONObject();
+			jsonUser = new JSONObject();
 			String s100 = "1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890";
-			jsonRole.put("id", 1000);
-			jsonRole.put("rolename", "");
-			jsonRole.put("roledesc", s100+s100+s100+s100+s100);
-			jsonRole.put("createdTimestamp", "Jul 2017");
+			jsonUser.put("id", 1000);
+			jsonUser.put("uid", "");
+			jsonUser.put("enabled", "true");
+			jsonUser.put("name", s100+s100+s100+s100+s100);
+			jsonUser.put("createdTimestamp", "Jul 2017");
 			
-			Map<String, String> mapErr = m.validateDataWithSchema("crud.sample_roles", jsonRole, true);
+			Map<String, String[]> mapErr = m.validateDataWithSchema("crud.sample_users", jsonUser, true);
 			System.out.println("16. validation errors = "+mapErr.size());
 			for(String sColName : mapErr.keySet())
 			{
-				System.out.println("  - "+sColName+" : "+mapErr.get(sColName));
+				String[] sErrors = mapErr.get(sColName);
+				System.out.println("  - '"+sColName+"' : ");
+				int i = 1;
+				for(String sErr : sErrors)
+				{
+					System.out.println("        "+(i++)+". "+sErr);
+				}
 			}
 			
 			//////////////////////////
