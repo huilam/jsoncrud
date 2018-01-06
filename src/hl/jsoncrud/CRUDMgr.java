@@ -1105,14 +1105,14 @@ public class CRUDMgr {
 		}
 	}
 	
-	public Map<String, String> validateDataWithSchema(String aCrudKey, JSONObject aJsonData)
+	public Map<String, String[]> validateDataWithSchema(String aCrudKey, JSONObject aJsonData)
 	{
 		return validateDataWithSchema(aCrudKey, aJsonData, false);
 	}
 	
-	public Map<String, String> validateDataWithSchema(String aCrudKey, JSONObject aJsonData, boolean isDebugMode)
+	public Map<String, String[]> validateDataWithSchema(String aCrudKey, JSONObject aJsonData, boolean isDebugMode)
 	{
-		Map<String, String> mapError = new HashMap<String, String>();
+		Map<String, String[]> mapError = new HashMap<String, String[]>();
 		if(aJsonData!=null)
 		{
 			Map<String, String> mapJsonToCol = mapJson2ColName.get(aCrudKey);
@@ -1133,6 +1133,7 @@ public class CRUDMgr {
 					if(col!=null)
 					{
 						Object oVal = aJsonData.get(sJsonKey);
+						List<String> listErr = new ArrayList<String>();
 						
 						////// Check if Nullable //////////
 						if(!col.getColnullable())
@@ -1145,67 +1146,74 @@ public class CRUDMgr {
 								{
 									sbErrInfo.append(" - '").append(col.getColname()).append("' cannot be empty. ").append(col);
 								}
-								mapError.put(sJsonKey, sbErrInfo.toString());
+								listErr.add(sbErrInfo.toString());
 							}
 						}
 
-						if(oVal==null)
-							continue;
-						
-						////// Check Data Type //////////
-						boolean isInvalidDataType = false;
-						if(oVal instanceof String)
-						{
-							isInvalidDataType = !col.isString();
-						}
-						else if (oVal instanceof Boolean)
-						{
-							isInvalidDataType = (!col.isBit() && !col.isBoolean());
-						}
-						else if (oVal instanceof Long 
-								|| oVal instanceof Double
-								|| oVal instanceof Float
-								|| oVal instanceof Integer)
-						{
-							isInvalidDataType = !col.isNumeric();
-						}
-						
-						if(isInvalidDataType)
-						{
-							sbErrInfo.setLength(0);
-							sbErrInfo.append(ERRCODE_INVALID_TYPE);								
-							if(isDebugMode)
+						if(oVal!=null)
+						{						
+							////// Check Data Type //////////
+							boolean isInvalidDataType = false;
+							if(oVal instanceof String)
 							{
-								sbErrInfo.append(" - '").append(col.getColname()).append("' invalid type, expect:").append(col.getColtypename()).append(" actual:").append(oVal.getClass().getSimpleName()).append(". ").append(col);
+								isInvalidDataType = !col.isString();
 							}
-							mapError.put(sJsonKey, sbErrInfo.toString());
-						}
-
-						
-						////// Check Data Size //////////
-						String sVal = oVal.toString();
-						if(sVal.length()>col.getColsize())
-						{
-							sbErrInfo.setLength(0);
-							sbErrInfo.append(ERRCODE_EXCEED_SIZE);								
-							if(isDebugMode)
+							else if (oVal instanceof Boolean)
 							{
-								sbErrInfo.append(" - '").append(col.getColname()).append("' exceed allowed size, expect:").append(col.getColsize()).append(" actual:").append(sVal.length()).append(". ").append(col);
+								isInvalidDataType = (!col.isBit() && !col.isBoolean());
 							}
-							mapError.put(sJsonKey, sbErrInfo.toString());
+							else if (oVal instanceof Long 
+									|| oVal instanceof Double
+									|| oVal instanceof Float
+									|| oVal instanceof Integer)
+							{
+								isInvalidDataType = !col.isNumeric();
+							}
+							
+							if(isInvalidDataType)
+							{
+								sbErrInfo.setLength(0);
+								sbErrInfo.append(ERRCODE_INVALID_TYPE);								
+								if(isDebugMode)
+								{
+									sbErrInfo.append(" - '").append(col.getColname()).append("' invalid type, expect:").append(col.getColtypename()).append(" actual:").append(oVal.getClass().getSimpleName()).append(". ").append(col);
+								}
+								listErr.add(sbErrInfo.toString());
+							}
+	
+							
+							////// Check Data Size //////////
+							if(oVal instanceof String && !isInvalidDataType)
+							{
+								String sVal = oVal.toString();
+								if(sVal.length()>col.getColsize())
+								{
+									sbErrInfo.setLength(0);
+									sbErrInfo.append(ERRCODE_EXCEED_SIZE);								
+									if(isDebugMode)
+									{
+										sbErrInfo.append(" - '").append(col.getColname()).append("' exceed allowed size, expect:").append(col.getColsize()).append(" actual:").append(sVal.length()).append(". ").append(col);
+									}
+									listErr.add(sbErrInfo.toString());
+								}
+							}
+							///// Check if Data is autoincremental //////
+							if(col.getColautoincrement())
+							{
+								// 
+								sbErrInfo.setLength(0);
+								sbErrInfo.append(ERRCODE_SYSTEM_FIELD);								
+								if(isDebugMode)
+								{
+									sbErrInfo.append(" - '").append(col.getColname()).append("' not allowed (auto increment field). ").append(col);
+								}
+								listErr.add(sbErrInfo.toString());
+							}
 						}
 						
-						///// Check if Data is autoincremental //////
-						if(col.getColautoincrement())
+						if(listErr.size()>0)
 						{
-							// 
-							sbErrInfo.setLength(0);
-							sbErrInfo.append(ERRCODE_SYSTEM_FIELD);								
-							if(isDebugMode)
-							{
-								sbErrInfo.append(" - '").append(col.getColname()).append("' not allowed (auto increment field). ").append(col);
-							}
-							mapError.put(sJsonKey, sbErrInfo.toString());
+						mapError.put(sJsonKey, listErr.toArray(new String[listErr.size()]));
 						}
 						
 					}
