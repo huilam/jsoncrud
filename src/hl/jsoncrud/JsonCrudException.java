@@ -25,19 +25,28 @@ package hl.jsoncrud;
 public class JsonCrudException extends Exception {
 
 	private static final long serialVersionUID = -1068899117288657750L;
+	private String error_code = null;
 
-	public JsonCrudException(String aErrMessage)
+	public JsonCrudException(String aErrCode, String aErrMessage)
 	{
-		super(aErrMessage);
+		super("["+aErrCode+"]"+aErrMessage);
+		error_code = aErrCode;
 	}
 	
-	public JsonCrudException(String aErrMessage, Throwable aThrowable)
+	public JsonCrudException(String aErrCode, String aErrMessage, Throwable aThrowable)
 	{
-		super(aErrMessage, aThrowable);
+		super("["+aErrCode+"]"+aErrMessage, aThrowable);
+		error_code = aErrCode;
 	}
 	
-	public JsonCrudException(Throwable aThrowable)
+	public JsonCrudException(String aErrCode, Throwable aThrowable)
 	{
 		super(aThrowable);
+		error_code = aErrCode;
+	}
+	
+	public String getErrorCode()
+	{
+		return error_code;
 	}
 }
