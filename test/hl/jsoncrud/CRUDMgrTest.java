@@ -68,7 +68,7 @@ public class CRUDMgrTest {
 			
 			JSONObject jsonUser = new JSONObject();
 			jsonUser.put("uid", "huilam_ong");
-			jsonUser.put("displayname", "Hui Lam");
+			jsonUser.put("displayname", "Hui Lam %%|");
 			jsonUser.put("gender", "M");
 			jsonUser.put("enabled", true);
 			jsonUser.put("age", 100);
@@ -84,7 +84,7 @@ public class CRUDMgrTest {
 			JSONObject jsonWhere = new JSONObject();
 			jsonWhere.put("uid", "huilam_ong");
 			jsonUser = new JSONObject();
-			jsonUser.put("displayname", "HL");
+			jsonUser.put("displayname", "|HL%_");
 			jsonUser.put("age", 999);
 			
 			jsonUserAttrs = new JSONObject();
@@ -157,8 +157,8 @@ public class CRUDMgrTest {
 			{
 				jsonUser = new JSONObject();
 				jsonUser.put("uid", "uid_"+i);
-				jsonUser.put("displayname", "name_"+random.nextInt());
-				jsonUser.put("age", random.nextInt());
+				jsonUser.put("displayname", "name_"+random.nextInt(1000));
+				jsonUser.put("age", 1+random.nextInt(100));
 				jsonUser = m.create("crud.sample_users", jsonUser);
 			}
 			
@@ -177,7 +177,6 @@ public class CRUDMgrTest {
 			/////
 			jsonUser = new JSONObject();
 			jsonUser.put("displayname.ci.not", "NAME_32");
-			jsonUser.put("displayname.ci", "NAME_*");
 			jsonUser.put("uid.startwith.ci", "uiD_");
 			jsonUser.put("uid.endwith", "2");
 			jArr = m.retrieve("crud.sample_users", jsonUser);
@@ -262,6 +261,18 @@ public class CRUDMgrTest {
 			{
 				System.out.println("    19."+(i+1)+" - "+jArr.get(i));
 			}
+			
+			
+			System.out.println("20. Filter by _ % |");
+			jsonUser = new JSONObject();
+			jsonUser.put("displayname.endwith", "_");
+			jsonUser.put("displayname.contain", "%");
+			jArr = m.retrieve("crud.sample_users", jsonUser);
+			for(int i=0; i<jArr.length(); i++)
+			{
+				System.out.println("    20."+(i+1)+" - "+jArr.get(i));
+			}
+			
 			
 			sOrderBys = new String[] {"displayname2"};
 			System.out.println("21. invalid sorting field");

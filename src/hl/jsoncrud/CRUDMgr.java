@@ -33,7 +33,6 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 import java.util.StringTokenizer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -50,11 +49,14 @@ public class CRUDMgr {
 	private final static String JSONFILTER_STARTWITH			= "startwith";
 	private final static String JSONFILTER_ENDWITH				= "endwith";
 	private final static String JSONFILTER_CONTAIN				= "contain";
-	private final static String SQLLIKE_WILDCARD				= "%";
-	private final static String JSONVAL_WILDCARD				= "*";
 	private final static String JSONFILTER_CASE_INSENSITIVE		= "ci";
 	private final static String JSONFILTER_NOT					= "not";
 	
+	private final static String SQLLIKE_WILDCARD				= "%";
+	
+	private final static char SQLLIKE_ESCAPE_CHAR				= '|';
+	private final static char[] SQLLIKE_RESERVED_CHARS			= new char[]{'%','_'};
+
 	private Map<String, JdbcDBMgr> mapDBMgr 					= null;
 	private Map<String, Map<String, String>> mapJson2ColName 	= null;
 	private Map<String, Map<String, String>> mapColName2Json 	= null;
@@ -100,7 +102,7 @@ public class CRUDMgr {
 	{
 		JSONObject jsonVer = new JSONObject();
 		jsonVer.put("framework", "jsoncrud");
-		jsonVer.put("version", "0.2.2 beta");
+		jsonVer.put("version", "0.3.0 beta");
 		return jsonVer;
 	}
 	
@@ -697,30 +699,25 @@ public class CRUDMgr {
 					}
 					else if(oJsonValue!=null && oJsonValue instanceof String)
 					{
+						String sJsonValue = escapeSqllike(oJsonValue.toString());
+						
 						if(JSONFILTER_STARTWITH.equals(sJsonOperator))
 						{
 							sOperator = " like ";
-							oJsonValue = oJsonValue+SQLLIKE_WILDCARD;
+							oJsonValue = sJsonValue+SQLLIKE_WILDCARD;
 						}
 						else if (JSONFILTER_ENDWITH.equals(sJsonOperator))
 						{
 							sOperator = " like ";
-							oJsonValue = SQLLIKE_WILDCARD+oJsonValue;
+							oJsonValue = SQLLIKE_WILDCARD+sJsonValue;
 						}
 						else if (JSONFILTER_CONTAIN.equals(sJsonOperator))
 						{
 							sOperator = " like ";
-							oJsonValue = SQLLIKE_WILDCARD+oJsonValue+SQLLIKE_WILDCARD;
+							oJsonValue = SQLLIKE_WILDCARD+sJsonValue+SQLLIKE_WILDCARD;
 						}
 					}
 				}
-			}
-			
-			if(oJsonValue!=null && (oJsonValue instanceof String) && (oJsonValue.toString().indexOf(JSONVAL_WILDCARD)>-1))
-			{
-				sOperator = " like ";
-				oJsonValue = oJsonValue.toString().replaceAll(Pattern.quote(JSONVAL_WILDCARD), SQLLIKE_WILDCARD);
-				
 			}
 			
 			String sColName = mapCrudJsonCol.get(sJsonName);
@@ -741,6 +738,12 @@ public class CRUDMgr {
 				else
 				{
 					sbWhere.append(sColName).append(sOperator).append(" ? ");
+				}
+				
+				
+				if(sOperator.equalsIgnoreCase(" like "))
+				{
+					sbWhere.append(" ESCAPE '").append(SQLLIKE_ESCAPE_CHAR).append("'");
 				}
 				
 				if(isNotCondition)
@@ -825,6 +828,21 @@ public class CRUDMgr {
 		return jsonReturn;
 //
 	}	
+	
+	private String escapeSqllike(String aSqlStrValue) 
+	{	
+		for(char cReservedChar : SQLLIKE_RESERVED_CHARS)
+		{
+			if(aSqlStrValue.indexOf(cReservedChar)>-1)
+			{
+				aSqlStrValue = aSqlStrValue.replaceAll(
+						String.valueOf(cReservedChar), 
+						String.valueOf(SQLLIKE_ESCAPE_CHAR)+cReservedChar);
+			}
+		}
+		
+		return aSqlStrValue;
+	}
 	
 	public JSONArray update(String aCrudKey, JSONObject aDataJson, JSONObject aWhereJson) throws Exception
 	{
