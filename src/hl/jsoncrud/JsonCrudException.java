@@ -26,27 +26,36 @@ public class JsonCrudException extends Exception {
 
 	private static final long serialVersionUID = -1068899117288657750L;
 	private String error_code = null;
+	private String error_msg = null;
 
 	public JsonCrudException(String aErrCode, String aErrMessage)
 	{
-		super("["+aErrCode+"]"+aErrMessage);
+		super(aErrMessage);
 		error_code = aErrCode;
+		error_msg = aErrMessage;
 	}
 	
 	public JsonCrudException(String aErrCode, String aErrMessage, Throwable aThrowable)
 	{
-		super("["+aErrCode+"]"+aErrMessage, aThrowable);
+		super(aErrMessage, aThrowable);
 		error_code = aErrCode;
+		error_msg = aErrMessage;
 	}
 	
 	public JsonCrudException(String aErrCode, Throwable aThrowable)
 	{
 		super(aThrowable);
 		error_code = aErrCode;
+		error_msg = aThrowable.getMessage();
 	}
 	
 	public String getErrorCode()
 	{
 		return error_code;
+	}
+	
+	public String getErrorMsg()
+	{
+		return error_msg;
 	}
 }

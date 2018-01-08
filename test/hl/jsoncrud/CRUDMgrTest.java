@@ -23,6 +23,7 @@
 package hl.jsoncrud;
 
 import java.util.Map;
+import java.util.Random;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -35,6 +36,7 @@ public class CRUDMgrTest {
 	{
 		long lStart = System.currentTimeMillis();
 		
+		Random random = new Random(lStart);
 		CRUDMgr m = new CRUDMgr();
 
 		try{
@@ -151,12 +153,12 @@ public class CRUDMgrTest {
 			//////////////////////////			
 			// Range filter test
 			
-			for(int i=0; i<100; i++)
+			for(int i=0; i<20; i++)
 			{
 				jsonUser = new JSONObject();
 				jsonUser.put("uid", "uid_"+i);
-				jsonUser.put("displayname", "name_"+i);
-				jsonUser.put("age", i);
+				jsonUser.put("displayname", "name_"+random.nextInt());
+				jsonUser.put("age", random.nextInt());
 				jsonUser = m.create("crud.sample_users", jsonUser);
 			}
 			
@@ -237,7 +239,7 @@ public class CRUDMgrTest {
 			}
 			
 			json = m.retrieve("crud.sample_users", 
-					" select currval('jsoncrud_sample_users_id_seq') ", 
+					" select nextval('jsoncrud_sample_users_id_seq') ", 
 					null, 0 ,0);
 			System.out.println("18. Get Current Sequence with SQL");
 			System.out.println("  - "+m._LIST_META+" = "+json.get(m._LIST_META));
@@ -250,15 +252,36 @@ public class CRUDMgrTest {
 			}
 			
 			//////////////////////////
-			System.out.println("19. order seq");
 			jsonUser = new JSONObject();
-			String sOrderBys[] = new String[] {"displayname.desc", "enabled", "uid.asc"};
+			String sOrderBys[] = new String[] {"displayname.desc", "enabled", "age.asc"};
+			System.out.println("19. order seq {displayname.desc, enabled, age.asc}");
 			
-			jArr = m.retrieve("crud.sample_users", jsonUser, sOrderBys);
+			json = m.retrieve("crud.sample_users", jsonUser, 1, 10, sOrderBys);
+			jArr = json.getJSONArray(m._LIST_RESULT);
 			for(int i=0; i<jArr.length(); i++)
 			{
 				System.out.println("    19."+(i+1)+" - "+jArr.get(i));
 			}
+			
+			sOrderBys = new String[] {"displayname2"};
+			System.out.println("21. invalid sorting field");
+			try {				
+				json = m.retrieve("crud.sample_users", jsonUser, 1, 10, sOrderBys);
+			}catch(JsonCrudException ex)
+			{
+				System.out.println("   ErrorCode:"+ex.getErrorCode()+"  ErrMsg:"+ex.getErrorMsg());
+			}
+			
+			jsonUser.put("invalid_field", "");
+			System.out.println("22. invalid sorting field");
+			try {	
+				jArr = m.retrieve("crud.sample_users", jsonUser);
+			}catch(JsonCrudException ex)
+			{
+				System.out.println("   ErrorCode:"+ex.getErrorCode()+"  ErrMsg:"+ex.getErrorMsg());
+			}
+			
+			
 		}
 		finally
 		{

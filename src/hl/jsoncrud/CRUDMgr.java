@@ -33,6 +33,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.StringTokenizer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -789,7 +790,7 @@ public class CRUDMgr {
 				}
 				else
 				{
-					throw new JsonCrudException(ERRCODE_INVALID_SORTING, "Invalid sorting mapping - "+sOrderBy+" : "+sJsonAttr);
+					throw new JsonCrudException(ERRCODE_INVALID_SORTING, "Invalid sorting - "+sOrderBy+" : "+sJsonAttr);
 				}
 			}
 			if(sbOrderBy.length()>0)
