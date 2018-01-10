@@ -136,24 +136,31 @@ public class JsonCrudRestUtil {
 			String aCrudKey, JSONObject aJsonWhere,
 			long iStartFrom, long iFetchSize) throws Exception
 	{
-		return retrieveList(aCrudKey, aJsonWhere, iStartFrom, iFetchSize, null);
+		return retrieveList(aCrudKey, aJsonWhere, iStartFrom, iFetchSize, null, null);
 	}
 	
 	public static JSONObject retrieveList(
 			String aCrudKey, JSONObject aJsonWhere,
-			long iStartFrom, long iFetchSize, List<String> listOrderBy) throws Exception
+			long iStartFrom, long iFetchSize, 
+			List<String> listSorting,
+			List<String> listReturns) throws Exception
 	{
 		CRUDMgr crudMgr = getCRUDMgr();
 		
 		String sConfigKey = JsonCrudConfig._PROP_KEY_CRUD+"."+aCrudKey;
 		//boolean debug = crudMgr.isDebugMode(sConfigKey);
 		
-		if(listOrderBy==null)
-			listOrderBy = new ArrayList<String>();
-
+		if(listSorting==null)
+			listSorting = new ArrayList<String>();
+		
+		if(listReturns==null)
+			listReturns = new ArrayList<String>();
+		
 		JSONObject jsonOutput = crudMgr.retrieve(
 				sConfigKey, aJsonWhere, iStartFrom, iFetchSize, 
-				listOrderBy.toArray(new String[listOrderBy.size()]));
+				listSorting.toArray(new String[listSorting.size()]),
+				listReturns.toArray(new String[listReturns.size()])
+				);
 		
 		if(jsonOutput==null)
 		{

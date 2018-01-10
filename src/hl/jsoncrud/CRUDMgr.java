@@ -80,7 +80,7 @@ public class CRUDMgr {
 	{
 		JSONObject jsonVer = new JSONObject();
 		jsonVer.put("framework", "jsoncrud");
-		jsonVer.put("version", "0.3.1 beta");
+		jsonVer.put("version", "0.3.2 beta");
 		return jsonVer;
 	}
 	
@@ -367,7 +367,7 @@ public class CRUDMgr {
 	
 	public JSONArray retrieve(String aCrudKey, JSONObject aWhereJson) throws JsonCrudException
 	{
-		JSONObject json = retrieve(aCrudKey, aWhereJson, 0, 0, null);
+		JSONObject json = retrieve(aCrudKey, aWhereJson, 0, 0, null, null);
 		if(json==null)
 		{
 			return new JSONArray();
@@ -375,9 +375,9 @@ public class CRUDMgr {
 		return (JSONArray) json.get(JsonCrudConfig._LIST_RESULT);
 	}
 	
-	public JSONArray retrieve(String aCrudKey, JSONObject aWhereJson, String[] aOrderBy) throws JsonCrudException
+	public JSONArray retrieve(String aCrudKey, JSONObject aWhereJson, String[] aSorting, String[] aReturns) throws JsonCrudException
 	{
-		JSONObject json = retrieve(aCrudKey, aWhereJson, 0, 0, aOrderBy);
+		JSONObject json = retrieve(aCrudKey, aWhereJson, 0, 0, aSorting, aReturns);
 		if(json==null)
 		{
 			return new JSONArray();
@@ -616,7 +616,7 @@ public class CRUDMgr {
 	
 	
 	public JSONObject retrieve(String aCrudKey, JSONObject aWhereJson, 
-			long aStartFrom, long aFetchSize, String[] aOrderBy) throws JsonCrudException
+			long aStartFrom, long aFetchSize, String[] aSorting, String[] aReturns) throws JsonCrudException
 	{
 		aWhereJson = castJson2DBVal(aCrudKey, aWhereJson);
 		if(aWhereJson==null)
@@ -741,9 +741,9 @@ public class CRUDMgr {
 		}
 		
 		StringBuffer sbOrderBy = new StringBuffer();
-		if(aOrderBy!=null && aOrderBy.length>0)
+		if(aSorting!=null && aSorting.length>0)
 		{
-			for(String sOrderBy : aOrderBy)
+			for(String sOrderBy : aSorting)
 			{
 				String sOrderSeqKeyword = "";
 				int iOrderSeq = sOrderBy.indexOf('.');
@@ -780,17 +780,38 @@ public class CRUDMgr {
 			}
 		}
 
-		String sSQL 			= "SELECT * FROM "+sTableName+" WHERE 1=1 "+sbWhere.toString();
+		StringBuffer sbFields = new StringBuffer();
+		if(aReturns!=null && aReturns.length>0)
+		{
+			for(String sReturnAttr : aReturns)
+			{
+				String sColName = mapCrudJsonCol.get(sReturnAttr);
+				if(sColName!=null)
+				{
+					sReturnAttr = sColName;
+				}
+				if(sbFields.length()>0)
+					sbFields.append(", ");
+				sbFields.append(sReturnAttr);
+			}
+		}
+		
+		if(sbFields.length()==0)
+		{
+			sbFields.append("*");
+		}
+		
+		String sSQL 			= "SELECT "+sbFields.toString()+" FROM "+sTableName+" WHERE 1=1 "+sbWhere.toString();
 		JSONObject jsonReturn 	= retrieve(aCrudKey, sSQL, listValues.toArray(new Object[listValues.size()]), aStartFrom, aFetchSize);
 		
 		if(jsonReturn!=null && jsonReturn.has(JsonCrudConfig._LIST_META))
 		{
 			JSONObject jsonMeta 	= jsonReturn.getJSONObject(JsonCrudConfig._LIST_META);
 			
-			if(aOrderBy!=null)
+			if(aSorting!=null)
 			{
 				StringBuffer sbOrderBys = new StringBuffer();
-				for(String sOrderBy : aOrderBy)
+				for(String sOrderBy : aSorting)
 				{
 					if(sbOrderBys.length()>0)
 						sbOrderBys.append(",");
