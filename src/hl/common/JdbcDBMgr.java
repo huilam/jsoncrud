@@ -61,7 +61,7 @@ public class JdbcDBMgr {
 	public String db_pwd 			= null;
 	public int db_conn_pool_size	= 2;
 	
-	private static Stack<Connection> stackConns = new Stack<Connection>();
+	private Stack<Connection> stackConns 		= new Stack<Connection>();
 	private Map<String, String> mapSQLtemplate 	= new HashMap<String, String>();
 	private static List<String> listNumericType = null;
 	private static List<String> listDoubleType 	= null;
@@ -395,5 +395,16 @@ public class JdbcDBMgr {
 				stackConns.remove(aConn);
 			}
 		}
+	}
+	
+	
+	public String toString()
+	{
+		JSONObject json = new JSONObject();
+		for(String sKey : mapReferenceConfig.keySet())
+		{
+			json.put(sKey, mapReferenceConfig.get(sKey));
+		}
+		return json.toString();
 	}
 }
