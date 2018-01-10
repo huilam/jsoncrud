@@ -996,6 +996,9 @@ public class CRUDMgr {
 	
 	public Map<String, String> getCrudConfigs(String aConfigKey) 
 	{
+		if(!aConfigKey.startsWith(JsonCrudConfig._PROP_KEY_CRUD))
+			aConfigKey = JsonCrudConfig._PROP_KEY_CRUD + "." + aConfigKey;
+		
 		Map<String, String> mapCrudCfg = jsoncrudConfig.getConfig(aConfigKey);
 		
 		if(mapCrudCfg!=null && mapCrudCfg.size()>0)
