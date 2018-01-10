@@ -53,6 +53,8 @@ public class JdbcDBMgr {
 	public static String KEY_DB_PWD			= "db.pwd";
 	public static String KEY_DB_CONNPOOL	= "db.pool.size";
 	
+	public Map<String, String> mapReferenceConfig	= null;
+	
 	public String db_classname 		= null;
 	public String db_url 			= null;
 	public String db_uid 			= null;
@@ -149,6 +151,16 @@ public class JdbcDBMgr {
 		return db_conn_pool_size;
 	}
 
+	public void setReferenceConfig(Map<String, String> aReferenceMap)
+	{
+		this.mapReferenceConfig = aReferenceMap;
+	}
+	
+	public Map<String, String> getReferenceConfig()
+	{
+		return this.mapReferenceConfig;
+	}
+	
 	private void initDB(Properties aProp) throws InstantiationException, IllegalAccessException, ClassNotFoundException, SQLException
 	{
 		db_classname = aProp.getProperty(KEY_DB_CLASSNAME);

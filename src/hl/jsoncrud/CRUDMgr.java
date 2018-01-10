@@ -53,8 +53,6 @@ public class CRUDMgr {
 	private final static String JSONFILTER_NOT					= "not";
 	
 	private final static String SQLLIKE_WILDCARD				= "%";
-	
-	private final static char SQLLIKE_ESCAPE_CHAR				= '|';
 	private final static char[] SQLLIKE_RESERVED_CHARS			= new char[]{'%','_'};
 
 	private Map<String, JdbcDBMgr> mapDBMgr 					= null;
@@ -72,26 +70,6 @@ public class CRUDMgr {
 	private JsonCrudConfig jsoncrudConfig 		= null;
 	private String config_prop_filename 		= null;
 	
-	public final static String _PAGINATION_CONFIGKEY = "list.pagination";
-	public String _LIST_META 		= "meta";
-	public String _LIST_RESULT 		= "result";
-	public String _LIST_TOTAL 		= "total";
-	public String _LIST_FETCHSIZE 	= "fetchsize";
-	public String _LIST_START 		= "start";
-	public String _LIST_SORTBY 		= "sorting";
-	
-	public final static String _DB_VALIDATION_ERRCODE_CONFIGKEY = "dbschema.validation_errcode";
-	public static String ERRCODE_NOT_NULLABLE 		= "not_nullable";
-	public static String ERRCODE_EXCEED_SIZE 		= "exceed_size";
-	public static String ERRCODE_INVALID_TYPE		= "invalid_type";
-	public static String ERRCODE_SYSTEM_FIELD		= "system_field";
-	
-	public final static String _JSONCRUD_FRAMEWORK_ERRCODE_CONFIGKEY = "jsoncrud.framework_errcode";
-	public static String ERRCODE_SQLEXCEPTION		= "sql_exception";
-	public static String ERRCODE_JSONCRUDCFG		= "invalid_jsoncrudcfg";
-	public static String ERRCODE_INVALID_FILTER		= "invalid_filter";
-	public static String ERRCODE_INVALID_SORTING	= "invalid_sorting";
-	
 	public CRUDMgr()
 	{
 		config_prop_filename = null;
@@ -102,7 +80,7 @@ public class CRUDMgr {
 	{
 		JSONObject jsonVer = new JSONObject();
 		jsonVer.put("framework", "jsoncrud");
-		jsonVer.put("version", "0.3.0 beta");
+		jsonVer.put("version", "0.3.1 beta");
 		return jsonVer;
 	}
 	
@@ -161,82 +139,82 @@ public class CRUDMgr {
 
 	private void initValidationErrCodeConfig()
 	{
-		Map<String, String> mapErrCodes = jsoncrudConfig.getConfig(_DB_VALIDATION_ERRCODE_CONFIGKEY);
+		Map<String, String> mapErrCodes = jsoncrudConfig.getConfig(JsonCrudConfig._DB_VALIDATION_ERRCODE_CONFIGKEY);
 		if(mapErrCodes!=null && mapErrCodes.size()>0)
 		{
 			String sMetaKey = null;
-			sMetaKey = mapErrCodes.get(ERRCODE_EXCEED_SIZE);
+			sMetaKey = mapErrCodes.get(JsonCrudConfig.ERRCODE_EXCEED_SIZE);
 			if(sMetaKey!=null)
-				ERRCODE_EXCEED_SIZE = sMetaKey;
+				JsonCrudConfig.ERRCODE_EXCEED_SIZE = sMetaKey;
 			
-			sMetaKey = mapErrCodes.get(ERRCODE_INVALID_TYPE);
+			sMetaKey = mapErrCodes.get(JsonCrudConfig.ERRCODE_INVALID_TYPE);
 			if(sMetaKey!=null)
-				ERRCODE_INVALID_TYPE = sMetaKey;
+				JsonCrudConfig.ERRCODE_INVALID_TYPE = sMetaKey;
 
-			sMetaKey = mapErrCodes.get(ERRCODE_NOT_NULLABLE);
+			sMetaKey = mapErrCodes.get(JsonCrudConfig.ERRCODE_NOT_NULLABLE);
 			if(sMetaKey!=null)
-				ERRCODE_NOT_NULLABLE = sMetaKey;
+				JsonCrudConfig.ERRCODE_NOT_NULLABLE = sMetaKey;
 			
-			sMetaKey = mapErrCodes.get(ERRCODE_SYSTEM_FIELD);
+			sMetaKey = mapErrCodes.get(JsonCrudConfig.ERRCODE_SYSTEM_FIELD);
 			if(sMetaKey!=null)
-				ERRCODE_SYSTEM_FIELD = sMetaKey;
+				JsonCrudConfig.ERRCODE_SYSTEM_FIELD = sMetaKey;
 			
 		}
 		////////
-		mapErrCodes = jsoncrudConfig.getConfig(_JSONCRUD_FRAMEWORK_ERRCODE_CONFIGKEY);
+		mapErrCodes = jsoncrudConfig.getConfig(JsonCrudConfig._JSONCRUD_FRAMEWORK_ERRCODE_CONFIGKEY);
 		if(mapErrCodes!=null && mapErrCodes.size()>0)
 		{
 			String sMetaKey = null;
 			
-			sMetaKey = mapErrCodes.get(ERRCODE_JSONCRUDCFG);
+			sMetaKey = mapErrCodes.get(JsonCrudConfig.ERRCODE_JSONCRUDCFG);
 			if(sMetaKey!=null)
-				ERRCODE_JSONCRUDCFG = sMetaKey;
+				JsonCrudConfig.ERRCODE_JSONCRUDCFG = sMetaKey;
 			
-			sMetaKey = mapErrCodes.get(ERRCODE_SQLEXCEPTION);
+			sMetaKey = mapErrCodes.get(JsonCrudConfig.ERRCODE_SQLEXCEPTION);
 			if(sMetaKey!=null)
-				ERRCODE_SQLEXCEPTION = sMetaKey;		
+				JsonCrudConfig.ERRCODE_SQLEXCEPTION = sMetaKey;		
 			
-			sMetaKey = mapErrCodes.get(ERRCODE_INVALID_FILTER);
+			sMetaKey = mapErrCodes.get(JsonCrudConfig.ERRCODE_INVALID_FILTER);
 			if(sMetaKey!=null)
-				ERRCODE_INVALID_FILTER = sMetaKey;
+				JsonCrudConfig.ERRCODE_INVALID_FILTER = sMetaKey;
 			
-			sMetaKey = mapErrCodes.get(ERRCODE_INVALID_SORTING);
+			sMetaKey = mapErrCodes.get(JsonCrudConfig.ERRCODE_INVALID_SORTING);
 			if(sMetaKey!=null)
-				ERRCODE_INVALID_SORTING = sMetaKey;		
+				JsonCrudConfig.ERRCODE_INVALID_SORTING = sMetaKey;		
 		}
 	}
 
 	private void initPaginationConfig()
 	{
-		Map<String, String> mapPagination = jsoncrudConfig.getConfig(_PAGINATION_CONFIGKEY);
+		Map<String, String> mapPagination = jsoncrudConfig.getConfig(JsonCrudConfig._PAGINATION_CONFIGKEY);
 		
 		if(mapPagination!=null && mapPagination.size()>0)
 		{
 			String sMetaKey = null;
 			
-			sMetaKey = mapPagination.get(_LIST_META);
+			sMetaKey = mapPagination.get(JsonCrudConfig._LIST_META);
 			if(sMetaKey!=null)
-				_LIST_META = sMetaKey;
+				JsonCrudConfig._LIST_META = sMetaKey;
 			
-			sMetaKey = mapPagination.get(_LIST_RESULT);
+			sMetaKey = mapPagination.get(JsonCrudConfig._LIST_RESULT);
 			if(sMetaKey!=null)
-				_LIST_RESULT = sMetaKey;
+				JsonCrudConfig._LIST_RESULT = sMetaKey;
 			
-			sMetaKey = mapPagination.get(_LIST_TOTAL);
+			sMetaKey = mapPagination.get(JsonCrudConfig._LIST_TOTAL);
 			if(sMetaKey!=null)
-				_LIST_TOTAL = sMetaKey;
+				JsonCrudConfig._LIST_TOTAL = sMetaKey;
 	
-			sMetaKey = mapPagination.get(_LIST_FETCHSIZE);
+			sMetaKey = mapPagination.get(JsonCrudConfig._LIST_FETCHSIZE);
 			if(sMetaKey!=null)
-				_LIST_FETCHSIZE = sMetaKey;
+				JsonCrudConfig._LIST_FETCHSIZE = sMetaKey;
 			
-			sMetaKey = mapPagination.get(_LIST_START);
+			sMetaKey = mapPagination.get(JsonCrudConfig._LIST_START);
 			if(sMetaKey!=null)
-				_LIST_START = sMetaKey;
+				JsonCrudConfig._LIST_START = sMetaKey;
 					
-			sMetaKey = mapPagination.get(_LIST_SORTBY);
+			sMetaKey = mapPagination.get(JsonCrudConfig._LIST_SORTING);
 			if(sMetaKey!=null)
-				_LIST_SORTBY = sMetaKey;
+				JsonCrudConfig._LIST_SORTING = sMetaKey;
 		}		
 		
 	}
@@ -245,7 +223,7 @@ public class CRUDMgr {
 	{
 		Map<String, String> map = jsoncrudConfig.getConfig(aCrudKey);
 		if(map==null || map.size()==0)
-			throw new JsonCrudException(ERRCODE_JSONCRUDCFG, "Invalid crud configuration key ! - "+aCrudKey);
+			throw new JsonCrudException(JsonCrudConfig.ERRCODE_JSONCRUDCFG, "Invalid crud configuration key ! - "+aCrudKey);
 		
 		aDataJson = castJson2DBVal(aCrudKey, aDataJson);
 		
@@ -300,7 +278,7 @@ public class CRUDMgr {
 		}
 		catch(Throwable ex)
 		{
-			throw new JsonCrudException(ERRCODE_SQLEXCEPTION, "sql:"+sSQL+", params:"+listParamsToString(listValues), ex);
+			throw new JsonCrudException(JsonCrudConfig.ERRCODE_SQLEXCEPTION, "sql:"+sSQL+", params:"+listParamsToString(listValues), ex);
 		}
 
 		
@@ -350,15 +328,15 @@ public class CRUDMgr {
 								JSONArray jArrRollbackRows = dbmgr.executeUpdate(sbRollbackParentSQL.toString(), listValues);
 								if(jArrCreated.length() != jArrRollbackRows.length())
 								{
-									throw new JsonCrudException(ERRCODE_SQLEXCEPTION, "Record fail to Rollback!");
+									throw new JsonCrudException(JsonCrudConfig.ERRCODE_SQLEXCEPTION, "Record fail to Rollback!");
 								}
 							}
 							catch(Throwable ex2)
 							{
-								throw new JsonCrudException(ERRCODE_SQLEXCEPTION, "[Rollback Failed], parent:[sql:"+sbRollbackParentSQL.toString()+",params:"+listParamsToString(listValues)+"], child:[sql:"+sObjInsertSQL+",params:"+listParamsToString(listParams2)+"]", ex);
+								throw new JsonCrudException(JsonCrudConfig.ERRCODE_SQLEXCEPTION, "[Rollback Failed], parent:[sql:"+sbRollbackParentSQL.toString()+",params:"+listParamsToString(listValues)+"], child:[sql:"+sObjInsertSQL+",params:"+listParamsToString(listParams2)+"]", ex);
 							}
 							
-							throw new JsonCrudException(ERRCODE_SQLEXCEPTION, "[Rollback Success] : child : sql:"+sObjInsertSQL+", params:"+listParamsToString(listParams2), ex);
+							throw new JsonCrudException(JsonCrudConfig.ERRCODE_SQLEXCEPTION, "[Rollback Success] : child : sql:"+sObjInsertSQL+", params:"+listParamsToString(listParams2), ex);
 						}
 							
 					}
@@ -394,7 +372,7 @@ public class CRUDMgr {
 		{
 			return new JSONArray();
 		}
-		return (JSONArray) json.get(_LIST_RESULT);
+		return (JSONArray) json.get(JsonCrudConfig._LIST_RESULT);
 	}
 	
 	public JSONArray retrieve(String aCrudKey, JSONObject aWhereJson, String[] aOrderBy) throws JsonCrudException
@@ -404,7 +382,7 @@ public class CRUDMgr {
 		{
 			return new JSONArray();
 		}
-		return (JSONArray) json.get(_LIST_RESULT);
+		return (JSONArray) json.get(JsonCrudConfig._LIST_RESULT);
 	}
 	
 	
@@ -551,22 +529,22 @@ public class CRUDMgr {
 			if(jsonArr!=null)
 			{
 				jsonReturn = new JSONObject();
-				jsonReturn.put(_LIST_RESULT, jsonArr);
+				jsonReturn.put(JsonCrudConfig._LIST_RESULT, jsonArr);
 				//
 				JSONObject jsonMeta = new JSONObject();
-				jsonMeta.put(_LIST_TOTAL, lTotalResult);
-				jsonMeta.put(_LIST_START, aStartFrom);
+				jsonMeta.put(JsonCrudConfig._LIST_TOTAL, lTotalResult);
+				jsonMeta.put(JsonCrudConfig._LIST_START, aStartFrom);
 				//
 				if(aFetchSize>0)
-					jsonMeta.put(_LIST_FETCHSIZE, aFetchSize);
+					jsonMeta.put(JsonCrudConfig._LIST_FETCHSIZE, aFetchSize);
 				//
-				jsonReturn.put(_LIST_META, jsonMeta);
+				jsonReturn.put(JsonCrudConfig._LIST_META, jsonMeta);
 			}
 			
 		}
 		catch(SQLException sqlEx)
 		{
-			throw new JsonCrudException(ERRCODE_SQLEXCEPTION, "sql:"+sSQL+", params:"+listParamsToString(aObjParams), sqlEx);
+			throw new JsonCrudException(JsonCrudConfig.ERRCODE_SQLEXCEPTION, "sql:"+sSQL+", params:"+listParamsToString(aObjParams), sqlEx);
 		}
 		finally
 		{
@@ -574,7 +552,7 @@ public class CRUDMgr {
 			try {
 				dbmgr.closeQuietly(conn, stmt, rs);
 			} catch (SQLException e) {
-				throw new JsonCrudException(ERRCODE_SQLEXCEPTION, e);
+				throw new JsonCrudException(JsonCrudConfig.ERRCODE_SQLEXCEPTION, e);
 			}
 		}
 		
@@ -646,7 +624,7 @@ public class CRUDMgr {
 		
 		Map<String, String> map = jsoncrudConfig.getConfig(aCrudKey);
 		if(map==null || map.size()==0)
-			throw new JsonCrudException(ERRCODE_JSONCRUDCFG, "Invalid crud configuration key ! - "+aCrudKey);
+			throw new JsonCrudException(JsonCrudConfig.ERRCODE_JSONCRUDCFG, "Invalid crud configuration key ! - "+aCrudKey);
 		
 		List<Object> listValues 			= new ArrayList<Object>();		
 		Map<String, String> mapCrudJsonCol 	= mapJson2ColName.get(aCrudKey);
@@ -743,7 +721,7 @@ public class CRUDMgr {
 				
 				if(sOperator.equalsIgnoreCase(" like "))
 				{
-					sbWhere.append(" ESCAPE '").append(SQLLIKE_ESCAPE_CHAR).append("'");
+					sbWhere.append(" ESCAPE '").append(JsonCrudConfig.SQLLIKE_ESCAPE_CHAR).append("'");
 				}
 				
 				if(isNotCondition)
@@ -756,9 +734,9 @@ public class CRUDMgr {
 			}
 			else 
 			{
-				Map mapJsonSql = mapJson2Sql.get(aCrudKey);
+				Map<String, String> mapJsonSql = mapJson2Sql.get(aCrudKey);
 				if(mapJsonSql==null || mapJsonSql.get(sJsonName)==null)
-					throw new JsonCrudException(ERRCODE_INVALID_FILTER, "Invalid filter - "+aCrudKey+" : "+sJsonName);
+					throw new JsonCrudException(JsonCrudConfig.ERRCODE_INVALID_FILTER, "Invalid filter - "+aCrudKey+" : "+sJsonName);
 			}
 		}
 		
@@ -793,7 +771,7 @@ public class CRUDMgr {
 				}
 				else
 				{
-					throw new JsonCrudException(ERRCODE_INVALID_SORTING, "Invalid sorting - "+sOrderBy+" : "+sJsonAttr);
+					throw new JsonCrudException(JsonCrudConfig.ERRCODE_INVALID_SORTING, "Invalid sorting - "+aCrudKey+" : "+sJsonAttr);
 				}
 			}
 			if(sbOrderBy.length()>0)
@@ -805,9 +783,9 @@ public class CRUDMgr {
 		String sSQL 			= "SELECT * FROM "+sTableName+" WHERE 1=1 "+sbWhere.toString();
 		JSONObject jsonReturn 	= retrieve(aCrudKey, sSQL, listValues.toArray(new Object[listValues.size()]), aStartFrom, aFetchSize);
 		
-		if(jsonReturn!=null && jsonReturn.has(_LIST_META))
+		if(jsonReturn!=null && jsonReturn.has(JsonCrudConfig._LIST_META))
 		{
-			JSONObject jsonMeta 	= jsonReturn.getJSONObject(_LIST_META);
+			JSONObject jsonMeta 	= jsonReturn.getJSONObject(JsonCrudConfig._LIST_META);
 			
 			if(aOrderBy!=null)
 			{
@@ -819,10 +797,10 @@ public class CRUDMgr {
 					sbOrderBys.append(sOrderBy);
 				}
 				if(sbOrderBys.length()>0)
-					jsonMeta.put(_LIST_SORTBY, sbOrderBys.toString());
+					jsonMeta.put(JsonCrudConfig._LIST_SORTING, sbOrderBys.toString());
 			}
 			//
-			jsonReturn.put(_LIST_META, jsonMeta);
+			jsonReturn.put(JsonCrudConfig._LIST_META, jsonMeta);
 		}
 		
 		return jsonReturn;
@@ -837,7 +815,7 @@ public class CRUDMgr {
 			{
 				aSqlStrValue = aSqlStrValue.replaceAll(
 						String.valueOf(cReservedChar), 
-						String.valueOf(SQLLIKE_ESCAPE_CHAR)+cReservedChar);
+						String.valueOf(JsonCrudConfig.SQLLIKE_ESCAPE_CHAR)+cReservedChar);
 			}
 		}
 		
@@ -848,7 +826,7 @@ public class CRUDMgr {
 	{
 		Map<String, String> map = jsoncrudConfig.getConfig(aCrudKey);
 		if(map.size()==0)
-			throw new JsonCrudException(ERRCODE_JSONCRUDCFG, "Invalid crud configuration key ! - "+aCrudKey);
+			throw new JsonCrudException(JsonCrudConfig.ERRCODE_JSONCRUDCFG, "Invalid crud configuration key ! - "+aCrudKey);
 
 		aDataJson 	= castJson2DBVal(aCrudKey, aDataJson);
 		aWhereJson 	= castJson2DBVal(aCrudKey, aWhereJson);
@@ -885,7 +863,7 @@ public class CRUDMgr {
 			//
 			if(sColName==null)
 			{
-				throw new JsonCrudException(ERRCODE_JSONCRUDCFG, "Missing Json to dbcol mapping ("+sJsonName+":"+aWhereJson.get(sJsonName)+") ! - "+aCrudKey);
+				throw new JsonCrudException(JsonCrudConfig.ERRCODE_JSONCRUDCFG, "Missing Json to dbcol mapping ("+sJsonName+":"+aWhereJson.get(sJsonName)+") ! - "+aCrudKey);
 			}
 			
 			sbWhere.append(" AND ").append(sColName).append(" = ? ");
@@ -937,7 +915,7 @@ public class CRUDMgr {
 		}
 		catch(SQLException sqlEx) 
 		{
-			throw new JsonCrudException(ERRCODE_SQLEXCEPTION, "sql:"+sSQL+", params:"+listParamsToString(listValues), sqlEx);
+			throw new JsonCrudException(JsonCrudConfig.ERRCODE_SQLEXCEPTION, "sql:"+sSQL+", params:"+listParamsToString(listValues), sqlEx);
 		}
 		
 		if(jArrUpdated.length()>0 || lAffectedRow2>0)
@@ -955,7 +933,7 @@ public class CRUDMgr {
 	{
 		Map<String, String> map = jsoncrudConfig.getConfig(aCrudKey);
 		if(map==null || map.size()==0)
-			throw new JsonCrudException(ERRCODE_JSONCRUDCFG, "Invalid crud configuration key ! - "+aCrudKey);
+			throw new JsonCrudException(JsonCrudConfig.ERRCODE_JSONCRUDCFG, "Invalid crud configuration key ! - "+aCrudKey);
 		
 		aWhereJson = castJson2DBVal(aCrudKey, aWhereJson);
 		
@@ -991,7 +969,7 @@ public class CRUDMgr {
 			}
 			catch(SQLException sqlEx)
 			{
-				throw new JsonCrudException(ERRCODE_SQLEXCEPTION, "sql:"+sSQL+", params:"+listParamsToString(listValues), sqlEx);
+				throw new JsonCrudException(JsonCrudConfig.ERRCODE_SQLEXCEPTION, "sql:"+sSQL+", params:"+listParamsToString(listValues), sqlEx);
 			}
 			
 			if(jArrAffectedRow.length()>0)
@@ -1014,6 +992,25 @@ public class CRUDMgr {
 	public Map<String, String> getAllConfig() 
 	{
 		return jsoncrudConfig.getAllConfig();
+	}
+	
+	public Map<String, String> getCrudConfigs(String aConfigKey) 
+	{
+		Map<String, String> mapCrudCfg = jsoncrudConfig.getConfig(aConfigKey);
+		
+		if(mapCrudCfg!=null && mapCrudCfg.size()>0)
+		{
+			JdbcDBMgr jdbcMgr = mapDBMgr.get(aConfigKey);
+			if(jdbcMgr!=null)
+			{
+				Map<String , String> mapJdbcCfg = jdbcMgr.getReferenceConfig();
+				if(mapJdbcCfg!=null)
+				{
+					mapCrudCfg.putAll(mapJdbcCfg);
+				}
+			}
+		}
+		return mapCrudCfg;
 	}
 	
 	private JdbcDBMgr initNRegJdbcDBMgr(String aJdbcConfigKey, Map<String, String> mapJdbcConfig) throws SQLException
@@ -1054,6 +1051,7 @@ public class CRUDMgr {
 			
 			if(dbmgr!=null)
 			{
+				dbmgr.setReferenceConfig(mapJdbcConfig);
 				mapDBMgr.put(aJdbcConfigKey, dbmgr);
 			}
 		}
@@ -1093,7 +1091,7 @@ public class CRUDMgr {
 				Map<String, String> mapDBConfig = jsoncrudConfig.getConfig(sDBConfigName);
 				
 				if(mapDBConfig==null)
-					throw new JsonCrudException(ERRCODE_JSONCRUDCFG, "Invalid "+JsonCrudConfig._PROP_KEY_DBCONFIG+" - "+sDBConfigName);
+					throw new JsonCrudException(JsonCrudConfig.ERRCODE_JSONCRUDCFG, "Invalid "+JsonCrudConfig._PROP_KEY_DBCONFIG+" - "+sDBConfigName);
 								
 				String sJdbcClassname = mapDBConfig.get(JsonCrudConfig._PROP_KEY_JDBC_CLASSNAME);
 				
@@ -1103,7 +1101,7 @@ public class CRUDMgr {
 				}
 				else
 				{
-					throw new JsonCrudException(ERRCODE_JSONCRUDCFG, "Invalid "+JsonCrudConfig._PROP_KEY_JDBC_CLASSNAME+" - "+sJdbcClassname);
+					throw new JsonCrudException(JsonCrudConfig.ERRCODE_JSONCRUDCFG, "Invalid "+JsonCrudConfig._PROP_KEY_JDBC_CLASSNAME+" - "+sJdbcClassname);
 				}
 			}
 			
@@ -1196,7 +1194,7 @@ public class CRUDMgr {
 							if(oVal==null || oVal.toString().trim().length()==0)
 							{
 								sbErrInfo.setLength(0);
-								sbErrInfo.append(ERRCODE_NOT_NULLABLE);								
+								sbErrInfo.append(JsonCrudConfig.ERRCODE_NOT_NULLABLE);								
 								if(isDebugMode)
 								{
 									sbErrInfo.append(" - '").append(col.getColname()).append("' cannot be empty. ").append(col);
@@ -1228,7 +1226,7 @@ public class CRUDMgr {
 							if(isInvalidDataType)
 							{
 								sbErrInfo.setLength(0);
-								sbErrInfo.append(ERRCODE_INVALID_TYPE);								
+								sbErrInfo.append(JsonCrudConfig.ERRCODE_INVALID_TYPE);								
 								if(isDebugMode)
 								{
 									sbErrInfo.append(" - '").append(col.getColname()).append("' invalid type, expect:").append(col.getColtypename()).append(" actual:").append(oVal.getClass().getSimpleName()).append(". ").append(col);
@@ -1244,7 +1242,7 @@ public class CRUDMgr {
 								if(sVal.length()>col.getColsize())
 								{
 									sbErrInfo.setLength(0);
-									sbErrInfo.append(ERRCODE_EXCEED_SIZE);								
+									sbErrInfo.append(JsonCrudConfig.ERRCODE_EXCEED_SIZE);								
 									if(isDebugMode)
 									{
 										sbErrInfo.append(" - '").append(col.getColname()).append("' exceed allowed size, expect:").append(col.getColsize()).append(" actual:").append(sVal.length()).append(". ").append(col);
@@ -1257,7 +1255,7 @@ public class CRUDMgr {
 							{
 								// 
 								sbErrInfo.setLength(0);
-								sbErrInfo.append(ERRCODE_SYSTEM_FIELD);								
+								sbErrInfo.append(JsonCrudConfig.ERRCODE_SYSTEM_FIELD);								
 								if(isDebugMode)
 								{
 									sbErrInfo.append(" - '").append(col.getColname()).append("' not allowed (auto increment field). ").append(col);
@@ -1521,7 +1519,7 @@ public class CRUDMgr {
 			}
 			catch(SQLException sqlEx)
 			{
-				throw new JsonCrudException(ERRCODE_SQLEXCEPTION, "sql:"+aObjInsertSQL+", params:"+listParamsToString(aListParams), sqlEx);
+				throw new JsonCrudException(JsonCrudConfig.ERRCODE_SQLEXCEPTION, "sql:"+aObjInsertSQL+", params:"+listParamsToString(aListParams), sqlEx);
 			}
 		}
 		return lAffectedRow;
@@ -1597,7 +1595,7 @@ public class CRUDMgr {
 		}
 		
 		if(sObjKeyName==null)
-			throw new JsonCrudException(ERRCODE_JSONCRUDCFG, "No object mapping found ! - "+aJsonName);
+			throw new JsonCrudException(JsonCrudConfig.ERRCODE_JSONCRUDCFG, "No object mapping found ! - "+aJsonName);
 		///		
 		
 		return listAllParams;

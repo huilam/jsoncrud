@@ -114,19 +114,19 @@ public class JsonCrudRestUtil {
 		}
 		
 		try {
-			jsonOutput.get(getCRUDMgr()._LIST_RESULT);
+			jsonOutput.get(JsonCrudConfig._LIST_RESULT);
 		}
 		catch(JSONException ex)
 		{
-			jsonOutput.put(getCRUDMgr()._LIST_RESULT, new JSONArray());
+			jsonOutput.put(JsonCrudConfig._LIST_RESULT, new JSONArray());
 		}
 		
 		try {
-			jsonOutput.get(getCRUDMgr()._LIST_META);
+			jsonOutput.get(JsonCrudConfig._LIST_META);
 		}
 		catch(JSONException ex)
 		{
-			jsonOutput.put(getCRUDMgr()._LIST_META, new JSONObject());
+			jsonOutput.put(JsonCrudConfig._LIST_META, new JSONObject());
 		}
 
 		return jsonOutput;
@@ -160,14 +160,14 @@ public class JsonCrudRestUtil {
 			jsonOutput = new JSONObject();
 		}
 		
-		if(!jsonOutput.has(crudMgr._LIST_RESULT))
+		if(!jsonOutput.has(JsonCrudConfig._LIST_RESULT))
 		{
-			jsonOutput.put(crudMgr._LIST_RESULT, new JSONArray());
+			jsonOutput.put(JsonCrudConfig._LIST_RESULT, new JSONArray());
 		}
 		
-		if(!jsonOutput.has(crudMgr._LIST_META))
+		if(!jsonOutput.has(JsonCrudConfig._LIST_META))
 		{
-			jsonOutput.put(crudMgr._LIST_META, new JSONObject());
+			jsonOutput.put(JsonCrudConfig._LIST_META, new JSONObject());
 		}
 
 		return jsonOutput;
@@ -177,9 +177,9 @@ public class JsonCrudRestUtil {
 	{
 		CRUDMgr crudMgr = getCRUDMgr();
 		
-		if(aJsonObject.has(crudMgr._LIST_META))
+		if(aJsonObject.has(JsonCrudConfig._LIST_META))
 		{
-			return aJsonObject.getJSONObject(crudMgr._LIST_META);
+			return aJsonObject.getJSONObject(JsonCrudConfig._LIST_META);
 		}
 		else
 		{
@@ -191,9 +191,9 @@ public class JsonCrudRestUtil {
 	{
 		CRUDMgr crudMgr = getCRUDMgr();
 		
-		if(aJsonObject.has(crudMgr._LIST_RESULT))
+		if(aJsonObject.has(JsonCrudConfig._LIST_RESULT))
 		{
-			return aJsonObject.getJSONArray(crudMgr._LIST_RESULT);
+			return aJsonObject.getJSONArray(JsonCrudConfig._LIST_RESULT);
 		}
 		else
 		{

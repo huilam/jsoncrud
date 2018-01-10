@@ -39,6 +39,29 @@ public class JsonCrudConfig {
 	public static String _PROP_FILENAME 		= "jsoncrud.properties";
 	//
 	public static String _PROP_KEY_CRUD 		= "crud";
+	
+	public final static String _PAGINATION_CONFIGKEY = "list.pagination";
+	public static String _LIST_META 		= "meta";
+	public static String _LIST_RESULT 		= "result";
+	public static String _LIST_TOTAL 		= "total";
+	public static String _LIST_FETCHSIZE 	= "fetchsize";
+	public static String _LIST_START 		= "start";
+	public static String _LIST_SORTING 		= "sorting";
+	
+	public final static String _DB_VALIDATION_ERRCODE_CONFIGKEY = "dbschema.validation_errcode";
+	public static String ERRCODE_NOT_NULLABLE 		= "not_nullable";
+	public static String ERRCODE_EXCEED_SIZE 		= "exceed_size";
+	public static String ERRCODE_INVALID_TYPE		= "invalid_type";
+	public static String ERRCODE_SYSTEM_FIELD		= "system_field";
+	
+	public final static String _JSONCRUD_FRAMEWORK_ERRCODE_CONFIGKEY = "jsoncrud.framework_errcode";
+	public static String ERRCODE_SQLEXCEPTION		= "sql_exception";
+	public static String ERRCODE_JSONCRUDCFG		= "invalid_jsoncrudcfg";
+	public static String ERRCODE_INVALID_FILTER		= "invalid_filter";
+	public static String ERRCODE_INVALID_SORTING	= "invalid_sorting";
+	
+	//
+	public static char SQLLIKE_ESCAPE_CHAR			= '|';
 	//
 	public static String _PROP_KEY_JDBC_CLASSNAME 	= "classname";
 	public static String _PROP_KEY_JDBC_UID 		= "uid";

@@ -189,10 +189,10 @@ public class CRUDMgrTest {
 			//////////////////////////
 			JSONObject json = m.retrieve("crud.sample_users", new JSONObject(), 0, 3, new String[] {"id"});
 			System.out.println("15. Pagination");
-			System.out.println("  - "+m._LIST_META+" = "+json.get(m._LIST_META));
+			System.out.println("  - "+JsonCrudConfig._LIST_META+" = "+json.get(JsonCrudConfig._LIST_META));
 			
-			JSONArray jarr = json.getJSONArray(m._LIST_RESULT);
-			System.out.println("  - "+m._LIST_RESULT+" = "+jarr.length());
+			JSONArray jarr = json.getJSONArray(JsonCrudConfig._LIST_RESULT);
+			System.out.println("  - "+JsonCrudConfig._LIST_RESULT+" = "+jarr.length());
 			for(int i=0; i<jarr.length(); i++)
 			{
 				System.out.println("       15."+(i+1)+" - "+jarr.getJSONObject(i).toString());
@@ -228,10 +228,10 @@ public class CRUDMgrTest {
 					" WHERE a.user_id = u.id GROUP BY u.id", 
 					null, 0 ,3);
 			System.out.println("17. Custom SQL");
-			System.out.println("  - "+m._LIST_META+" = "+json.get(m._LIST_META));
+			System.out.println("  - "+JsonCrudConfig._LIST_META+" = "+json.get(JsonCrudConfig._LIST_META));
 			
-			jarr = json.getJSONArray(m._LIST_RESULT);
-			System.out.println("  - "+m._LIST_RESULT+" = "+jarr.length());
+			jarr = json.getJSONArray(JsonCrudConfig._LIST_RESULT);
+			System.out.println("  - "+JsonCrudConfig._LIST_RESULT+" = "+jarr.length());
 			for(int i=0; i<jarr.length(); i++)
 			{
 				System.out.println("       17."+(i+1)+" - "+jarr.getJSONObject(i).toString());
@@ -241,10 +241,10 @@ public class CRUDMgrTest {
 					" select nextval('jsoncrud_sample_users_id_seq') ", 
 					null, 0 ,0);
 			System.out.println("18. Get Current Sequence with SQL");
-			System.out.println("  - "+m._LIST_META+" = "+json.get(m._LIST_META));
+			System.out.println("  - "+JsonCrudConfig._LIST_META+" = "+json.get(JsonCrudConfig._LIST_META));
 			
-			jarr = json.getJSONArray(m._LIST_RESULT);
-			System.out.println("  - "+m._LIST_RESULT+" = "+jarr.length());
+			jarr = json.getJSONArray(JsonCrudConfig._LIST_RESULT);
+			System.out.println("  - "+JsonCrudConfig._LIST_RESULT+" = "+jarr.length());
 			for(int i=0; i<jarr.length(); i++)
 			{
 				System.out.println("       18."+(i+1)+" - "+jarr.getJSONObject(i).toString());
@@ -256,14 +256,14 @@ public class CRUDMgrTest {
 			System.out.println("19. order seq {displayname.desc, enabled, age.asc}");
 			
 			json = m.retrieve("crud.sample_users", jsonUser, 1, 10, sOrderBys);
-			jArr = json.getJSONArray(m._LIST_RESULT);
+			jArr = json.getJSONArray(JsonCrudConfig._LIST_RESULT);
 			for(int i=0; i<jArr.length(); i++)
 			{
 				System.out.println("    19."+(i+1)+" - "+jArr.get(i));
 			}
 			
 			
-			System.out.println("20. Filter by _ % |");
+			System.out.println("20. Filter by _ %");
 			jsonUser = new JSONObject();
 			jsonUser.put("displayname.endwith", "_");
 			jsonUser.put("displayname.contain", "%");
@@ -274,7 +274,7 @@ public class CRUDMgrTest {
 			}
 			
 			
-			sOrderBys = new String[] {"displayname2"};
+			sOrderBys = new String[] {"xxx"};
 			System.out.println("21. invalid sorting field");
 			try {				
 				json = m.retrieve("crud.sample_users", jsonUser, 1, 10, sOrderBys);
@@ -283,7 +283,7 @@ public class CRUDMgrTest {
 				System.out.println("   ErrorCode:"+ex.getErrorCode()+"  ErrMsg:"+ex.getErrorMsg());
 			}
 			
-			jsonUser.put("invalid_field", "");
+			jsonUser.put("xxx", "");
 			System.out.println("22. invalid sorting field");
 			try {	
 				jArr = m.retrieve("crud.sample_users", jsonUser);
