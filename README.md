@@ -1,19 +1,26 @@
 # Introduction
 
-A lightweight JSON JDBC ORM framework that created to simplify RESTful API implementation as author tire of bloated opensource RDBMS ORM frameworks and its complicated dependencies. 
+A lightweight JSON JDBC ORM framework (39,508 bytes) that created to simplify RESTful API implementation as author tire of bloated opensource RDBMS ORM frameworks and its complicated dependencies. 
 
-The only 3rd party dependency of jsoncrud is JSON-java (https://github.com/stleary/JSON-java), and your database server JDBC drivers.
+3rd party dependencies of jsoncrud are
+
+1. JSON-java (https://github.com/stleary/JSON-java) - 48,224 bytes
+2. database server JDBC drivers - 676,247 bytes
+
 
 
 # Sample Java code
 
 #### jsoncrud.properties
 ```
-crud.sample_users.dbconfig=jdbc.postgres
-crud.sample_users.tablename=jsoncrud_sample_users
-crud.sample_users.jsonattr.uid.colname=uid
-crud.sample_users.jsonattr.displayname.colname=name
-crud.sample_users.jsonattr.age.colname=age
+crud.jsoncrud_cfg.dbconfig=jdbc.postgres
+crud.jsoncrud_cfg.tablename=jsoncrud_cfg
+crud.jsoncrud_cfg.jsonattr.id.colname=cfg_id
+crud.jsoncrud_cfg.jsonattr.appNamespace.colname=cfg_app_namespace
+crud.jsoncrud_cfg.jsonattr.moduleCode.colname=cfg_module_code
+crud.jsoncrud_cfg.jsonattr.createdTimestamp.colname=created_timestamp
+crud.jsoncrud_cfg.jsonattr.enabled.colname=enabled
+crud.jsoncrud_cfg.jsonattr.values.sql=select cfg_key, cfg_value from jsoncrud_cfg_values where cfg_id = {id} 
 
 jdbc.postgres.classname=org.postgresql.Driver
 jdbc.postgres.url=jdbc:postgresql://127.0.0.1:5432/postgres
@@ -30,34 +37,37 @@ crudmgr.init();
 #### Create
 ```
 JSONObject jsonUser = new JSONObject(); 
-jsonUser.put("uid", "my-uniqie-id"); 
-jsonUser.put("displayname", "My Name");
-jsonUser.put("age", 100);
-jsonUser = crudmgr.create("crud.users", jsonUser);
+jsonUser.put("appNamespace", "my-app"); 
+jsonUser.put("moduleCode", "my-app-module1");
+jsonUser.put("enabled", false);
+jsonUser = crudmgr.create("crud.jsoncrud_cfg", jsonUser);
 ```
 
 #### Retrieve
 ```
 JSONObject jsonWhere = new JSONObject();
-jsonWhere.put("uid", "my-uniqie-id");
-jsonUser = crudmgr.retrieveFirst("crud.users", jsonWhere);
+jsonWhere.put("appNamespace", "my-app");
+jsonUser = crudmgr.retrieveFirst("crud.jsoncrud_cfg", jsonWhere);
 ```
   
 #### Update
 ```
 JSONObject jsonWhere = new JSONObject();
-jsonWhere.put("uid", "my-uniqie-id");
-JSONObject jsonUser = new JSONObject();
-jsonUser.put("displayname", "My New Name");
-jsonUser.put("age", 1);
-jsonUser = crudmgr.update("crud.users", jsonUser, jsonWhere);
+jsonWhere.put("appNamespace", "my-app");
+jsonUser.put("moduleCode", "my-app-module1");
+
+JSONObject jsonConfig = new JSONObject();
+jsonConfig.put("enabled", true);
+jsonConfig = crudmgr.update("crud.jsoncrud_cfg", jsonConfig, jsonWhere);
 ```
 
 #### Delete
 ```
 JSONObject jsonWhere = new JSONObject();
-jsonWhere.put("uid", "my-uniqie-id");
-jsonUser = crudmgr.delete("crud.users", jsonWhere);
+jsonWhere.put("appNamespace", "my-app");
+jsonWhere.put("enabled", false);
+
+jsonWhere = crudmgr.delete("crud.users", jsonWhere);
 ```
 
 --
