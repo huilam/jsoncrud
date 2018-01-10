@@ -55,6 +55,7 @@ public class JsonCrudConfig {
 	public static String ERRCODE_SYSTEM_FIELD		= "system_field";
 	
 	public final static String _JSONCRUD_FRAMEWORK_ERRCODE_CONFIGKEY = "jsoncrud.framework_errcode";
+	public static String ERRCODE_PLUGINEXCEPTION	= "plugin_exception";
 	public static String ERRCODE_SQLEXCEPTION		= "sql_exception";
 	public static String ERRCODE_JSONCRUDCFG		= "invalid_jsoncrudcfg";
 	public static String ERRCODE_INVALID_FILTER		= "invalid_filter";

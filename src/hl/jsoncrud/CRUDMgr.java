@@ -174,6 +174,10 @@ public class CRUDMgr {
 			if(sMetaKey!=null)
 				JsonCrudConfig.ERRCODE_SQLEXCEPTION = sMetaKey;		
 			
+			sMetaKey = mapErrCodes.get(JsonCrudConfig.ERRCODE_PLUGINEXCEPTION);
+			if(sMetaKey!=null)
+				JsonCrudConfig.ERRCODE_PLUGINEXCEPTION = sMetaKey;		
+			
 			sMetaKey = mapErrCodes.get(JsonCrudConfig.ERRCODE_INVALID_FILTER);
 			if(sMetaKey!=null)
 				JsonCrudConfig.ERRCODE_INVALID_FILTER = sMetaKey;
@@ -389,6 +393,12 @@ public class CRUDMgr {
 	public JSONObject retrieve(String aCrudKey, String aSQL, Object[] aObjParams,
 			long aStartFrom, long aFetchSize) throws JsonCrudException
 	{
+		return retrieve(aCrudKey, aSQL, aObjParams, aStartFrom, aFetchSize, null);
+	}
+	
+	private JSONObject retrieve(String aCrudKey, String aSQL, Object[] aObjParams,
+			long aStartFrom, long aFetchSize, String[] aReturns) throws JsonCrudException
+	{
 		JSONObject jsonReturn 		= null;
 		Map<String, String> map 	= jsoncrudConfig.getConfig(aCrudKey);
 		
@@ -397,6 +407,15 @@ public class CRUDMgr {
 		
 		String sJdbcName 	= map.get(JsonCrudConfig._PROP_KEY_DBCONFIG);
 		JdbcDBMgr dbmgr 	= mapDBMgr.get(sJdbcName);
+		
+		List<String> listReturns = new ArrayList<String>();
+		if(aReturns!=null)
+		{
+			for(String sAttrName : aReturns)
+			{
+				listReturns.add(sAttrName.toUpperCase());
+			}
+		}
 		
 		Connection conn = null;
 		PreparedStatement stmt	= null;
@@ -441,6 +460,12 @@ public class CRUDMgr {
 				{
 					for(String sJsonName : mapCrudSql.keySet())
 					{
+						if(listReturns.size()>0)
+						{
+							if(!listReturns.contains(sJsonName.toUpperCase()))
+								continue;
+						}
+						
 						if(!jsonOnbj.has(sJsonName))
 						{
 							List<Object> listParams2 = new ArrayList<Object>();
@@ -456,8 +481,12 @@ public class CRUDMgr {
 							}
 							sSQL2 = sSQL2.replaceAll("\\{.+?\\}", "?");
 							
-							if(sSQL2.indexOf("?")>-1 && listParams2.size()>0)
+							if(sSQL2.indexOf("?")>-1)
 							{
+								if(listParams2.size()==0)
+									throw new JsonCrudException(JsonCrudConfig.ERRCODE_SQLEXCEPTION, 
+											"Invalid SQL : "+mapCrudSql.get(sJsonName));
+								
 								JSONArray jsonArrayChild = retrieveChild(dbmgr, sSQL2, listParams2);
 								
 								if(jsonArrayChild!=null && jsonArrayChild.length()>0)
@@ -783,8 +812,12 @@ public class CRUDMgr {
 		StringBuffer sbFields = new StringBuffer();
 		if(aReturns!=null && aReturns.length>0)
 		{
+			Map<String, String> mapCrudSql = mapJson2Sql.get(aCrudKey);
 			for(String sReturnAttr : aReturns)
 			{
+				if(mapCrudSql.get(sReturnAttr)!=null)
+					continue;
+				
 				String sColName = mapCrudJsonCol.get(sReturnAttr);
 				if(sColName!=null)
 				{
@@ -802,7 +835,10 @@ public class CRUDMgr {
 		}
 		
 		String sSQL 			= "SELECT "+sbFields.toString()+" FROM "+sTableName+" WHERE 1=1 "+sbWhere.toString();
-		JSONObject jsonReturn 	= retrieve(aCrudKey, sSQL, listValues.toArray(new Object[listValues.size()]), aStartFrom, aFetchSize);
+		JSONObject jsonReturn 	= retrieve(
+				aCrudKey, sSQL, 
+				listValues.toArray(new Object[listValues.size()]), 
+				aStartFrom, aFetchSize, aReturns);
 		
 		if(jsonReturn!=null && jsonReturn.has(JsonCrudConfig._LIST_META))
 		{
