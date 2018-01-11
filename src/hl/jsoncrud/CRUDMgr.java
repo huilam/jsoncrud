@@ -485,7 +485,7 @@ public class CRUDMgr {
 							{
 								if(listParams2.size()==0)
 									throw new JsonCrudException(JsonCrudConfig.ERRCODE_SQLEXCEPTION, 
-											"Insufficient sql paramters - sql:"+sSQL2+", params:"+listParamsToString(listParams2));
+											"Insufficient sql paramters - sql:"+mapCrudSql.get(sJsonName)+", params:"+listParamsToString(listParams2));
 								
 								JSONArray jsonArrayChild = retrieveChild(dbmgr, sSQL2, listParams2);
 								
