@@ -35,29 +35,35 @@ public class JsonCrudRestUtil {
 	private static CRUDMgr _crudmgr 	= null;
 	
 	
-	public static JSONObject create(String aCrudKey, String aJsonContent) throws Exception
+	public static JSONObject create(String aCrudKey, String aJsonContent) throws JsonCrudException
 	{
 		if(aJsonContent!=null && aJsonContent.length()>0)
 		{
 			aJsonContent = aJsonContent.trim();
-			if(aJsonContent.startsWith("{") && aJsonContent.endsWith("}"))
+			try {
+				if(aJsonContent.startsWith("{") && aJsonContent.endsWith("}"))
+				{
+					create(aCrudKey, new JSONObject(aJsonContent));
+				}
+				else if(aJsonContent.startsWith("[") && aJsonContent.endsWith("]"))
+				{
+					create(aCrudKey, new JSONArray(aJsonContent));
+				}
+				else
+				{
+					throw new JSONException("Invalid content : "+aJsonContent);
+				}
+			}catch(JSONException ex)
 			{
-				create(aCrudKey, new JSONObject(aJsonContent));
-			}
-			else if(aJsonContent.startsWith("[") && aJsonContent.endsWith("]"))
-			{
-				create(aCrudKey, new JSONArray(aJsonContent));
-			}
-			else
-			{
-				throw new Exception("Unsupported JSON content : "+aJsonContent);
+				throw new JsonCrudException(JsonCrudConfig.ERRCODE_INVALIDFORMAT,
+						"Invalid content : "+aJsonContent, ex);
 			}
 		}
 		return null;
 	}
 	
 	
-	public static JSONObject create(String aCrudKey, JSONObject aJSONObject) throws Exception
+	public static JSONObject create(String aCrudKey, JSONObject aJSONObject) throws JsonCrudException
 	{
     	if(aJSONObject==null)
     		return aJSONObject;
@@ -72,7 +78,7 @@ public class JsonCrudRestUtil {
     		return null;
 	}
 	
-	public static JSONArray create(String aCrudKey, JSONArray aJsonInputArray) throws Exception
+	public static JSONArray create(String aCrudKey, JSONArray aJsonInputArray) throws JsonCrudException
 	{
 		JSONArray jsonOutputArray = new JSONArray();
 		
@@ -101,7 +107,7 @@ public class JsonCrudRestUtil {
         
 	public static JSONObject retrieveList(
 			String aCrudKey, String aSQL, Object[] aObjParams,
-			long iStartFrom, long iFetchSize) throws Exception
+			long iStartFrom, long iFetchSize) throws JsonCrudException
 	{
 		String sConfigKey = JsonCrudConfig._PROP_KEY_CRUD+"."+aCrudKey;
 		
@@ -134,7 +140,7 @@ public class JsonCrudRestUtil {
 	
 	public static JSONObject retrieveList(
 			String aCrudKey, JSONObject aJsonWhere,
-			long iStartFrom, long iFetchSize) throws Exception
+			long iStartFrom, long iFetchSize) throws JsonCrudException
 	{
 		return retrieveList(aCrudKey, aJsonWhere, iStartFrom, iFetchSize, null, null);
 	}
@@ -143,7 +149,7 @@ public class JsonCrudRestUtil {
 			String aCrudKey, JSONObject aJsonWhere,
 			long iStartFrom, long iFetchSize, 
 			List<String> listSorting,
-			List<String> listReturns) throws Exception
+			List<String> listReturns) throws JsonCrudException
 	{
 		CRUDMgr crudMgr = getCRUDMgr();
 		
@@ -208,7 +214,7 @@ public class JsonCrudRestUtil {
 		}
 	}
     
-	public static JSONObject retrieveFirst(String aCrudKey, JSONObject aJsonWhere) throws Exception
+	public static JSONObject retrieveFirst(String aCrudKey, JSONObject aJsonWhere) throws JsonCrudException
 	{
     	
 		String sConfigKey = JsonCrudConfig._PROP_KEY_CRUD+"."+aCrudKey;
@@ -217,7 +223,7 @@ public class JsonCrudRestUtil {
 		return getCRUDMgr().retrieveFirst(sConfigKey, aJsonWhere);
 	}
 
-	public static JSONArray update(String aCrudKey,	JSONObject aJsonData, JSONObject aJsonWhere) throws Exception
+	public static JSONArray update(String aCrudKey,	JSONObject aJsonData, JSONObject aJsonWhere) throws JsonCrudException
 	{
    		String sConfigKey 	= JsonCrudConfig._PROP_KEY_CRUD+"."+aCrudKey;
 		//boolean debug 		= getCRUDMgr().isDebugMode(sConfigKey);
@@ -225,7 +231,7 @@ public class JsonCrudRestUtil {
 		return  getCRUDMgr().update(sConfigKey, aJsonData, aJsonWhere);
 	}
     
-	public static JSONArray delete(String aCrudKey, JSONObject aJsonWhere) throws Exception
+	public static JSONArray delete(String aCrudKey, JSONObject aJsonWhere) throws JsonCrudException
 	{
 		String sConfigKey 	= JsonCrudConfig._PROP_KEY_CRUD+"."+aCrudKey;
 		//boolean debug 		= getCRUDMgr().isDebugMode(sConfigKey);

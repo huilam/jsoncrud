@@ -485,7 +485,7 @@ public class CRUDMgr {
 							{
 								if(listParams2.size()==0)
 									throw new JsonCrudException(JsonCrudConfig.ERRCODE_SQLEXCEPTION, 
-											"Invalid SQL : "+mapCrudSql.get(sJsonName));
+											"Insufficient sql paramters - sql:"+sSQL2+", params:"+listParamsToString(listParams2));
 								
 								JSONArray jsonArrayChild = retrieveChild(dbmgr, sSQL2, listParams2);
 								
@@ -879,7 +879,7 @@ public class CRUDMgr {
 		return aSqlStrValue;
 	}
 	
-	public JSONArray update(String aCrudKey, JSONObject aDataJson, JSONObject aWhereJson) throws Exception
+	public JSONArray update(String aCrudKey, JSONObject aDataJson, JSONObject aWhereJson) throws JsonCrudException
 	{
 		Map<String, String> map = jsoncrudConfig.getConfig(aCrudKey);
 		if(map.size()==0)
@@ -986,7 +986,7 @@ public class CRUDMgr {
 		}
 	}
 	
-	public JSONArray delete(String aCrudKey, JSONObject aWhereJson) throws Exception
+	public JSONArray delete(String aCrudKey, JSONObject aWhereJson) throws JsonCrudException
 	{
 		Map<String, String> map = jsoncrudConfig.getConfig(aCrudKey);
 		if(map==null || map.size()==0)
@@ -1512,7 +1512,7 @@ public class CRUDMgr {
 		return jsonArr.toString();
 	}
 	
-	private long updateChildObject(JdbcDBMgr aDBMgr, String aObjInsertSQL, List<Object[]> aListParams) throws Exception
+	private long updateChildObject(JdbcDBMgr aDBMgr, String aObjInsertSQL, List<Object[]> aListParams) throws JsonCrudException
 	{
 		long lAffectedRow 			= 0;
 		String sChildTableName 	 	= null;
@@ -1564,9 +1564,14 @@ public class CRUDMgr {
 					listFlattenParam.add(o);
 				}
 				
-				if(aDBMgr.getQueryCount(sbObjSQL2.toString(), obj2)==0)
-				{
-					listParams_new.add(obj2);
+				try {
+					if(aDBMgr.getQueryCount(sbObjSQL2.toString(), obj2)==0)
+					{
+						listParams_new.add(obj2);
+					}
+				} catch (SQLException e) {
+					throw new JsonCrudException(
+							JsonCrudConfig.ERRCODE_SQLEXCEPTION, "sql:"+sbObjSQL2.toString()+", params:"+listParamsToString(obj2), e);
 				}
 			}
 			aListParams.clear();
@@ -1579,7 +1584,8 @@ public class CRUDMgr {
 			}
 			catch(SQLException sqlEx)
 			{
-				throw new JsonCrudException(JsonCrudConfig.ERRCODE_SQLEXCEPTION, "sql:"+aObjInsertSQL+", params:"+listParamsToString(aListParams), sqlEx);
+				throw new JsonCrudException(
+						JsonCrudConfig.ERRCODE_SQLEXCEPTION, "sql:"+aObjInsertSQL+", params:"+listParamsToString(aListParams), sqlEx);
 			}
 		}
 		return lAffectedRow;
