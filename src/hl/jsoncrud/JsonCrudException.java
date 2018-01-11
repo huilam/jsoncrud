@@ -58,4 +58,9 @@ public class JsonCrudException extends Exception {
 	{
 		return error_msg;
 	}
+	
+	public String getMessage()
+	{
+		return getErrorCode()+":"+getErrorMsg();
+	}
 }
