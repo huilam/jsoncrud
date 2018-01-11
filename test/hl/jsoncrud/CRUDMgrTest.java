@@ -32,12 +32,157 @@ import hl.jsoncrud.CRUDMgr;
 
 public class CRUDMgrTest {
 	
+	private void test1_CRUD(CRUDMgr m) throws JsonCrudException
+	{
+		JSONObject jsonData 	= null;
+		JSONObject jsonWhere 	= null;
+		JSONObject jsonResult 	= null;
+		JSONArray jsonArrResult = null;
+		
+		System.out.println();
+		System.out.println("1. CRUD");
+		jsonData = new JSONObject();
+		jsonData.put("appNamespace", "jsoncrud-framework");
+		jsonData.put("moduleCode", "unit-test");
+		jsonData.put("enabled", false);
+		jsonResult = m.create("crud.jsoncrud_cfg", jsonData);
+		//
+		long id = jsonResult.getLong("cfgId");
+		jsonData = new JSONObject();
+		jsonData.put("cfgId", id);
+		jsonData.put("key", "testkey01_");
+		jsonData.put("value", "testvalue001_");
+		jsonData.put("enabled", true);
+		jsonData.put("displaySeq", 1);
+		m.create("crud.jsoncrud_cfg_values", jsonData);
+		//
+		jsonData.put("key", "testkey02_");
+		jsonData.put("value", "testvalue|%002_");
+		jsonData.put("displaySeq", 200);
+		m.create("crud.jsoncrud_cfg_values", jsonData);
+		//
+		jsonData.put("key", "testkey03_");
+		jsonData.put("value", "testvalue003");
+		jsonData.put("displaySeq", 30);
+		m.create("crud.jsoncrud_cfg_values", jsonData);
+		//
+		jsonData.put("key", "testkey04_");
+		jsonData.put("value", JSONObject.NULL);
+		jsonData.put("displaySeq", 7);
+		m.create("crud.jsoncrud_cfg_values", jsonData);
+		//
+		jsonData.put("key", "testkey05_");
+		jsonData.put("value", "testvalue005");
+		jsonData.put("enabled", false);
+		m.create("crud.jsoncrud_cfg_values", jsonData);
+		//		
+		System.out.println("	1.1 C:"+jsonResult);
+
+		jsonWhere = new JSONObject();
+		jsonWhere.put("cfgId", id);
+		jsonArrResult = m.retrieve("crud.jsoncrud_cfg", jsonWhere);
+		System.out.println("	1.2 R:"+jsonArrResult);
+
+		jsonData = new JSONObject();
+		jsonData.put("enabled", true);
+		jsonArrResult = m.update("crud.jsoncrud_cfg", jsonData, jsonWhere);
+		System.out.println("	1.3 U:"+jsonArrResult);
+		
+		jsonWhere = new JSONObject();
+		jsonWhere.put("cfgId", id);
+		jsonWhere.put("enabled", false);
+		jsonArrResult = m.delete("crud.jsoncrud_cfg_values", jsonWhere);
+		System.out.println("	1.4 D:"+jsonArrResult);
+	}
+	
+	private void test2_SchemaValidation(CRUDMgr m) throws JsonCrudException
+	{
+		String s100 = "1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890";
+		System.out.println();
+		System.out.println("2. SchemaValidation");
+		JSONObject jsonData = new JSONObject();
+		jsonData.put("appNamespace", 1000);
+		jsonData.put("moduleCode", s100+s100+s100);
+		jsonData.put("enabled", "false");
+		jsonData.put("createdTimestamp", "Jul 2017");
+		
+		Map<String, String[]> mapErr = m.validateDataWithSchema("crud.jsoncrud_cfg", jsonData, true);
+		int i = 1;
+		for(String sColName : mapErr.keySet())
+		{
+			String[] sErrors = mapErr.get(sColName);
+			System.out.println("	"+(++i)+". '"+sColName+"' : ");
+			int j = 1;
+			for(String sErr : sErrors)
+			{
+				System.out.println("        	"+i+"."+(j++)+". "+sErr);
+			}
+		}
+		
+	}
+	
+	private void test3_CustomSQL(CRUDMgr m) throws JsonCrudException
+	{
+		StringBuffer sbSQL = new StringBuffer();
+		sbSQL.append(" SELECT cfg.*, count(val.cfg_key) as totalKeys ");
+		sbSQL.append(" FROM jsoncrud_cfg cfg, jsoncrud_cfg_values val ");
+		sbSQL.append(" WHERE val.cfg_id = cfg.cfg_id GROUP BY cfg.cfg_id ");
+		
+		System.out.println();
+		System.out.println("3. Custom SQL");
+		JSONObject jsonResult = m.retrieve("crud.jsoncrud_cfg", sbSQL.toString(), null, 0, 0);
+		
+		System.out.println("	3.1 Count & Group By "+jsonResult);
+		
+	}
+	
+	private void test4_Sorting_Returns(CRUDMgr m) throws JsonCrudException
+	{
+		String[] sSorting = new String[]{"displaySeq.desc", "cfgId"};
+		String[] sReturns = new String[]{"displaySeq", "cfgId", "enabled","key", "value"};
+		
+		long id = getCfgId(m);
+		
+		System.out.println();
+		System.out.println("4. Test Sorting, Returns");
+		JSONArray jsonArrResult = null;
+		JSONObject jsonWhere = new JSONObject();
+		jsonWhere.put("cfgId", id);
+		jsonWhere.put("value.contain", "value");
+		jsonWhere.put("displaySeq.from", 0);
+		jsonWhere.put("displaySeq.to", 2000);
+		jsonWhere.put("key.startwith", "test");
+		jsonWhere.put("key.endwith", "_");
+		jsonArrResult = m.retrieve("crud.jsoncrud_cfg_values", jsonWhere);
+		
+		jsonArrResult = m.retrieve("crud.jsoncrud_cfg_values", 
+				jsonWhere, sSorting, sReturns);
+		
+		for(int i=0; i<jsonArrResult.length(); i++)
+		{
+			System.out.println("	"+jsonArrResult.getJSONObject(i));
+		}
+		
+	}
+	
+	private long getCfgId(CRUDMgr m) throws JsonCrudException
+	{
+		JSONObject jsonWhere = new JSONObject();
+		jsonWhere.put("appNamespace", "jsoncrud-framework");
+		jsonWhere.put("moduleCode", "unit-test");
+		
+		JSONArray jArrResult = m.retrieve("crud.jsoncrud_cfg", jsonWhere);
+		JSONObject jsonResult = jArrResult.getJSONObject(0);
+		return jsonResult.getLong("cfgId");
+	}
+	
 	public static void main(String args[]) throws Exception
 	{
+		CRUDMgrTest test = new CRUDMgrTest();
 		long lStart = System.currentTimeMillis();
 		
-		Random random = new Random(lStart);
 		CRUDMgr m = new CRUDMgr();
+		Random random = new Random(lStart);
 
 		try{
 			Map<String, String> map = m.getAllConfig();
@@ -46,251 +191,31 @@ public class CRUDMgrTest {
 				String sVal = map.get(sKey);
 				System.out.println("[init] config - "+sKey+" = "+sVal);
 			}
-			System.out.println();
-			
-			System.out.println("1. delete.sample_user_attrs:"+m.delete("crud.sample_userattrs", new JSONObject()));
-			System.out.println("2. delete.sample_userroles:"+m.delete("crud.sample_userroles", new JSONObject()));
-			System.out.println("3. delete.sample_users:"+m.delete("crud.sample_users", new JSONObject()));
-			System.out.println("4. delete.sample_roles:"+m.delete("crud.sample_roles", new JSONObject()));
 
 			System.out.println();
-			JSONObject jsonRole = new JSONObject();
-			jsonRole.put("rolename", "dev");
-			jsonRole.put("roledesc", "java developer");
-			jsonRole = m.create("crud.sample_roles", jsonRole);
-			System.out.println("5. create.sample_roles:"+jsonRole);
+			System.out.println("0. clean up data");
+			System.out.print("	0.1 delete.jsoncrud_cfg_values:");
+			JSONArray jArr = m.delete("crud.jsoncrud_cfg_values", new JSONObject());
+			if(jArr==null) jArr = new JSONArray();
+			System.out.println(jArr.length());
 			
-			jsonRole = new JSONObject();
-			jsonRole.put("rolename", "admin");
-			jsonRole.put("roledesc", "administrator");
-			jsonRole = m.create("crud.sample_roles", jsonRole);
-			System.out.println("6. create.sample_roles:"+jsonRole);
-			
-			JSONObject jsonUser = new JSONObject();
-			jsonUser.put("uid", "huilam_ong");
-			jsonUser.put("displayname", "Hui Lam %%|");
-			jsonUser.put("gender", "M");
-			jsonUser.put("enabled", true);
-			jsonUser.put("age", 100);
-			
-			JSONObject jsonUserAttrs = new JSONObject();
-			jsonUserAttrs.put("race","human being");
-			jsonUserAttrs.put("height","1cm");
-			jsonUser.put("attrs", jsonUserAttrs);
-			
-			jsonUser = m.create("crud.sample_users", jsonUser);
-			System.out.println("7. create.sample_users:"+jsonUser);
-	
-			JSONObject jsonWhere = new JSONObject();
-			jsonWhere.put("uid", "huilam_ong");
-			jsonUser = new JSONObject();
-			jsonUser.put("displayname", "|HL%_");
-			jsonUser.put("age", 999);
-			
-			jsonUserAttrs = new JSONObject();
-			jsonUserAttrs.put("height","1cm");
-			jsonUserAttrs.put("company","nls");
-			jsonUser.put("attrs", jsonUserAttrs);
-			
-			JSONArray jArr = m.update("crud.sample_users", jsonUser, jsonWhere);
-			for(int i=0; i<jArr.length(); i++)
-			{
-				System.out.println("8. update.sample_users:"+jArr.get(i));
-			}
-			
-			jsonUser = new JSONObject();
-			jsonUser.put("uid", "huilam_ong");
-			jsonUser = m.retrieveFirst("crud.sample_users", jsonUser);
+			System.out.print("	0.2 delete.jsoncrud_cfg:");
+			jArr = m.delete("crud.jsoncrud_cfg", new JSONObject());
+			if(jArr==null) jArr = new JSONArray();
+			System.out.println(jArr.length());
 			//
-			jsonRole = new JSONObject();
-			jsonRole.put("rolename", "admin");
-			jsonRole = m.retrieveFirst("crud.sample_roles", jsonRole);
+			test.test1_CRUD(m);
 			//
-			JSONObject jsonUserRoles = new JSONObject();
-			jsonUserRoles.put("userid", jsonUser.get("id"));
-			jsonUserRoles.put("roleid", jsonRole.get("id"));
-			jsonUserRoles = m.create("crud.sample_userroles", jsonUserRoles);
-			System.out.println("9. create.sample_userroles:"+jsonUserRoles);
-			
-			jsonRole = new JSONObject();
-			jsonRole.put("rolename", "dev");
-			jsonRole = m.retrieveFirst("crud.sample_roles", jsonRole);
-			
-			jsonUserRoles = new JSONObject();
-			jsonUserRoles.put("userid", jsonUser.get("id"));
-			jsonUserRoles.put("roleid", jsonRole.get("id"));
-			jsonUserRoles = m.create("crud.sample_userroles", jsonUserRoles);
-			System.out.println("10. create.sample_userroles:"+jsonUserRoles);
+			test.test2_SchemaValidation(m);
 			//
-			
-			jArr = m.retrieve("crud.sample_users", jsonUser);
-			for(int i=0; i<jArr.length(); i++)
-			{
-				System.out.println("11. retrieve.sample_users:"+jArr.get(i));
-			}
-			
-			/////////// Test Rollback
-			try {
-				jsonUser = new JSONObject();
-				jsonUser.put("uid", "rollback_uid");
-				jsonUser.put("displayname", "Rollback User Name");
-				jsonUser.put("gender", "M");
-				jsonUser.put("enabled", true);
-				jsonUser.put("age", 1);
-				
-				jsonUserAttrs = new JSONObject();
-				jsonUserAttrs.put("1234567890123456789012345678901234567890123456789012345678901234567890","");
-				jsonUser.put("attrs", jsonUserAttrs);
-			
-				jsonUser = m.create("crud.sample_users", jsonUser);
-			}catch(Exception ex) {
-			}
-			
-			jsonUser = new JSONObject(); 
-			jsonUser.put("uid", "rollback_uid");
-			jsonUser = m.retrieveFirst("crud.sample_users", jsonUser);
-			System.out.println("12. rollback.create.sample_users (should be null):"+jsonUser);
-			//////////////////////////			
-			// Range filter test
-			
-			for(int i=0; i<20; i++)
-			{
-				jsonUser = new JSONObject();
-				jsonUser.put("uid", "uid_"+i);
-				jsonUser.put("displayname", "name_"+random.nextInt(1000));
-				jsonUser.put("age", 1+random.nextInt(100));
-				jsonUser = m.create("crud.sample_users", jsonUser);
-			}
-			
-			jsonUser = new JSONObject();
-			jsonUser.put("age.from", 5);
-			jsonUser.put("age.to", 9);
-			jsonUser.put("age.not", 8);
-			jsonUser.put("uid.from", "uid_6");
-			jArr = m.retrieve("crud.sample_users", jsonUser);
-			System.out.println("13. retrieve.sample_users (age>=5 + age<=9 + uid>='uid_6'):"+jArr.length());
-			for(int i=0; i<jArr.length(); i++)
-			{
-				System.out.println("    13."+(i+1)+" - "+jArr.get(i));
-			}
+			test.test3_CustomSQL(m);
+			//
+			test.test4_Sorting_Returns(m);
+			//////////////////////////
 
-			/////
-			jsonUser = new JSONObject();
-			jsonUser.put("displayname.ci.not", "NAME_32");
-			jsonUser.put("uid.startwith.ci", "uiD_");
-			jsonUser.put("uid.endwith", "2");
-			jArr = m.retrieve("crud.sample_users", jsonUser);
-			System.out.println("14. retrieve.sample_users (displayname='*5*' + uid.startwith='uid_' + uin.endwith='2'):"+jArr.length());
-			for(int i=0; i<jArr.length(); i++)
-			{
-				System.out.println("    14."+(i+1)+" - "+jArr.get(i));
-			}
-			
+
 			//////////////////////////
-			JSONObject json = m.retrieve("crud.sample_users", new JSONObject(), 0, 3, new String[] {"id"});
-			System.out.println("15. Pagination");
-			System.out.println("  - "+JsonCrudConfig._LIST_META+" = "+json.get(JsonCrudConfig._LIST_META));
-			
-			JSONArray jarr = json.getJSONArray(JsonCrudConfig._LIST_RESULT);
-			System.out.println("  - "+JsonCrudConfig._LIST_RESULT+" = "+jarr.length());
-			for(int i=0; i<jarr.length(); i++)
-			{
-				System.out.println("       15."+(i+1)+" - "+jarr.getJSONObject(i).toString());
-			}
-			
-			//////////////////////////
-			System.out.println();
-			jsonUser = new JSONObject();
-			String s100 = "1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890";
-			jsonUser.put("id", 1000);
-			jsonUser.put("uid", "");
-			jsonUser.put("enabled", "true");
-			jsonUser.put("name", s100+s100+s100+s100+s100);
-			jsonUser.put("createdTimestamp", "Jul 2017");
-			
-			Map<String, String[]> mapErr = m.validateDataWithSchema("crud.sample_users", jsonUser, true);
-			System.out.println("16. validation errors = "+mapErr.size());
-			for(String sColName : mapErr.keySet())
-			{
-				String[] sErrors = mapErr.get(sColName);
-				System.out.println("  - '"+sColName+"' : ");
-				int i = 1;
-				for(String sErr : sErrors)
-				{
-					System.out.println("        "+(i++)+". "+sErr);
-				}
-			}
-			
-			//////////////////////////
-			json = m.retrieve("crud.sample_users", 
-					" SELECT u.*, count(a.attrkey) as totalAttrs "+
-					" FROM jsoncrud_sample_users u, jsoncrud_sample_user_attrs a "+
-					" WHERE a.user_id = u.id GROUP BY u.id", 
-					null, 0 ,3);
-			System.out.println("17. Custom SQL");
-			System.out.println("  - "+JsonCrudConfig._LIST_META+" = "+json.get(JsonCrudConfig._LIST_META));
-			
-			jarr = json.getJSONArray(JsonCrudConfig._LIST_RESULT);
-			System.out.println("  - "+JsonCrudConfig._LIST_RESULT+" = "+jarr.length());
-			for(int i=0; i<jarr.length(); i++)
-			{
-				System.out.println("       17."+(i+1)+" - "+jarr.getJSONObject(i).toString());
-			}
-			
-			json = m.retrieve("crud.sample_users", 
-					" select nextval('jsoncrud_sample_users_id_seq') ", 
-					null, 0 ,0);
-			System.out.println("18. Get Current Sequence with SQL");
-			System.out.println("  - "+JsonCrudConfig._LIST_META+" = "+json.get(JsonCrudConfig._LIST_META));
-			
-			jarr = json.getJSONArray(JsonCrudConfig._LIST_RESULT);
-			System.out.println("  - "+JsonCrudConfig._LIST_RESULT+" = "+jarr.length());
-			for(int i=0; i<jarr.length(); i++)
-			{
-				System.out.println("       18."+(i+1)+" - "+jarr.getJSONObject(i).toString());
-			}
-			
-			//////////////////////////
-			jsonUser = new JSONObject();
-			String sOrderBys[] = new String[] {"displayname.desc", "enabled", "age.asc"};
-			System.out.println("19. order seq {displayname.desc, enabled, age.asc}");
-			
-			json = m.retrieve("crud.sample_users", jsonUser, 1, 10, sOrderBys);
-			jArr = json.getJSONArray(JsonCrudConfig._LIST_RESULT);
-			for(int i=0; i<jArr.length(); i++)
-			{
-				System.out.println("    19."+(i+1)+" - "+jArr.get(i));
-			}
-			
-			
-			System.out.println("20. Filter by _ %");
-			jsonUser = new JSONObject();
-			jsonUser.put("displayname.endwith", "_");
-			jsonUser.put("displayname.contain", "%");
-			jArr = m.retrieve("crud.sample_users", jsonUser);
-			for(int i=0; i<jArr.length(); i++)
-			{
-				System.out.println("    20."+(i+1)+" - "+jArr.get(i));
-			}
-			
-			
-			sOrderBys = new String[] {"xxx"};
-			System.out.println("21. invalid sorting field");
-			try {				
-				json = m.retrieve("crud.sample_users", jsonUser, 1, 10, sOrderBys);
-			}catch(JsonCrudException ex)
-			{
-				System.out.println("   ErrorCode:"+ex.getErrorCode()+"  ErrMsg:"+ex.getErrorMsg());
-			}
-			
-			jsonUser.put("xxx", "");
-			System.out.println("22. invalid sorting field");
-			try {	
-				jArr = m.retrieve("crud.sample_users", jsonUser);
-			}catch(JsonCrudException ex)
-			{
-				System.out.println("   ErrorCode:"+ex.getErrorCode()+"  ErrMsg:"+ex.getErrorMsg());
-			}
+
 			
 			
 		}

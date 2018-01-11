@@ -229,7 +229,7 @@ public class CRUDMgr {
 		if(map==null || map.size()==0)
 			throw new JsonCrudException(JsonCrudConfig.ERRCODE_JSONCRUDCFG, "Invalid crud configuration key ! - "+aCrudKey);
 		
-		aDataJson = castJson2DBVal(aCrudKey, aDataJson);
+		JSONObject jsonData = castJson2DBVal(aCrudKey, aDataJson);
 		
 		StringBuffer sbColName 	= new StringBuffer();
 		StringBuffer sbParams 	= new StringBuffer();
@@ -244,25 +244,30 @@ public class CRUDMgr {
 		//boolean isDebug		= "true".equalsIgnoreCase(map.get(JsonCrudConfig._PROP_KEY_DEBUG)); 
 		
 		Map<String, String> mapCrudJsonCol = mapJson2ColName.get(aCrudKey);
-		for(String sJsonName : aDataJson.keySet())
+		for(String sJsonName : jsonData.keySet())
 		{
 			String sColName = mapCrudJsonCol.get(sJsonName);
 			if(sColName!=null)
 			{
-				//
-				if(sbColName.length()>0)
+				Object o = jsonData.get(sJsonName);
+				if(o!=null  && o!=JSONObject.NULL)
 				{
-					sbColName.append(",");
-					sbParams.append(",");
+					listValues.add(o);
+					//
+					if(sbColName.length()>0)
+					{
+						sbColName.append(",");
+						sbParams.append(",");
+					}
+					sbColName.append(sColName);
+					sbParams.append("?");
+					//
+	
+					//
+					sbRollbackParentSQL.append(" AND ").append(sColName).append(" = ? ");
+					//
 				}
-				sbColName.append(sColName);
-				sbParams.append("?");
-				//
-
-				//
-				sbRollbackParentSQL.append(" AND ").append(sColName).append(" = ? ");
-				//
-				listValues.add(aDataJson.get(sJsonName));
+				
 			}
 			else
 			{
@@ -295,22 +300,22 @@ public class CRUDMgr {
 				String sMappedKey = mapCrudCol2Json.get(sColName);
 				if(sMappedKey==null)
 					sMappedKey = sColName;
-				aDataJson.put(sMappedKey, jsonCreated.get(sColName));
+				jsonData.put(sMappedKey, jsonCreated.get(sColName));
 			}
 			
 			//child create
 			if(listUnmatchedJsonName.size()>0)
 			{
-				JSONArray jsonArrReturn = retrieve(aCrudKey, aDataJson);
+				JSONArray jsonArrReturn = retrieve(aCrudKey, jsonData);
 				
 				for(int i=0 ; i<jsonArrReturn.length(); i++  )
 				{
 					JSONObject jsonReturn = jsonArrReturn.getJSONObject(i);
 							
 					//merging json obj
-					for(String sDataJsonKey : aDataJson.keySet())
+					for(String sDataJsonKey : jsonData.keySet())
 					{
-						jsonReturn.put(sDataJsonKey, aDataJson.get(sDataJsonKey));
+						jsonReturn.put(sDataJsonKey, jsonData.get(sDataJsonKey));
 					}
 					
 					for(String sJsonName2 : listUnmatchedJsonName)
@@ -347,7 +352,7 @@ public class CRUDMgr {
 				}
 			}			
 			
-			JSONArray jsonArray = retrieve(aCrudKey, aDataJson);
+			JSONArray jsonArray = retrieve(aCrudKey, jsonData);
 			if(jsonArray==null || jsonArray.length()==0)
 				return null;
 			else
@@ -536,7 +541,11 @@ public class CRUDMgr {
 											jsonOnbj.put(sJsonName, o);											
 										}
 									}
-									
+									else
+									{
+										if(o==null)
+											jsonOnbj.put(sJsonName, JSONObject.NULL);	
+									}
 								}						
 							}
 						}
@@ -584,7 +593,6 @@ public class CRUDMgr {
 				throw new JsonCrudException(JsonCrudConfig.ERRCODE_SQLEXCEPTION, e);
 			}
 		}
-		
 		return jsonReturn;		
 	}
 	
@@ -601,12 +609,15 @@ public class CRUDMgr {
 			stmt2 = conn2.prepareStatement(aSQL);
 			stmt2 = JdbcDBMgr.setParams(stmt2, aObjParamList);
 			rs2   = stmt2.executeQuery();
-			int iTotalCols = rs2.getMetaData().getColumnCount();
+			ResultSetMetaData meta = rs2.getMetaData();
+			int iTotalCols = meta.getColumnCount();
 			
+			/*
 			if(iTotalCols<1 || iTotalCols>2)
 			{
 				throw new SQLException("Only 1 or 2 return columns from subquery are supported !");				
 			}
+			*/
 			
 			while(rs2.next())
 			{
@@ -620,10 +631,24 @@ public class CRUDMgr {
 				{
 					//{"key1":"val1", "key2":"val2"}
 					Object o = rs2.getObject(2);
-					if(o!=null)
+					if(o==null)
+						o = JSONObject.NULL;		
+					json2.put(s, o);
+					
+				}
+				else
+				{
+					for(int i=1; i<=iTotalCols; i++)
 					{
-						json2.put(s, o);
+						String sColName = meta.getColumnLabel(i+1);
+						Object o = rs2.getObject(i);
+						if(o==null)
+						{
+							o = JSONObject.NULL;
+						}
+						json2.put(sColName, o);
 					}
+					jsonArr2.put(json2);
 				}
 			}
 			
@@ -647,9 +672,9 @@ public class CRUDMgr {
 	public JSONObject retrieve(String aCrudKey, JSONObject aWhereJson, 
 			long aStartFrom, long aFetchSize, String[] aSorting, String[] aReturns) throws JsonCrudException
 	{
-		aWhereJson = castJson2DBVal(aCrudKey, aWhereJson);
-		if(aWhereJson==null)
-			aWhereJson = new JSONObject();
+		JSONObject jsonWhere = castJson2DBVal(aCrudKey, aWhereJson);
+		if(jsonWhere==null)
+			jsonWhere = new JSONObject();
 		
 		Map<String, String> map = jsoncrudConfig.getConfig(aCrudKey);
 		if(map==null || map.size()==0)
@@ -662,13 +687,13 @@ public class CRUDMgr {
 
 		// WHERE
 		StringBuffer sbWhere 	= new StringBuffer();
-		for(String sOrgJsonName : aWhereJson.keySet())
+		for(String sOrgJsonName : jsonWhere.keySet())
 		{
 			boolean isCaseInSensitive 	= false;
 			boolean isNotCondition		= false;
 			String sOperator 	= " = ";
 			String sJsonName 	= sOrgJsonName;
-			Object oJsonValue 	= aWhereJson.get(sOrgJsonName);
+			Object oJsonValue 	= jsonWhere.get(sOrgJsonName);
 			
 			if(sJsonName.indexOf(".")>-1)
 			{
@@ -733,6 +758,12 @@ public class CRUDMgr {
 			{
 				sbWhere.append(" AND ");
 				
+				if(oJsonValue==null || oJsonValue==JSONObject.NULL)
+				{
+					sbWhere.append(sColName).append(" IS NULL ");
+					continue;
+				}
+				
 				if(isNotCondition)
 				{
 					sbWhere.append(" NOT (");
@@ -742,7 +773,7 @@ public class CRUDMgr {
 				{
 					sbWhere.append(" UPPER(").append(sColName).append(") ").append(sOperator).append(" UPPER(?) ");
 				}
-				else
+				else 
 				{
 					sbWhere.append(sColName).append(sOperator).append(" ? ");
 				}
@@ -834,7 +865,7 @@ public class CRUDMgr {
 			sbFields.append("*");
 		}
 		
-		String sSQL 			= "SELECT "+sbFields.toString()+" FROM "+sTableName+" WHERE 1=1 "+sbWhere.toString();
+		String sSQL = "SELECT "+sbFields.toString()+" FROM "+sTableName+" WHERE 1=1 "+sbWhere.toString();
 		JSONObject jsonReturn 	= retrieve(
 				aCrudKey, sSQL, 
 				listValues.toArray(new Object[listValues.size()]), 
@@ -885,8 +916,8 @@ public class CRUDMgr {
 		if(map.size()==0)
 			throw new JsonCrudException(JsonCrudConfig.ERRCODE_JSONCRUDCFG, "Invalid crud configuration key ! - "+aCrudKey);
 
-		aDataJson 	= castJson2DBVal(aCrudKey, aDataJson);
-		aWhereJson 	= castJson2DBVal(aCrudKey, aWhereJson);
+		JSONObject jsonData 	= castJson2DBVal(aCrudKey, aDataJson);
+		JSONObject jsonWhere 	= castJson2DBVal(aCrudKey, aWhereJson);
 		
 		List<Object> listValues 			= new ArrayList<Object>();
 		Map<String, String> mapCrudJsonCol 	= mapJson2ColName.get(aCrudKey);
@@ -894,7 +925,7 @@ public class CRUDMgr {
 		List<String> listUnmatchedJsonName	= new ArrayList<String>();
 		//SET
 		StringBuffer sbSets 	= new StringBuffer();
-		for(String sJsonName : aDataJson.keySet())
+		for(String sJsonName : jsonData.keySet())
 		{
 			String sColName = mapCrudJsonCol.get(sJsonName);
 			//
@@ -905,7 +936,7 @@ public class CRUDMgr {
 					sbSets.append(",");
 				sbSets.append(sColName).append(" = ? ");
 				//
-				listValues.add(aDataJson.get(sJsonName));
+				listValues.add(jsonData.get(sJsonName));
 			}
 			else
 			{
@@ -914,18 +945,18 @@ public class CRUDMgr {
 		}
 		// WHERE
 		StringBuffer sbWhere 	= new StringBuffer();
-		for(String sJsonName : aWhereJson.keySet())
+		for(String sJsonName : jsonWhere.keySet())
 		{
 			String sColName = mapCrudJsonCol.get(sJsonName);
 			//
 			if(sColName==null)
 			{
-				throw new JsonCrudException(JsonCrudConfig.ERRCODE_JSONCRUDCFG, "Missing Json to dbcol mapping ("+sJsonName+":"+aWhereJson.get(sJsonName)+") ! - "+aCrudKey);
+				throw new JsonCrudException(JsonCrudConfig.ERRCODE_JSONCRUDCFG, "Missing Json to dbcol mapping ("+sJsonName+":"+jsonWhere.get(sJsonName)+") ! - "+aCrudKey);
 			}
 			
 			sbWhere.append(" AND ").append(sColName).append(" = ? ");
 			//
-			listValues.add(aWhereJson.get(sJsonName));
+			listValues.add(jsonWhere.get(sJsonName));
 		}
 		
 		String sTableName 	= map.get(JsonCrudConfig._PROP_KEY_TABLENAME);
@@ -948,16 +979,16 @@ public class CRUDMgr {
 			{
 				//child update
 				
-				JSONArray jsonArrReturn = retrieve(aCrudKey, aWhereJson);
+				JSONArray jsonArrReturn = retrieve(aCrudKey, jsonWhere);
 				
 				for(int i=0 ; i<jsonArrReturn.length(); i++  )
 				{
 					JSONObject jsonReturn = jsonArrReturn.getJSONObject(i);
 							
 					//merging json obj
-					for(String sDataJsonKey : aDataJson.keySet())
+					for(String sDataJsonKey : jsonData.keySet())
 					{
-						jsonReturn.put(sDataJsonKey, aDataJson.get(sDataJsonKey));
+						jsonReturn.put(sDataJsonKey, jsonData.get(sDataJsonKey));
 					}
 					
 					for(String sJsonName2 : listUnmatchedJsonName)
@@ -977,7 +1008,7 @@ public class CRUDMgr {
 		
 		if(jArrUpdated.length()>0 || lAffectedRow2>0)
 		{
-			JSONArray jsonArray = retrieve(aCrudKey, aWhereJson);
+			JSONArray jsonArray = retrieve(aCrudKey, jsonWhere);
 			return jsonArray;
 		}
 		else
@@ -992,19 +1023,19 @@ public class CRUDMgr {
 		if(map==null || map.size()==0)
 			throw new JsonCrudException(JsonCrudConfig.ERRCODE_JSONCRUDCFG, "Invalid crud configuration key ! - "+aCrudKey);
 		
-		aWhereJson = castJson2DBVal(aCrudKey, aWhereJson);
+		JSONObject jsonWhere = castJson2DBVal(aCrudKey, aWhereJson);
 		
 		List<Object> listValues 		= new ArrayList<Object>();
 		Map<String, String> mapCrudJsonCol = mapJson2ColName.get(aCrudKey);
 		
 		StringBuffer sbWhere 	= new StringBuffer();
-		for(String sJsonName : aWhereJson.keySet())
+		for(String sJsonName : jsonWhere.keySet())
 		{
 			String sColName = mapCrudJsonCol.get(sJsonName);
 			//
 			sbWhere.append(" AND ").append(sColName).append(" = ? ");
 			//
-			listValues.add(aWhereJson.get(sJsonName));
+			listValues.add(jsonWhere.get(sJsonName));
 		}
 		
 		String sTableName 	= map.get(JsonCrudConfig._PROP_KEY_TABLENAME);
@@ -1016,7 +1047,7 @@ public class CRUDMgr {
 		
 		JSONArray jsonArray = null;
 		
-		jsonArray = retrieve(aCrudKey, aWhereJson);
+		jsonArray = retrieve(aCrudKey, jsonWhere);
 		
 		if(jsonArray.length()>0)
 		{
@@ -1338,14 +1369,15 @@ public class CRUDMgr {
 	}
 	
 	
-	public JSONObject castJson2DBVal(String aCrudKey, JSONObject jsonObj)
+	public JSONObject castJson2DBVal(String aCrudKey, JSONObject aDataObj)
 	{
-		if(jsonObj==null)
+		if(aDataObj==null)
 			return null;
 		
-		for(String sKey : jsonObj.keySet())
+		JSONObject jsonObj = new JSONObject();
+		for(String sKey : aDataObj.keySet())
 		{
-			Object o = jsonObj.get(sKey);
+			Object o = aDataObj.get(sKey);
 			o = castJson2DBVal(aCrudKey, sKey, o);
 			jsonObj.put(sKey, o);
 		}
