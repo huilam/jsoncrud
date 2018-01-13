@@ -43,9 +43,17 @@ public class CRUDMgrTest {
 		System.out.println("1. CRUD");
 		jsonData = new JSONObject();
 		jsonData.put("appNamespace", "jsoncrud-framework");
-		jsonData.put("moduleCode", "unit-test");
+		jsonData.put("moduleCode", "unit-test-1");
 		jsonData.put("enabled", false);
+		//
+		JSONObject jsonDataChild = new JSONObject();
+		jsonDataChild.put("key", "testkey000_");
+		jsonDataChild.put("value", "testvalue000_");
+		jsonData.put("values", jsonDataChild);
+		//
+		System.out.println("	1.1  Insert parent with child");
 		jsonResult = m.create("crud.jsoncrud_cfg", jsonData);
+		System.out.println("		- "+jsonResult);
 		//
 		long id = jsonResult.getLong("cfgId");
 		jsonData = new JSONObject();
@@ -54,45 +62,50 @@ public class CRUDMgrTest {
 		jsonData.put("value", "testvalue001_");
 		jsonData.put("enabled", true);
 		jsonData.put("displaySeq", 1);
-		m.create("crud.jsoncrud_cfg_values", jsonData);
+		System.out.println("	1.2  create childs");
+		jsonResult = m.create("crud.jsoncrud_cfg_values", jsonData);
+		System.out.println(" 		- "+jsonResult);
 		//
 		jsonData.put("key", "testkey02_");
 		jsonData.put("value", "testvalue|%002_");
 		jsonData.put("displaySeq", 200);
-		m.create("crud.jsoncrud_cfg_values", jsonData);
+		jsonResult = m.create("crud.jsoncrud_cfg_values", jsonData);
+		System.out.println(" 		- "+jsonResult);
 		//
 		jsonData.put("key", "testkey03_");
 		jsonData.put("value", "testvalue003");
 		jsonData.put("displaySeq", 30);
-		m.create("crud.jsoncrud_cfg_values", jsonData);
+		jsonResult = m.create("crud.jsoncrud_cfg_values", jsonData);
+		System.out.println(" 		- "+jsonResult);
 		//
 		jsonData.put("key", "testkey04_");
 		jsonData.put("value", JSONObject.NULL);
 		jsonData.put("displaySeq", 7);
-		m.create("crud.jsoncrud_cfg_values", jsonData);
+		jsonResult = m.create("crud.jsoncrud_cfg_values", jsonData);
+		System.out.println(" 		- "+jsonResult);
 		//
 		jsonData.put("key", "testkey05_");
 		jsonData.put("value", "testvalue005");
 		jsonData.put("enabled", false);
-		m.create("crud.jsoncrud_cfg_values", jsonData);
+		jsonResult = m.create("crud.jsoncrud_cfg_values", jsonData);
+		System.out.println(" 		- "+jsonResult);
 		//		
-		System.out.println("	1.1 C:"+jsonResult);
 
 		jsonWhere = new JSONObject();
 		jsonWhere.put("cfgId", id);
 		jsonArrResult = m.retrieve("crud.jsoncrud_cfg", jsonWhere);
-		System.out.println("	1.2 R:"+jsonArrResult);
+		System.out.println("	1.3 R:"+jsonArrResult);
 
 		jsonData = new JSONObject();
 		jsonData.put("enabled", true);
 		jsonArrResult = m.update("crud.jsoncrud_cfg", jsonData, jsonWhere);
-		System.out.println("	1.3 U:"+jsonArrResult);
+		System.out.println("	1.4 U:"+jsonArrResult);
 		
 		jsonWhere = new JSONObject();
 		jsonWhere.put("cfgId", id);
 		jsonWhere.put("enabled", false);
 		jsonArrResult = m.delete("crud.jsoncrud_cfg_values", jsonWhere);
-		System.out.println("	1.4 D:"+jsonArrResult);
+		System.out.println("	1.5 D:"+jsonArrResult);
 	}
 	
 	private void test2_SchemaValidation(CRUDMgr m) throws JsonCrudException
@@ -132,7 +145,8 @@ public class CRUDMgrTest {
 		System.out.println("3. Custom SQL");
 		JSONObject jsonResult = m.retrieve("crud.jsoncrud_cfg", sbSQL.toString(), null, 0, 0);
 		
-		System.out.println("	3.1 Count & Group By "+jsonResult);
+		System.out.println("	3.1 Count & Group By ");
+		System.out.println("		- "+jsonResult);
 		
 	}
 	
@@ -165,11 +179,25 @@ public class CRUDMgrTest {
 		
 	}
 	
+	private void test5_Null(CRUDMgr m) throws JsonCrudException
+	{
+		long id = getCfgId(m);
+		
+		JSONObject jsonData = new JSONObject();
+		jsonData.put("cfgId", id);
+		jsonData.put("key", "testNULL");
+		jsonData.put("value", JSONObject.NULL);
+		
+		System.out.println("5. Insert NULL value");
+		JSONObject jsonResult = m.create("crud.jsoncrud_cfg_values", jsonData);
+		System.out.println("	- "+jsonResult);		
+	}
+
 	private long getCfgId(CRUDMgr m) throws JsonCrudException
 	{
 		JSONObject jsonWhere = new JSONObject();
 		jsonWhere.put("appNamespace", "jsoncrud-framework");
-		jsonWhere.put("moduleCode", "unit-test");
+		jsonWhere.put("moduleCode", "unit-test-1");
 		
 		JSONArray jArrResult = m.retrieve("crud.jsoncrud_cfg", jsonWhere);
 		JSONObject jsonResult = jArrResult.getJSONObject(0);
@@ -211,6 +239,8 @@ public class CRUDMgrTest {
 			test.test3_CustomSQL(m);
 			//
 			test.test4_Sorting_Returns(m);
+			//
+			test.test5_Null(m);
 			//////////////////////////
 
 

@@ -458,7 +458,11 @@ public class CRUDMgr {
 					String sJsonName = mapCrudCol2Json.get(sColName);
 					if(sJsonName==null)
 						sJsonName = sColName;
-					jsonOnbj.put(sJsonName, rs.getObject(sColName));
+					
+					Object oObj = rs.getObject(sColName);
+					if(oObj==null)
+						oObj = JSONObject.NULL;
+					jsonOnbj.put(sJsonName, oObj);
 				}
 				
 				if(mapCrudSql.size()>0)
@@ -541,11 +545,6 @@ public class CRUDMgr {
 											jsonOnbj.put(sJsonName, o);											
 										}
 									}
-									else
-									{
-										if(o==null)
-											jsonOnbj.put(sJsonName, JSONObject.NULL);	
-									}
 								}						
 							}
 						}
@@ -624,8 +623,10 @@ public class CRUDMgr {
 				String s = rs2.getString(1);
 				if(iTotalCols==1)
 				{
-					//["1"]
-					jsonArr2.put(s);
+					if(s==null)
+						jsonArr2.put(JSONObject.NULL);
+					else
+						jsonArr2.put(s);
 				}
 				else if(iTotalCols==2)
 				{
@@ -643,9 +644,7 @@ public class CRUDMgr {
 						String sColName = meta.getColumnLabel(i+1);
 						Object o = rs2.getObject(i);
 						if(o==null)
-						{
 							o = JSONObject.NULL;
-						}
 						json2.put(sColName, o);
 					}
 					jsonArr2.put(json2);
