@@ -187,10 +187,55 @@ public class CRUDMgrTest {
 		jsonData.put("cfgId", id);
 		jsonData.put("key", "testNULL");
 		jsonData.put("value", JSONObject.NULL);
-		
-		System.out.println("5. Insert NULL value");
+
+		System.out.println();	
+		System.out.println("5. Test NULL value");
+		System.out.println("	5.1 Insert NULL value");
 		JSONObject jsonResult = m.create("crud.jsoncrud_cfg_values", jsonData);
-		System.out.println("	- "+jsonResult);		
+		System.out.println("		- "+jsonResult);
+		//////
+		JSONObject jsonWhere = new JSONObject();
+		jsonWhere.put("cfgId", id);
+		jsonWhere.put("key", "testNULL");
+		jsonData.put("value", JSONObject.NULL);
+		
+		jsonData = new JSONObject();
+		jsonData.put("value", JSONObject.NULL);
+		
+		System.out.println("	5.2 Update NULL value to NULL value");
+		JSONArray jArrResult = m.update("crud.jsoncrud_cfg_values", jsonData, jsonWhere);
+		if(jArrResult==null)
+			jArrResult = new JSONArray();
+		for(int i=0; i<jArrResult.length(); i++)
+		{
+			System.out.println("		- "+jArrResult.getJSONObject(i));
+		}		
+		//////
+		jsonWhere = new JSONObject();
+		jsonWhere.put("cfgId", id);
+		jsonWhere.put("key", "testNULL");
+		jsonWhere.put("value", JSONObject.NULL);
+		System.out.println("	5.3 Delete NULL value");
+		jArrResult = m.delete("crud.jsoncrud_cfg_values", jsonWhere);
+		if(jArrResult==null)
+			jArrResult = new JSONArray();
+		for(int i=0; i<jArrResult.length(); i++)
+		{
+			System.out.println("		- "+jArrResult.getJSONObject(i));
+		}		
+		//////
+		jsonWhere = new JSONObject();
+		jsonWhere.put("value", JSONObject.NULL);
+		System.out.println("	5.4 Retrieve NULL value");
+		jArrResult = m.retrieve("crud.jsoncrud_cfg_values", jsonWhere);
+		if(jArrResult==null)
+			jArrResult = new JSONArray();
+		for(int i=0; i<jArrResult.length(); i++)
+		{
+			System.out.println("		- "+jArrResult.getJSONObject(i));
+		}
+
+		//////		
 	}
 
 	private long getCfgId(CRUDMgr m) throws JsonCrudException

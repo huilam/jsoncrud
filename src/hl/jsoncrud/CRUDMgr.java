@@ -80,7 +80,7 @@ public class CRUDMgr {
 	{
 		JSONObject jsonVer = new JSONObject();
 		jsonVer.put("framework", "jsoncrud");
-		jsonVer.put("version", "0.3.2 beta");
+		jsonVer.put("version", "0.3.4 beta");
 		return jsonVer;
 	}
 	
@@ -1030,11 +1030,19 @@ public class CRUDMgr {
 		StringBuffer sbWhere 	= new StringBuffer();
 		for(String sJsonName : jsonWhere.keySet())
 		{
+			Object o = jsonWhere.get(sJsonName);
 			String sColName = mapCrudJsonCol.get(sJsonName);
+			
+			if(o==null || o==JSONObject.NULL)
+			{
+				sbWhere.append(" AND ").append(sColName).append(" IS NULL ");
+			}
+			else
+			{
+				sbWhere.append(" AND ").append(sColName).append(" = ? ");
+				listValues.add(o);
+			}
 			//
-			sbWhere.append(" AND ").append(sColName).append(" = ? ");
-			//
-			listValues.add(jsonWhere.get(sJsonName));
 		}
 		
 		String sTableName 	= map.get(JsonCrudConfig._PROP_KEY_TABLENAME);
@@ -1386,6 +1394,9 @@ public class CRUDMgr {
 	
 	public Object castJson2DBVal(String aCrudKey, String aJsonName, Object aVal)
 	{
+		if(aVal == null)
+			return JSONObject.NULL;
+		
 		if(!(aVal instanceof String))
 			return aVal;
 		

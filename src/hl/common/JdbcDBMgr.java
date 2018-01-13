@@ -247,7 +247,12 @@ public class JdbcDBMgr {
 				Object param = aParams[i];
 				
 				String sParamClassName = param.getClass().getSimpleName();
-				if(String.class.getSimpleName().equals(sParamClassName))
+				
+				if(param == null || param == JSONObject.NULL)
+				{
+					aStatement.setObject(i+1, null);
+				}
+				else if(String.class.getSimpleName().equals(sParamClassName))
 				{
 					aStatement.setString(i+1, param.toString());
 				}
@@ -271,6 +276,7 @@ public class JdbcDBMgr {
 				{
 					aStatement.setBoolean(i+1, Boolean.parseBoolean(param.toString()));
 				}
+				
 			}
 		}		
 		return aStatement;
