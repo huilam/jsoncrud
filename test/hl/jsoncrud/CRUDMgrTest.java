@@ -43,6 +43,15 @@ public class CRUDMgrTest {
 		System.out.println("1. CRUD");
 		jsonData = new JSONObject();
 		jsonData.put("appNamespace", "jsoncrud-framework");
+		jsonData.put("moduleCode", "unit-test-0");
+		jsonData.put("enabled", true);
+		//
+		System.out.println("	1.1  Insert parent NO child");
+		jsonResult = m.create("crud.jsoncrud_cfg", jsonData);
+		System.out.println("		- "+jsonResult);		
+		/////
+		jsonData = new JSONObject();
+		jsonData.put("appNamespace", "jsoncrud-framework");
 		jsonData.put("moduleCode", "unit-test-1");
 		jsonData.put("enabled", false);
 		//
@@ -51,7 +60,7 @@ public class CRUDMgrTest {
 		jsonDataChild.put("value", "testvalue000_");
 		jsonData.put("values", jsonDataChild);
 		//
-		System.out.println("	1.1  Insert parent with child");
+		System.out.println("	1.2  Insert parent WITH child");
 		jsonResult = m.create("crud.jsoncrud_cfg", jsonData);
 		System.out.println("		- "+jsonResult);
 		//
@@ -62,7 +71,7 @@ public class CRUDMgrTest {
 		jsonData.put("value", "testvalue001_");
 		jsonData.put("enabled", true);
 		jsonData.put("displaySeq", 1);
-		System.out.println("	1.2  create childs");
+		System.out.println("	1.3  create childs");
 		jsonResult = m.create("crud.jsoncrud_cfg_values", jsonData);
 		System.out.println(" 		- "+jsonResult);
 		//
@@ -94,18 +103,18 @@ public class CRUDMgrTest {
 		jsonWhere = new JSONObject();
 		jsonWhere.put("cfgId", id);
 		jsonArrResult = m.retrieve("crud.jsoncrud_cfg", jsonWhere);
-		System.out.println("	1.3 R:"+jsonArrResult);
+		System.out.println("	1.4 R:"+jsonArrResult);
 
 		jsonData = new JSONObject();
 		jsonData.put("enabled", true);
 		jsonArrResult = m.update("crud.jsoncrud_cfg", jsonData, jsonWhere);
-		System.out.println("	1.4 U:"+jsonArrResult);
+		System.out.println("	1.5 U:"+jsonArrResult);
 		
 		jsonWhere = new JSONObject();
 		jsonWhere.put("cfgId", id);
 		jsonWhere.put("enabled", false);
 		jsonArrResult = m.delete("crud.jsoncrud_cfg_values", jsonWhere);
-		System.out.println("	1.5 D:"+jsonArrResult);
+		System.out.println("	1.6 D:"+jsonArrResult);
 	}
 	
 	private void test2_SchemaValidation(CRUDMgr m) throws JsonCrudException
@@ -235,7 +244,26 @@ public class CRUDMgrTest {
 			System.out.println("		- "+jArrResult.getJSONObject(i));
 		}
 
-		//////		
+		//////
+		System.out.println("	5.5 Retrieve NULL SQL result ");
+		String sSQL = "select cfg_key, cfg_value from jsoncrud_cfg_values where cfg_key = ?";
+		jsonResult = m.retrieve("crud.jsoncrud_cfg_values", 
+				sSQL, new Object[] {"not-suchrec-!#@#%!$#'"}, 0 ,0);
+		System.out.println("		- "+jsonResult);
+		
+		//////
+		
+		jsonWhere = new JSONObject();
+		jsonWhere.put("appNamespace", "jsoncrud-framework");
+		jsonWhere.put("moduleCode", "unit-test-0");		
+		System.out.println("	5.6 Retrieve record with NO sql mapping (values) result");
+		jArrResult = m.retrieve("crud.jsoncrud_cfg", jsonWhere);
+		if(jArrResult==null)
+			jArrResult = new JSONArray();
+		for(int i=0; i<jArrResult.length(); i++)
+		{
+			System.out.println("		- "+jArrResult.getJSONObject(i));
+		}
 	}
 
 	private long getCfgId(CRUDMgr m) throws JsonCrudException

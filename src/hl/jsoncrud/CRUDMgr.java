@@ -80,7 +80,7 @@ public class CRUDMgr {
 	{
 		JSONObject jsonVer = new JSONObject();
 		jsonVer.put("framework", "jsoncrud");
-		jsonVer.put("version", "0.3.4 beta");
+		jsonVer.put("version", "0.3.5 beta");
 		return jsonVer;
 	}
 	
@@ -498,52 +498,32 @@ public class CRUDMgr {
 								
 								JSONArray jsonArrayChild = retrieveChild(dbmgr, sSQL2, listParams2);
 								
-								if(jsonArrayChild!=null && jsonArrayChild.length()>0)
+								if(jsonArrayChild!=null)
 								{
 									String sChildFormat = map.get(
 											"jsonattr."+sJsonName+"."+JsonCrudConfig._PROP_KEY_FORMAT);
 									
-									Object o 	= jsonArrayChild.get(0);
-									if(o!=null && !isEmptyJson(o.toString()))
+									JSONObject jsonObj0 = new JSONObject();
+									if(jsonArrayChild.length()>0)
 									{
-										if(sChildFormat!=null)
+										jsonObj0 = jsonArrayChild.getJSONObject(0);
+									}
+									///
+									if(sChildFormat!=null)
+									{
+										if(sChildFormat.trim().equals("[]"))
 										{
-											if(sChildFormat.trim().equals("[]"))
-											{
-												jsonOnbj.put(sJsonName, jsonArrayChild);
-											}
-											else if(sChildFormat.trim().equals("{}"))
-											{
-												jsonOnbj.put(sJsonName, jsonArrayChild.getJSONObject(0));
-											}
+											jsonOnbj.put(sJsonName, jsonArrayChild);
 										}
-										else
+										else if(sChildFormat.trim().equals("{}"))
 										{
-											/*
-											if(o instanceof JSONArray)
-											{
-												JSONArray jsonArrO 	= (JSONArray) o;
-												String sJsonArray 	= jsonArrO.toString();
-												if(sJsonArray.length()>2)
-												{
-													o = sJsonArray.substring(1, sJsonArray.length()-2);
-												}
-												else o = "";
-											}
 											
-											if(o instanceof JSONObject)
-											{
-												JSONObject jsonO = (JSONObject) o;
-												String sJsonObj = jsonO.toString();
-												if(sJsonObj.length()>2)
-												{
-													o = sJsonObj.substring(1, sJsonObj.length()-2);
-												}
-												else o = "";
-											}
-											 */
-											jsonOnbj.put(sJsonName, o);											
+											jsonOnbj.put(sJsonName, jsonObj0);
 										}
+									}
+									else
+									{
+										jsonOnbj.put(sJsonName, jsonObj0);											
 									}
 								}						
 							}
@@ -600,17 +580,21 @@ public class CRUDMgr {
 		Connection conn2 	= null;
 		PreparedStatement stmt2	= null;
 		ResultSet rs2 = null;
+		int iTotalCols = 0;
 		
-		JSONArray jsonArr2 	= new JSONArray();
+		JSONArray jsonArr2 	= null;
 		JSONObject json2 	= new JSONObject();
 		try{
 			conn2 = aJdbcMgr.getConnection();
 			stmt2 = conn2.prepareStatement(aSQL);
 			stmt2 = JdbcDBMgr.setParams(stmt2, aObjParamList);
 			rs2   = stmt2.executeQuery();
-			ResultSetMetaData meta = rs2.getMetaData();
-			int iTotalCols = meta.getColumnCount();
 			
+			///
+			ResultSetMetaData meta = rs2.getMetaData();
+			iTotalCols = meta.getColumnCount();
+			if(iTotalCols>0)
+				jsonArr2 = new JSONArray();
 			/*
 			if(iTotalCols<1 || iTotalCols>2)
 			{
@@ -620,35 +604,29 @@ public class CRUDMgr {
 			
 			while(rs2.next())
 			{
-				String s = rs2.getString(1);
-				if(iTotalCols==1)
+				switch(iTotalCols)
 				{
-					if(s==null)
-						jsonArr2.put(JSONObject.NULL);
-					else
-						jsonArr2.put(s);
-				}
-				else if(iTotalCols==2)
-				{
-					//{"key1":"val1", "key2":"val2"}
-					Object o = rs2.getObject(2);
-					if(o==null)
-						o = JSONObject.NULL;		
-					json2.put(s, o);
-					
-				}
-				else
-				{
-					for(int i=1; i<=iTotalCols; i++)
-					{
-						String sColName = meta.getColumnLabel(i+1);
-						Object o = rs2.getObject(i);
-						if(o==null)
-							o = JSONObject.NULL;
-						json2.put(sColName, o);
-					}
-					jsonArr2.put(json2);
-				}
+					case 1:
+						jsonArr2.put(rs2.getString(1));
+						break;
+					case 2:
+						//{"key1":"val1", "key2":"val2"}
+						Object o2 = rs2.getObject(2);
+						if(o2==null)
+							o2 = JSONObject.NULL;		
+						json2.put(rs2.getString(1), o2);
+						break;
+					default :
+						for(int i=1; i<=iTotalCols; i++)
+						{
+							String sColName = meta.getColumnLabel(i+1);
+							Object o = rs2.getObject(i);
+							if(o==null)
+								o = JSONObject.NULL;
+							json2.put(sColName, o);
+						}
+						jsonArr2.put(json2);
+				}				
 			}
 			
 			if(iTotalCols==2)
