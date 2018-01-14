@@ -65,7 +65,7 @@ public class JsonCrudConfig {
 	public static String ERRCODE_INVALID_SORTING	= "invalid_sorting";
 	
 	//
-	public static char SQLLIKE_ESCAPE_CHAR			= '|';
+	public static char[] SQLLIKE_ESCAPE_CHARS		= new char[] {'`','|','#'};
 	//
 	public static String _PROP_KEY_JDBC_CLASSNAME 	= "classname";
 	public static String _PROP_KEY_JDBC_UID 		= "uid";

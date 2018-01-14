@@ -671,6 +671,7 @@ public class CRUDMgr {
 			String sOperator 	= " = ";
 			String sJsonName 	= sOrgJsonName;
 			Object oJsonValue 	= jsonWhere.get(sOrgJsonName);
+			Map<String, String> mapSQLEscape = new HashMap<String, String>();
 			
 			if(sJsonName.indexOf(".")>-1)
 			{
@@ -708,7 +709,18 @@ public class CRUDMgr {
 					}
 					else if(oJsonValue!=null && oJsonValue instanceof String)
 					{
-						String sJsonValue = escapeSqllike(oJsonValue.toString());
+						String sJsonValue = String.valueOf(oJsonValue);
+						
+						if(isRequireSQLEscape(sJsonValue))
+						{
+							String sEscapeChar = getSQLEscapeChar(sJsonValue);
+							mapSQLEscape.put(sOrgJsonName, " ESCAPE '"+sEscapeChar+"' ");
+							
+							for(char c : SQLLIKE_RESERVED_CHARS)
+							{
+								sJsonValue = sJsonValue.replaceAll(String.valueOf(c), sEscapeChar+c);
+							}
+						}
 						
 						if(JSONFILTER_STARTWITH.equals(sJsonOperator))
 						{
@@ -758,7 +770,9 @@ public class CRUDMgr {
 				
 				if(sOperator.equalsIgnoreCase(" like "))
 				{
-					sbWhere.append(" ESCAPE '").append(JsonCrudConfig.SQLLIKE_ESCAPE_CHAR).append("'");
+					String sEscapeSQL = mapSQLEscape.get(sOrgJsonName);
+					if(sEscapeSQL!=null)
+						sbWhere.append(sEscapeSQL);
 				}
 				
 				if(isNotCondition)
@@ -843,6 +857,7 @@ public class CRUDMgr {
 		}
 		
 		String sSQL = "SELECT "+sbFields.toString()+" FROM "+sTableName+" WHERE 1=1 "+sbWhere.toString();
+		
 		JSONObject jsonReturn 	= retrieve(
 				aCrudKey, sSQL, 
 				listValues.toArray(new Object[listValues.size()]), 
@@ -872,19 +887,28 @@ public class CRUDMgr {
 //
 	}	
 	
-	private String escapeSqllike(String aSqlStrValue) 
-	{	
+	private String getSQLEscapeChar(String aSqlStrValue)
+	{
+		for(char ch : JsonCrudConfig.SQLLIKE_ESCAPE_CHARS)
+		{
+			if(aSqlStrValue.indexOf(ch)==-1)
+			{
+				return String.valueOf(ch);
+			}
+		}
+		return null;
+	}
+	
+	private boolean isRequireSQLEscape(String aSqlStrValue) 
+	{
 		for(char cReservedChar : SQLLIKE_RESERVED_CHARS)
 		{
 			if(aSqlStrValue.indexOf(cReservedChar)>-1)
 			{
-				aSqlStrValue = aSqlStrValue.replaceAll(
-						String.valueOf(cReservedChar), 
-						String.valueOf(JsonCrudConfig.SQLLIKE_ESCAPE_CHAR)+cReservedChar);
+				return true;
 			}
 		}
-		
-		return aSqlStrValue;
+		return false;
 	}
 	
 	public JSONArray update(String aCrudKey, JSONObject aDataJson, JSONObject aWhereJson) throws JsonCrudException
