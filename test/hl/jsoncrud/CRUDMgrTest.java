@@ -152,11 +152,13 @@ public class CRUDMgrTest {
 		
 		System.out.println();
 		System.out.println("3. Custom SQL");
-		JSONObject jsonResult = m.retrieve("crud.jsoncrud_cfg", sbSQL.toString(), null, 0, 0);
-		
 		System.out.println("	3.1 Count & Group By ");
+		JSONObject jsonResult = m.retrieve("crud.jsoncrud_cfg", sbSQL.toString(), null, 0, 0);
 		System.out.println("		- "+jsonResult);
 		
+		System.out.println("	3.2 Sequence ");
+		jsonResult = m.retrieve("crud.jsoncrud_cfg", "select nextval(?)", new Object[]{"jsoncrud_cfg_cfg_id_seq"}, 0, 0);
+		System.out.println("		- "+jsonResult);
 	}
 	
 	private void test4_Sorting_Returns(CRUDMgr m) throws JsonCrudException
@@ -334,13 +336,13 @@ public class CRUDMgrTest {
 			//
 			test.test1_CRUD(m);
 			//
-			//test.test2_SchemaValidation(m);
+			test.test2_SchemaValidation(m);
 			//
-			//test.test3_CustomSQL(m);
+			test.test3_CustomSQL(m);
 			//
 			test.test4_Sorting_Returns(m);
 			//
-			//test.test5_Null(m);
+			test.test5_Null(m);
 			//////////////////////////
 
 
