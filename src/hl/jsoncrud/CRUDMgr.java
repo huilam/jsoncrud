@@ -80,7 +80,7 @@ public class CRUDMgr {
 	{
 		JSONObject jsonVer = new JSONObject();
 		jsonVer.put("framework", "jsoncrud");
-		jsonVer.put("version", "0.3.5 beta");
+		jsonVer.put("version", "0.3.6 beta");
 		return jsonVer;
 	}
 	
@@ -493,8 +493,11 @@ public class CRUDMgr {
 							if(sSQL2.indexOf("?")>-1)
 							{
 								if(listParams2.size()==0)
-									throw new JsonCrudException(JsonCrudConfig.ERRCODE_SQLEXCEPTION, 
-											"Insufficient sql paramters - sql:"+mapCrudSql.get(sJsonName)+", params:"+listParamsToString(listParams2));
+								{
+									break;
+									//throw new JsonCrudException(JsonCrudConfig.ERRCODE_SQLEXCEPTION, 
+									//		"Insufficient sql paramters - sql:"+mapCrudSql.get(sJsonName)+", params:"+listParamsToString(listParams2));
+								}
 								
 								JSONArray jsonArrayChild = retrieveChild(dbmgr, sSQL2, listParams2);
 								
