@@ -46,9 +46,11 @@ public class CRUDMgrTest {
 		jsonData.put("moduleCode", "unit-test-0");
 		jsonData.put("enabled", true);
 		//
+		
 		System.out.println("	1.1  Insert parent NO child");
 		jsonResult = m.create("crud.jsoncrud_cfg", jsonData);
 		System.out.println("		- "+jsonResult);		
+		
 		/////
 		jsonData = new JSONObject();
 		jsonData.put("appNamespace", "jsoncrud-framework");
@@ -56,18 +58,17 @@ public class CRUDMgrTest {
 		jsonData.put("enabled", false);
 		//
 		JSONObject jsonDataChild = new JSONObject();
-		jsonDataChild.put("key", "testkey000_");
-		jsonDataChild.put("value", "testvalue000_");
-		jsonData.put("values", jsonDataChild);
+		jsonDataChild.put("testkey000_", "testvalue000_");
+		jsonData.put("kvpair", jsonDataChild);
 		//
 		System.out.println("	1.2  Insert parent WITH child");
 		jsonResult = m.create("crud.jsoncrud_cfg", jsonData);
 		System.out.println("		- "+jsonResult);
-		//
+		
 		long id = jsonResult.getLong("cfgId");
 		jsonData = new JSONObject();
 		jsonData.put("cfgId", id);
-		jsonData.put("key", "testkey01_");
+		jsonData.put("key", "testvalue001_");
 		jsonData.put("value", "testvalue001_");
 		jsonData.put("enabled", true);
 		jsonData.put("displaySeq", 1);
@@ -115,6 +116,7 @@ public class CRUDMgrTest {
 		jsonWhere.put("enabled", false);
 		jsonArrResult = m.delete("crud.jsoncrud_cfg_values", jsonWhere);
 		System.out.println("	1.6 D:"+jsonArrResult);
+		
 	}
 	
 	private void test2_SchemaValidation(CRUDMgr m) throws JsonCrudException

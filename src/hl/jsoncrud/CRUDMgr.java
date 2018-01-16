@@ -80,7 +80,7 @@ public class CRUDMgr {
 	{
 		JSONObject jsonVer = new JSONObject();
 		jsonVer.put("framework", "jsoncrud");
-		jsonVer.put("version", "0.4.0 beta");
+		jsonVer.put("version", "0.4.1 beta");
 		return jsonVer;
 	}
 	
@@ -321,7 +321,7 @@ public class CRUDMgr {
 					for(String sJsonName2 : listUnmatchedJsonName)
 					{
 						List<Object[]> listParams2 	= getSubQueryParams(map, jsonReturn, sJsonName2);
-						String sObjInsertSQL 		= map.get("jsonattr."+sJsonName2+"."+JsonCrudConfig._PROP_KEY_OBJ_SQL);
+						String sObjInsertSQL 		= map.get("jsonattr."+sJsonName2+"."+JsonCrudConfig._PROP_KEY_CHILD_INSERTSQL);
 						
 						long lupdatedRow = 0;
 						
@@ -501,32 +501,73 @@ public class CRUDMgr {
 								
 								JSONArray jsonArrayChild = retrieveChild(dbmgr, sSQL2, listParams2);
 								
-								if(jsonArrayChild!=null)
+								if(jsonArrayChild!=null && jsonArrayChild.length()>0)
 								{
-									String sChildFormat = map.get(
-											"jsonattr."+sJsonName+"."+JsonCrudConfig._PROP_KEY_FORMAT);
+									String sPropKeyMapping = "jsonattr."+sJsonName+"."+JsonCrudConfig._PROP_KEY_CHILD_MAPPING;
+									String sChildMapping = map.get(sPropKeyMapping);
 									
-									JSONObject jsonObj0 = new JSONObject();
-									if(jsonArrayChild.length()>0)
-									{
-										jsonObj0 = jsonArrayChild.getJSONObject(0);
-									}
 									///
-									if(sChildFormat!=null)
+									if(sChildMapping!=null)
 									{
-										if(sChildFormat.trim().equals("[]"))
+										sChildMapping = sChildMapping.trim();
+										
+										if(sChildMapping.startsWith("[") && sChildMapping.endsWith("]"))
 										{
-											jsonOnbj.put(sJsonName, jsonArrayChild);
+											JSONArray jArrMappingData = new JSONArray();
+											JSONArray jArrMapping = new JSONArray(sChildMapping);
+											for(int i=0; i<jsonArrayChild.length(); i++)
+											{		
+												JSONObject jsonData = jsonArrayChild.getJSONObject(i);
+												for(int j=0; j<jArrMapping.length(); j++)
+												{
+													String sKey = jArrMapping.getString(j);
+													if(jsonData.has(sKey))
+													{
+														Object oMappingData = jsonData.get(sKey);
+														jArrMappingData.put(oMappingData);
+													}
+													else
+													{
+														throw new JsonCrudException(JsonCrudConfig.ERRCODE_JSONCRUDCFG, 
+																"Invalid Child Mapping : "+sPropKeyMapping+"="+sChildMapping);
+													}
+												}
+											}
+											jsonOnbj.put(sJsonName, jArrMappingData);
 										}
-										else if(sChildFormat.trim().equals("{}"))
+										else if(sChildMapping.startsWith("{") && sChildMapping.endsWith("}"))
 										{
+											JSONObject jsonMappingData = null;
+											JSONObject jsonChildMapping = new JSONObject(sChildMapping);
+											int iKeys = jsonChildMapping.keySet().size();
+											if(iKeys>0)
+											{
+												jsonMappingData = new JSONObject();
+												for(int i=0; i<jsonArrayChild.length(); i++)
+												{		
+													JSONObject jsonData = jsonArrayChild.getJSONObject(i);
+													for(String sKey : jsonChildMapping.keySet())
+													{
+														String sMapKey = jsonData.getString(sKey);
+														Object oMapVal = jsonData.get(jsonChildMapping.getString(sKey));
+														
+														jsonMappingData.put(sMapKey, oMapVal);
+													}
+												}
+											}
 											
-											jsonOnbj.put(sJsonName, jsonObj0);
-										}
+											if(jsonMappingData!=null)
+											{
+												jsonOnbj.put(sJsonName, jsonMappingData);
+											}
+											else 
+												throw new JsonCrudException(JsonCrudConfig.ERRCODE_JSONCRUDCFG, 
+														"Invalid Child Mapping : "+sPropKeyMapping+"="+sChildMapping);
+										}	
 									}
 									else
 									{
-										jsonOnbj.put(sJsonName, jsonObj0);											
+										jsonOnbj.put(sJsonName, jsonArrayChild);			
 									}
 								}						
 							}
@@ -586,7 +627,7 @@ public class CRUDMgr {
 		int iTotalCols = 0;
 		
 		JSONArray jsonArr2 	= null;
-		JSONObject json2 	= new JSONObject();
+
 		try{
 			conn2 = aJdbcMgr.getConnection();
 			stmt2 = conn2.prepareStatement(aSQL);
@@ -598,43 +639,19 @@ public class CRUDMgr {
 			iTotalCols = meta.getColumnCount();
 			if(iTotalCols>0)
 				jsonArr2 = new JSONArray();
-			/*
-			if(iTotalCols<1 || iTotalCols>2)
-			{
-				throw new SQLException("Only 1 or 2 return columns from subquery are supported !");				
-			}
-			*/
-			
+
 			while(rs2.next())
 			{
-				switch(iTotalCols)
+				JSONObject json2 	= new JSONObject();
+				for(int i=1; i<=iTotalCols; i++)
 				{
-					case 1:
-						jsonArr2.put(rs2.getString(1));
-						break;
-					case 2:
-						//{"key1":"val1", "key2":"val2"}
-						Object o2 = rs2.getObject(2);
-						if(o2==null)
-							o2 = JSONObject.NULL;		
-						json2.put(rs2.getString(1), o2);
-						break;
-					default :
-						for(int i=1; i<=iTotalCols; i++)
-						{
-							String sColName = meta.getColumnLabel(i+1);
-							Object o = rs2.getObject(i);
-							if(o==null)
-								o = JSONObject.NULL;
-							json2.put(sColName, o);
-						}
-						jsonArr2.put(json2);
-				}				
-			}
-			
-			if(iTotalCols==2)
-			{
-				//[{"key1":"val1", "key2":"val2"}]
+					
+					String sColName = meta.getColumnLabel(i);
+					Object o = rs2.getObject(i);
+					if(o==null)
+						o = JSONObject.NULL;
+					json2.put(sColName, o);
+				}
 				jsonArr2.put(json2);
 			}
 			
@@ -998,7 +1015,7 @@ public class CRUDMgr {
 					for(String sJsonName2 : listUnmatchedJsonName)
 					{
 						List<Object[]> listParams2 	= getSubQueryParams(map, jsonReturn, sJsonName2);
-						String sObjInsertSQL 		= map.get("jsonattr."+sJsonName2+"."+JsonCrudConfig._PROP_KEY_OBJ_SQL);
+						String sObjInsertSQL 		= map.get("jsonattr."+sJsonName2+"."+JsonCrudConfig._PROP_KEY_CHILD_INSERTSQL);
 						
 						lAffectedRow2 += updateChildObject(dbmgr, sObjInsertSQL, listParams2);
 					}
@@ -1642,8 +1659,8 @@ public class CRUDMgr {
 	private List<Object[]> getSubQueryParams(Map<String, String> aCrudCfgMap, JSONObject aJsonParentData, String aJsonName) throws JsonCrudException
 	{
 		String sPrefix 		= "jsonattr."+aJsonName+".";
-		String sObjSQL 		= aCrudCfgMap.get(sPrefix+JsonCrudConfig._PROP_KEY_OBJ_SQL);
-		String sObjMapping 	= aCrudCfgMap.get(sPrefix+JsonCrudConfig._PROP_KEY_OBJ_MAPPING);
+		String sObjSQL 		= aCrudCfgMap.get(sPrefix+JsonCrudConfig._PROP_KEY_CHILD_INSERTSQL);
+		String sObjMapping 	= aCrudCfgMap.get(sPrefix+JsonCrudConfig._PROP_KEY_CHILD_MAPPING);
 		
 		String sObjKeyName = null;
 		String sObjValName = null;

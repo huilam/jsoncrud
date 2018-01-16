@@ -79,11 +79,11 @@ public class JsonCrudConfig {
 	public static String _PROP_KEY_JSON 		= "jsonattr";
 	public static String _PROP_KEY_COLNAME 		= "colname";
 	public static String _PROP_KEY_SQL			= "sql";
-	public static String _PROP_KEY_FORMAT		= "format";
+	//public static String _PROP_KEY_FORMAT		= "format";
 	public static String _PROP_KEY_DEBUG 		= "debug";
 	
-	public static String _PROP_KEY_OBJ_MAPPING	= "objinsert.mapping";
-	public static String _PROP_KEY_OBJ_SQL		= "objinsert.sql";
+	public static String _PROP_KEY_CHILD_MAPPING	= "mapping";
+	public static String _PROP_KEY_CHILD_INSERTSQL	= "insert.sql";
 	//
 	public static Pattern patJsonDaoKey 		= null;
 	
