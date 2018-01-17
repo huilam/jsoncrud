@@ -34,6 +34,11 @@ public class CRUDMgrTest {
 	
 	private void test1_CRUD(CRUDMgr m) throws JsonCrudException
 	{
+		String sTestData = "{\"moduleCode\": \"testpost180117-1\",\"kvpair\":" + 
+				"{\"key003\": \"val003\",\"key002\": \"val002\",\"key001\": \"val001\" }," + 
+				" \"appNamespace\": \"testpost180117-1\", \"no-such-dbfield\": \"test\"}";
+		
+		
 		JSONObject jsonData 	= null;
 		JSONObject jsonWhere 	= null;
 		JSONObject jsonResult 	= null;
@@ -50,6 +55,9 @@ public class CRUDMgrTest {
 		System.out.println("	1.1  Insert parent NO child");
 		jsonResult = m.create("crud.jsoncrud_cfg", jsonData);
 		System.out.println("		- "+jsonResult);		
+		
+		jsonResult = m.create("crud.jsoncrud_cfg", new JSONObject(sTestData));
+		System.out.println("		- "+jsonResult);
 		
 		/////
 		jsonData = new JSONObject();

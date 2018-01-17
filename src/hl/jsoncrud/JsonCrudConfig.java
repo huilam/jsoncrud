@@ -82,6 +82,8 @@ public class JsonCrudConfig {
 	//public static String _PROP_KEY_FORMAT		= "format";
 	public static String _PROP_KEY_DEBUG 		= "debug";
 	
+	
+	public static String _PROP_KEY_EXCEPTION_ON_UNKNOWN_ATTR	= "exception.on-unknown-jsonattr";
 	public static String _PROP_KEY_CHILD_MAPPING	= "mapping";
 	public static String _PROP_KEY_CHILD_INSERTSQL	= "insert.sql";
 	//
