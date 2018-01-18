@@ -925,10 +925,9 @@ public class CRUDMgr {
 		
 		if(jsonReturn!=null && jsonReturn.has(JsonCrudConfig._LIST_META))
 		{
-			JSONObject jsonMeta 	= jsonReturn.getJSONObject(JsonCrudConfig._LIST_META);
-			
 			if(aSorting!=null)
 			{
+				JSONObject jsonMeta 	= jsonReturn.getJSONObject(JsonCrudConfig._LIST_META);
 				StringBuffer sbOrderBys = new StringBuffer();
 				for(String sOrderBy : aSorting)
 				{
@@ -938,9 +937,10 @@ public class CRUDMgr {
 				}
 				if(sbOrderBys.length()>0)
 					jsonMeta.put(JsonCrudConfig._LIST_SORTING, sbOrderBys.toString());
+				
+				jsonReturn.put(JsonCrudConfig._LIST_META, jsonMeta);
 			}
 			//
-			jsonReturn.put(JsonCrudConfig._LIST_META, jsonMeta);
 		}
 		
 		return jsonReturn;

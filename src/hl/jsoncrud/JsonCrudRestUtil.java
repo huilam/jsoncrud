@@ -37,17 +37,23 @@ public class JsonCrudRestUtil {
 	
 	public static JSONObject create(String aCrudKey, String aJsonContent) throws JsonCrudException
 	{
+		JSONObject jsonCreated = null;
+		
 		if(aJsonContent!=null && aJsonContent.length()>0)
 		{
 			aJsonContent = aJsonContent.trim();
 			try {
 				if(aJsonContent.startsWith("{") && aJsonContent.endsWith("}"))
 				{
-					create(aCrudKey, new JSONObject(aJsonContent));
+					jsonCreated = create(aCrudKey, new JSONObject(aJsonContent));
 				}
 				else if(aJsonContent.startsWith("[") && aJsonContent.endsWith("]"))
 				{
-					create(aCrudKey, new JSONArray(aJsonContent));
+					JSONArray jsonOutputArray = create(aCrudKey, new JSONArray(aJsonContent));
+			    	if(jsonOutputArray.length()>0)
+			    	{
+			    		jsonCreated = jsonOutputArray.getJSONObject(0);
+			    	}
 				}
 				else
 				{
@@ -59,7 +65,7 @@ public class JsonCrudRestUtil {
 						"Invalid content : "+aJsonContent, ex);
 			}
 		}
-		return null;
+		return jsonCreated;
 	}
 	
 	
