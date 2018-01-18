@@ -80,7 +80,7 @@ public class CRUDMgr {
 	{
 		JSONObject jsonVer = new JSONObject();
 		jsonVer.put("framework", "jsoncrud");
-		jsonVer.put("version", "0.4.2 beta");
+		jsonVer.put("version", "0.4.3 beta");
 		return jsonVer;
 	}
 	
@@ -539,77 +539,77 @@ public class CRUDMgr {
 									//		"Insufficient sql paramters - sql:"+mapCrudSql.get(sJsonName)+", params:"+listParamsToString(listParams2));
 								}
 								
-								JSONArray jsonArrayChild = retrieveChild(dbmgr, sSQL2, listParams2);
+							}
+							JSONArray jsonArrayChild = retrieveChild(dbmgr, sSQL2, listParams2);
+							
+							if(jsonArrayChild!=null)
+							{
+								String sPropKeyMapping = "jsonattr."+sJsonName+"."+JsonCrudConfig._PROP_KEY_CHILD_MAPPING;
+								String sChildMapping = map.get(sPropKeyMapping);
 								
-								if(jsonArrayChild!=null && jsonArrayChild.length()>0)
+								///
+								if(sChildMapping!=null)
 								{
-									String sPropKeyMapping = "jsonattr."+sJsonName+"."+JsonCrudConfig._PROP_KEY_CHILD_MAPPING;
-									String sChildMapping = map.get(sPropKeyMapping);
+									sChildMapping = sChildMapping.trim();
 									
-									///
-									if(sChildMapping!=null)
+									if(sChildMapping.startsWith("[") && sChildMapping.endsWith("]"))
 									{
-										sChildMapping = sChildMapping.trim();
-										
-										if(sChildMapping.startsWith("[") && sChildMapping.endsWith("]"))
+										JSONArray jArrMappingData = new JSONArray();
+										JSONArray jArrMapping = new JSONArray(sChildMapping);
+										for(int i=0; i<jsonArrayChild.length(); i++)
+										{		
+											JSONObject jsonData = jsonArrayChild.getJSONObject(i);
+											for(int j=0; j<jArrMapping.length(); j++)
+											{
+												String sKey = jArrMapping.getString(j);
+												if(jsonData.has(sKey))
+												{
+													Object oMappingData = jsonData.get(sKey);
+													jArrMappingData.put(oMappingData);
+												}
+												else
+												{
+													throw new JsonCrudException(JsonCrudConfig.ERRCODE_JSONCRUDCFG, 
+															"Invalid Child Mapping : "+sPropKeyMapping+"="+sChildMapping);
+												}
+											}
+										}
+										jsonOnbj.put(sJsonName, jArrMappingData);
+									}
+									else if(sChildMapping.startsWith("{") && sChildMapping.endsWith("}"))
+									{
+										JSONObject jsonMappingData = null;
+										JSONObject jsonChildMapping = new JSONObject(sChildMapping);
+										int iKeys = jsonChildMapping.keySet().size();
+										if(iKeys>0)
 										{
-											JSONArray jArrMappingData = new JSONArray();
-											JSONArray jArrMapping = new JSONArray(sChildMapping);
+											jsonMappingData = new JSONObject();
 											for(int i=0; i<jsonArrayChild.length(); i++)
 											{		
 												JSONObject jsonData = jsonArrayChild.getJSONObject(i);
-												for(int j=0; j<jArrMapping.length(); j++)
+												for(String sKey : jsonChildMapping.keySet())
 												{
-													String sKey = jArrMapping.getString(j);
-													if(jsonData.has(sKey))
-													{
-														Object oMappingData = jsonData.get(sKey);
-														jArrMappingData.put(oMappingData);
-													}
-													else
-													{
-														throw new JsonCrudException(JsonCrudConfig.ERRCODE_JSONCRUDCFG, 
-																"Invalid Child Mapping : "+sPropKeyMapping+"="+sChildMapping);
-													}
+													String sMapKey = jsonData.getString(sKey);
+													Object oMapVal = jsonData.get(jsonChildMapping.getString(sKey));
+													
+													jsonMappingData.put(sMapKey, oMapVal);
 												}
 											}
-											jsonOnbj.put(sJsonName, jArrMappingData);
 										}
-										else if(sChildMapping.startsWith("{") && sChildMapping.endsWith("}"))
+										
+										if(jsonMappingData!=null)
 										{
-											JSONObject jsonMappingData = null;
-											JSONObject jsonChildMapping = new JSONObject(sChildMapping);
-											int iKeys = jsonChildMapping.keySet().size();
-											if(iKeys>0)
-											{
-												jsonMappingData = new JSONObject();
-												for(int i=0; i<jsonArrayChild.length(); i++)
-												{		
-													JSONObject jsonData = jsonArrayChild.getJSONObject(i);
-													for(String sKey : jsonChildMapping.keySet())
-													{
-														String sMapKey = jsonData.getString(sKey);
-														Object oMapVal = jsonData.get(jsonChildMapping.getString(sKey));
-														
-														jsonMappingData.put(sMapKey, oMapVal);
-													}
-												}
-											}
-											
-											if(jsonMappingData!=null)
-											{
-												jsonOnbj.put(sJsonName, jsonMappingData);
-											}
-											else 
-												throw new JsonCrudException(JsonCrudConfig.ERRCODE_JSONCRUDCFG, 
-														"Invalid Child Mapping : "+sPropKeyMapping+"="+sChildMapping);
-										}	
-									}
-									else
-									{
-										jsonOnbj.put(sJsonName, jsonArrayChild);			
-									}
-								}						
+											jsonOnbj.put(sJsonName, jsonMappingData);
+										}
+										else 
+											throw new JsonCrudException(JsonCrudConfig.ERRCODE_JSONCRUDCFG, 
+													"Invalid Child Mapping : "+sPropKeyMapping+"="+sChildMapping);
+									}	
+								}
+								else
+								{
+									jsonOnbj.put(sJsonName, jsonArrayChild);			
+								}
 							}
 						}
 					}
