@@ -977,7 +977,8 @@ public class CRUDMgr {
 		if(map.size()==0)
 			throw new JsonCrudException(JsonCrudConfig.ERRCODE_JSONCRUDCFG, "Invalid crud configuration key ! - "+aCrudKey);
 
-		JSONObject jsonData 	= castJson2DBVal(aCrudKey, aDataJson);
+		JSONObject jsonData = checkJSONmapping(aCrudKey, aDataJson, map);
+		jsonData 	= castJson2DBVal(aCrudKey, aDataJson);
 		JSONObject jsonWhere 	= castJson2DBVal(aCrudKey, aWhereJson);
 		
 		List<Object> listValues 			= new ArrayList<Object>();
