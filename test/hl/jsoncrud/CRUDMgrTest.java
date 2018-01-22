@@ -309,6 +309,41 @@ public class CRUDMgrTest {
 			System.out.println("		- "+jArrResult.getJSONObject(i));
 		}
 	}
+	
+	private void test6_ExtraAttrs(CRUDMgr m) throws JsonCrudException
+	{
+		long id = getCfgId(m);
+		
+		JSONObject jsonData = new JSONObject();
+		jsonData.put("cfgId", id);
+		jsonData.put("key", "key12345");
+		jsonData.put("value", 123456);
+		jsonData.put("extra", "this is extra field");
+
+		System.out.println();	
+		System.out.println("6. Test Create with Extra attribute");
+		System.out.println("	6.1 Insert NULL value");
+		JSONObject jsonResult = m.create("crud.jsoncrud_cfg_values", jsonData);
+		System.out.println("		- "+jsonResult);
+		//////
+		JSONObject jsonWhere = new JSONObject();
+		jsonWhere.put("cfgId", id);
+		jsonWhere.put("key", "key12345");
+				
+		jsonData = new JSONObject();
+		jsonData.put("value", 654321);
+		jsonData.put("extra", "this is extra field");
+		
+		System.out.println("	6.2 Update with Extra attribute");
+		JSONArray jArrResult = m.update("crud.jsoncrud_cfg_values", jsonData, jsonWhere);
+		if(jArrResult==null)
+			jArrResult = new JSONArray();
+		for(int i=0; i<jArrResult.length(); i++)
+		{
+			System.out.println("		- "+jArrResult.getJSONObject(i));
+		}		
+		//////
+	}
 
 	private long getCfgId(CRUDMgr m) throws JsonCrudException
 	{
@@ -353,11 +388,13 @@ public class CRUDMgrTest {
 			//
 			//test.test2_SchemaValidation(m);
 			//
-			test.test3_CustomSQL(m);
+			//test.test3_CustomSQL(m);
 			//
 			//test.test4_Sorting_Returns(m);
 			//
 			//test.test5_Null(m);
+			//
+			test.test6_ExtraAttrs(m);
 			//////////////////////////
 
 
