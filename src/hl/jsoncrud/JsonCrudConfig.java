@@ -119,10 +119,10 @@ public class JsonCrudConfig {
 			props = PropUtil.loadProperties(_PROP_FILENAME);
 		}
 		
-		initProps(props);
+		loadProp(props);
 	}
 	
-	public void initProps(Properties aProp) throws IOException
+	public void loadProp(Properties aProp) throws IOException
 	{
 		Iterator iter = aProp.keySet().iterator();
 		while(iter.hasNext())
