@@ -407,9 +407,12 @@ public class CRUDMgr {
 	public JSONObject retrieveFirst(String aCrudKey, JSONObject aWhereJson) throws JsonCrudException
 	{
 		JSONArray jsonArr = retrieve(aCrudKey, aWhereJson);
-		if(jsonArr!=null && jsonArr.length()>0)
+		if(jsonArr!=null)
 		{
-			return (JSONObject) jsonArr.get(0);
+			if(jsonArr.length()>0)
+				return (JSONObject) jsonArr.get(0);
+			else
+				return new JSONObject(); //empty result
 		}
 		return null;
 	}
