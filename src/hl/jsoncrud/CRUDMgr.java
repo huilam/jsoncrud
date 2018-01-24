@@ -80,7 +80,7 @@ public class CRUDMgr {
 	{
 		JSONObject jsonVer = new JSONObject();
 		jsonVer.put("framework", "jsoncrud");
-		jsonVer.put("version", "0.4.5 beta");
+		jsonVer.put("version", "0.4.6 beta");
 		return jsonVer;
 	}
 	
@@ -333,14 +333,11 @@ public class CRUDMgr {
 		
 		if(jArrCreated.length()>0)
 		{
-			Map<String, String> mapCrudCol2Json = mapColName2Json.get(aCrudKey);
 			JSONObject jsonCreated = jArrCreated.getJSONObject(0);
-			for(String sColName : jsonCreated.keySet())
+			jsonCreated = convertCol2Json(aCrudKey, jsonCreated);
+			for(String sAttrName : jsonCreated.keySet())
 			{
-				String sMappedKey = mapCrudCol2Json.get(sColName);
-				if(sMappedKey==null)
-					sMappedKey = sColName;
-				jsonData.put(sMappedKey, jsonCreated.get(sColName));
+				jsonData.put(sAttrName, jsonCreated.get(sAttrName));
 			}
 			
 			//child create
@@ -475,8 +472,7 @@ public class CRUDMgr {
 		JSONArray jsonArr = new JSONArray();
 		try{
 			
-			Map<String, String> mapCrudCol2Json = mapColName2Json.get(aCrudKey);
-			Map<String, String> mapCrudSql 		= mapJson2Sql.get(aCrudKey);
+			Map<String, String> mapCrudSql 	= mapJson2Sql.get(aCrudKey);
 			
 			conn = dbmgr.getConnection();
 			stmt = conn.prepareStatement(sSQL);
@@ -497,16 +493,13 @@ public class CRUDMgr {
 				for(int i=0; i<meta.getColumnCount(); i++)
 				{
 					String sColName = meta.getColumnLabel(i+1);
-					
-					String sJsonName = mapCrudCol2Json.get(sColName);
-					if(sJsonName==null)
-						sJsonName = sColName;
-					
 					Object oObj = rs.getObject(sColName);
 					if(oObj==null)
 						oObj = JSONObject.NULL;
-					jsonOnbj.put(sJsonName, oObj);
+					jsonOnbj.put(sColName, oObj);
 				}
+				
+				jsonOnbj = convertCol2Json(aCrudKey, jsonOnbj);
 				
 				if(mapCrudSql.size()>0)
 				{
@@ -543,7 +536,22 @@ public class CRUDMgr {
 								}
 								
 							}
-							JSONArray jsonArrayChild = retrieveChild(dbmgr, sSQL2, listParams2);
+							
+							
+							String sSQL2FetchLimit = map.get("jsonattr."+sJsonName+".sql.fetch.limit");
+							long lFetchLimit = 0;
+							if(sSQL2FetchLimit!=null)
+							{
+								try {
+									lFetchLimit = Integer.parseInt(sSQL2FetchLimit);
+								}catch(NumberFormatException ex)
+								{
+									ex.printStackTrace();
+									lFetchLimit = 0;
+								}
+							}
+							
+							JSONArray jsonArrayChild = retrieveChild(dbmgr, sSQL2, listParams2, 1, lFetchLimit);
 							
 							if(jsonArrayChild!=null)
 							{
@@ -662,7 +670,7 @@ public class CRUDMgr {
 		return jsonReturn;		
 	}
 	
-	private JSONArray retrieveChild(JdbcDBMgr aJdbcMgr, String aSQL, List<Object> aObjParamList) throws SQLException
+	private JSONArray retrieveChild(JdbcDBMgr aJdbcMgr, String aSQL, List<Object> aObjParamList, long iFetchStart, long iFetchSize) throws SQLException
 	{
 		Connection conn2 	= null;
 		PreparedStatement stmt2	= null;
@@ -682,9 +690,22 @@ public class CRUDMgr {
 			iTotalCols = meta.getColumnCount();
 			if(iTotalCols>0)
 				jsonArr2 = new JSONArray();
+			
+			long lTotalCnt = 0;
+			
+			if(iFetchStart<=0)
+				iFetchStart = 1;
+			
+			if(iFetchSize<0)
+				iFetchSize = 0;
 
 			while(rs2.next())
 			{
+				lTotalCnt++;
+				
+				if(lTotalCnt<iFetchStart)
+					continue;
+				
 				JSONObject json2 	= new JSONObject();
 				for(int i=1; i<=iTotalCols; i++)
 				{
@@ -696,6 +717,9 @@ public class CRUDMgr {
 					json2.put(sColName, o);
 				}
 				jsonArr2.put(json2);
+				
+				if(iFetchSize>0 && lTotalCnt>=iFetchSize)
+					continue;
 			}
 			
 		}catch(SQLException sqlEx)
@@ -1246,26 +1270,30 @@ public class CRUDMgr {
 				continue;
 			}
 			
+			JdbcDBMgr dbmgr = null;
 			Map<String, String> mapCrudConfig = jsoncrudConfig.getConfig(sKey);
 			String sDBConfigName = mapCrudConfig.get(JsonCrudConfig._PROP_KEY_DBCONFIG);
 			//
-			JdbcDBMgr dbmgr = mapDBMgr.get(sDBConfigName);
-			if(dbmgr==null)
+			if(sDBConfigName!=null && sDBConfigName.trim().length()>0)
 			{
-				Map<String, String> mapDBConfig = jsoncrudConfig.getConfig(sDBConfigName);
-				
-				if(mapDBConfig==null)
-					throw new JsonCrudException(JsonCrudConfig.ERRCODE_JSONCRUDCFG, "Invalid "+JsonCrudConfig._PROP_KEY_DBCONFIG+" - "+sDBConfigName);
-								
-				String sJdbcClassname = mapDBConfig.get(JsonCrudConfig._PROP_KEY_JDBC_CLASSNAME);
-				
-				if(sJdbcClassname!=null)
+				dbmgr = mapDBMgr.get(sDBConfigName);
+				if(dbmgr==null)
 				{
-					dbmgr = initNRegJdbcDBMgr(sDBConfigName, mapDBConfig);
-				}
-				else
-				{
-					throw new JsonCrudException(JsonCrudConfig.ERRCODE_JSONCRUDCFG, "Invalid "+JsonCrudConfig._PROP_KEY_JDBC_CLASSNAME+" - "+sJdbcClassname);
+					Map<String, String> mapDBConfig = jsoncrudConfig.getConfig(sDBConfigName);
+					
+					if(mapDBConfig==null)
+						throw new JsonCrudException(JsonCrudConfig.ERRCODE_JSONCRUDCFG, "Invalid "+JsonCrudConfig._PROP_KEY_DBCONFIG+" - "+sDBConfigName);
+									
+					String sJdbcClassname = mapDBConfig.get(JsonCrudConfig._PROP_KEY_JDBC_CLASSNAME);
+					
+					if(sJdbcClassname!=null)
+					{
+						dbmgr = initNRegJdbcDBMgr(sDBConfigName, mapDBConfig);
+					}
+					else
+					{
+						throw new JsonCrudException(JsonCrudConfig.ERRCODE_JSONCRUDCFG, "Invalid "+JsonCrudConfig._PROP_KEY_JDBC_CLASSNAME+" - "+sJdbcClassname);
+					}
 				}
 			}
 			
@@ -1308,19 +1336,23 @@ public class CRUDMgr {
 
 				String sTableName = mapCrudConfig.get(JsonCrudConfig._PROP_KEY_TABLENAME);
 				System.out.print("[init] "+sKey+" - "+sTableName+" ... ");
-				Map<String, DBColMeta> mapCols = getTableMetaData(sKey, dbmgr, sTableName);
-				if(mapCols!=null)
+				
+				if(sTableName!=null && sTableName.trim().length()>0)
 				{
-					System.out.println(mapCols.size()+" cols meta loaded.");
-					mapTableCols.put(sKey, mapCols);
-					
-					for(String sColName : mapCols.keySet())
+					Map<String, DBColMeta> mapCols = getTableMetaData(sKey, dbmgr, sTableName);
+					if(mapCols!=null)
 					{
-						//No DB Mapping configured
-						if(mapCrudCol2Json.get(sColName)==null)
+						System.out.println(mapCols.size()+" cols meta loaded.");
+						mapTableCols.put(sKey, mapCols);
+						
+						for(String sColName : mapCols.keySet())
 						{
-							mapCrudJson2Col.put(sColName, sColName);
-							mapCrudCol2Json.put(sColName, sColName);
+							//No DB Mapping configured
+							if(mapCrudCol2Json.get(sColName)==null)
+							{
+								mapCrudJson2Col.put(sColName, sColName);
+								mapCrudCol2Json.put(sColName, sColName);
+							}
 						}
 					}
 				}
@@ -1819,6 +1851,36 @@ public class CRUDMgr {
 		}
 		return aJsonName;
 		
+	}
+	
+	public JSONObject convertCol2Json(String aCrudKey, JSONObject aJSONObject)
+	{
+		Map<String, String> mapCrudCol2Json = mapColName2Json.get(aCrudKey);
+		
+		if(aJSONObject==null || mapCrudCol2Json==null || mapCrudCol2Json.size()==0)
+		{
+			return aJSONObject;
+		}
+		
+		JSONObject jsonConverted = new JSONObject();
+
+		for(String sColName : aJSONObject.keySet())
+		{
+			String sMappedKey = mapCrudCol2Json.get(sColName);
+			if(sMappedKey==null)
+				sMappedKey = sColName;
+			
+			Object obj = aJSONObject.get(sColName);
+			
+			if(obj instanceof JSONObject)
+			{
+				obj = convertCol2Json(aCrudKey, (JSONObject) obj);
+			}
+			
+			jsonConverted.put(sMappedKey, obj);
+		}
+		
+		return jsonConverted;
 	}
 	
 	public JdbcDBMgr getJdbcMgr(String aJdbcConfigName)

@@ -23,8 +23,6 @@
 package hl.jsoncrud;
 
 import java.util.Map;
-import java.util.Random;
-
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -362,8 +360,6 @@ public class CRUDMgrTest {
 		long lStart = System.currentTimeMillis();
 		
 		CRUDMgr m = new CRUDMgr();
-		Random random = new Random(lStart);
-
 		try{
 			Map<String, String> map = m.getAllConfig();
 			for(String sKey : map.keySet())
@@ -386,13 +382,13 @@ public class CRUDMgrTest {
 			//
 			test.test1_CRUD(m);
 			//
-			//test.test2_SchemaValidation(m);
+			test.test2_SchemaValidation(m);
 			//
-			//test.test3_CustomSQL(m);
+			test.test3_CustomSQL(m);
 			//
-			//test.test4_Sorting_Returns(m);
+			test.test4_Sorting_Returns(m);
 			//
-			//test.test5_Null(m);
+			test.test5_Null(m);
 			//
 			test.test6_ExtraAttrs(m);
 			//////////////////////////
