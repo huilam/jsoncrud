@@ -1876,6 +1876,21 @@ public class CRUDMgr {
 			{
 				obj = convertCol2Json(aCrudKey, (JSONObject) obj);
 			}
+			else if(obj instanceof JSONArray)
+			{
+				JSONArray jArrNew = new JSONArray();
+				JSONArray jArr = (JSONArray) obj;
+				for(int i=0; i<jArr.length(); i++)
+				{
+					Object obj2 = jArr.get(i);
+					if(obj2 instanceof JSONObject)
+					{
+						obj2 = convertCol2Json(aCrudKey, (JSONObject) obj2);
+					}
+					jArrNew.put(obj2);
+				}
+				obj = jArrNew;
+			}
 			
 			jsonConverted.put(sMappedKey, obj);
 		}
