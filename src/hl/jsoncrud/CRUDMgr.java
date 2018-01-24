@@ -1855,6 +1855,11 @@ public class CRUDMgr {
 	
 	public JSONObject convertCol2Json(String aCrudKey, JSONObject aJSONObject)
 	{
+		if(!aCrudKey.startsWith(JsonCrudConfig._PROP_KEY_CRUD+"."))
+		{
+			aCrudKey = JsonCrudConfig._PROP_KEY_CRUD+"."+aCrudKey;
+		}
+		
 		Map<String, String> mapCrudCol2Json = mapColName2Json.get(aCrudKey);
 		
 		if(aJSONObject==null || mapCrudCol2Json==null || mapCrudCol2Json.size()==0)
