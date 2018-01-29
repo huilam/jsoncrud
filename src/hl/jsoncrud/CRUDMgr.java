@@ -33,6 +33,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.StringTokenizer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -98,6 +99,16 @@ public class CRUDMgr {
 		init();
 	}
 	
+	public CRUDMgr(Properties aProp)
+	{
+		try {
+			jsoncrudConfig = new JsonCrudConfig(aProp);
+		} catch (IOException e) {
+			throw new RuntimeException("Error loading Properties "+aProp.toString(), e);
+		}
+		init();
+	}
+
 	private void init()
 	{
 		mapDBMgr 			= new HashMap<String, JdbcDBMgr>();
@@ -656,7 +667,7 @@ public class CRUDMgr {
 		}
 		catch(SQLException sqlEx)
 		{
-			throw new JsonCrudException(JsonCrudConfig.ERRCODE_SQLEXCEPTION, "sql:"+sSQL+", params:"+listParamsToString(aObjParams), sqlEx);
+			throw new JsonCrudException(JsonCrudConfig.ERRCODE_SQLEXCEPTION, "crudKey:"+aCrudKey+", sql:"+sSQL+", params:"+listParamsToString(aObjParams), sqlEx);
 		}
 		finally
 		{
@@ -749,6 +760,11 @@ public class CRUDMgr {
 
 		String sTableName 	= map.get(JsonCrudConfig._PROP_KEY_TABLENAME);
 
+		if(sTableName==null || sTableName.trim().length()==0)
+		{
+			return null;
+		}
+		
 		// WHERE
 		StringBuffer sbWhere 	= new StringBuffer();
 		for(String sOrgJsonName : jsonWhere.keySet())

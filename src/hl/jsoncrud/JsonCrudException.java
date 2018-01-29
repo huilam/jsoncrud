@@ -40,6 +40,8 @@ public class JsonCrudException extends Exception {
 		super(aErrMessage, aThrowable);
 		error_code = aErrCode;
 		error_msg = aErrMessage;
+		
+		aThrowable.printStackTrace();
 	}
 	
 	public JsonCrudException(String aErrCode, Throwable aThrowable)
@@ -47,6 +49,8 @@ public class JsonCrudException extends Exception {
 		super(aThrowable);
 		error_code = aErrCode;
 		error_msg = aThrowable.getMessage();
+		
+		aThrowable.printStackTrace();
 	}
 	
 	public String getErrorCode()

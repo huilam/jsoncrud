@@ -23,8 +23,10 @@
 package hl.jsoncrud;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -32,7 +34,7 @@ import org.json.JSONObject;
 
 public class JsonCrudRestUtil {
 	
-	private static CRUDMgr _crudmgr 	= null;
+	private static Map<String, CRUDMgr> mapCrudMgrs = new HashMap<String, CRUDMgr>();
 	
 	
 	public static JSONObject create(String aCrudKey, String aJsonContent) throws JsonCrudException
@@ -305,11 +307,47 @@ public class JsonCrudRestUtil {
 	
 	public static CRUDMgr getCRUDMgr()
 	{
-		if(_crudmgr==null)
+		return getCRUDMgr(null);
+	}
+	
+	public static CRUDMgr registerCRUDMgr(String aNameSpace, Properties aProperties) throws JsonCrudException
+	{
+		if(aNameSpace==null || aNameSpace.trim().length()==0)
 		{
-			_crudmgr = new CRUDMgr();
+			throw new JsonCrudException(JsonCrudConfig.ERRCODE_PLUGINEXCEPTION, 
+					"Namespace for CRUDMgr cannot be null ! - "+aNameSpace);
 		}
-		return _crudmgr;
+		
+		CRUDMgr crudmgr = new CRUDMgr(aProperties);
+		return mapCrudMgrs.put(aNameSpace, crudmgr);
+	}
+		
+	public static CRUDMgr unregisterCRUDMgr(String aNameSpace) throws JsonCrudException
+	{
+		if(aNameSpace==null || aNameSpace.trim().length()==0)
+		{
+			throw new JsonCrudException(JsonCrudConfig.ERRCODE_PLUGINEXCEPTION, 
+					"Namespace for CRUDMgr cannot be null ! - "+aNameSpace);
+		}
+		
+		return mapCrudMgrs.remove(aNameSpace);
+	}
+	
+	public static CRUDMgr getCRUDMgr(String aNameSpace)
+	{
+		CRUDMgr crudmgr = null;
+		
+		if(aNameSpace==null || aNameSpace.trim().length()==0)
+		{
+			aNameSpace = "CORE";
+			
+			if(mapCrudMgrs.get(aNameSpace)==null)
+			{
+				crudmgr = new CRUDMgr((String)null);
+			}
+		}
+
+		return crudmgr;
 	}
     
 }

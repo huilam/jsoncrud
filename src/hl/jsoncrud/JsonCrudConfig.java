@@ -97,16 +97,13 @@ public class JsonCrudConfig {
 		init(aPropFileName);
 	}
 	
-	public JsonCrudConfig() throws IOException
+	public JsonCrudConfig(Properties aProperties) throws IOException
 	{
-		init(null);
+		init(aProperties);
 	}
 	
 	public void init(String aPropFilename) throws IOException
 	{		
-		mapJsonCrudConfig = new HashMap<String,Map<String, String>>();
-		patJsonDaoKey = Pattern.compile("(.+?\\..+?)\\.");
-		
 		Properties props = null;
 		if(aPropFilename!=null && aPropFilename.trim().length()>0)
 		{
@@ -119,8 +116,16 @@ public class JsonCrudConfig {
 			props = PropUtil.loadProperties(_PROP_FILENAME);
 		}
 		
-		loadProp(props);
+		init(props);
 	}
+	
+	public void init(Properties aProperties) throws IOException
+	{		
+		mapJsonCrudConfig = new HashMap<String,Map<String, String>>();
+		patJsonDaoKey = Pattern.compile("(.+?\\..+?)\\.");
+		
+		loadProp(aProperties);
+	}	
 	
 	public void loadProp(Properties aProp) throws IOException
 	{
