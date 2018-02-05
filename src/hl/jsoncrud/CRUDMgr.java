@@ -934,7 +934,6 @@ public class CRUDMgr {
 			}
 		}
 
-		StringBuffer sbFields = new StringBuffer();
 		if(aReturns!=null && aReturns.length>0)
 		{
 			Map<String, String> mapCrudSql = mapJson2Sql.get(aCrudKey);
@@ -948,18 +947,11 @@ public class CRUDMgr {
 				{
 					sReturnAttr = sColName;
 				}
-				if(sbFields.length()>0)
-					sbFields.append(", ");
-				sbFields.append(sReturnAttr);
 			}
 		}
 		
-		if(sbFields.length()==0)
-		{
-			sbFields.append("*");
-		}
 		
-		String sSQL = "SELECT "+sbFields.toString()+" FROM "+sTableName+" WHERE 1=1 "+sbWhere.toString();
+		String sSQL = "SELECT * FROM "+sTableName+" WHERE 1=1 "+sbWhere.toString();
 		
 		JSONObject jsonReturn 	= retrieve(
 				aCrudKey, sSQL, 
