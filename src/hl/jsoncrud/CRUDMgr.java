@@ -455,10 +455,11 @@ public class CRUDMgr {
 	private JSONObject retrieve(String aCrudKey, String aSQL, Object[] aObjParams,
 			long aStartFrom, long aFetchSize, String[] aReturns) throws JsonCrudException
 	{
-		JSONObject jsonReturn 		= null;
-		Map<String, String> map 	= jsoncrudConfig.getConfig(aCrudKey);
+		JSONObject jsonReturn 			= null;
+		Map<String, String> map 		= jsoncrudConfig.getConfig(aCrudKey);
 		
-		//boolean isDebug		= "true".equalsIgnoreCase(map.get(JsonCrudConfig._PROP_KEY_DEBUG)); 
+		Map<String, String> mapCrudSql 	= mapJson2Sql.get(aCrudKey);
+		
 		String sSQL 		= aSQL;
 		
 		String sJdbcName 	= map.get(JsonCrudConfig._PROP_KEY_DBCONFIG);
@@ -470,14 +471,31 @@ public class CRUDMgr {
 			Map<String, String> mapCrudJson2Col = mapJson2ColName.get(aCrudKey);
 			for(String sAttrName : aReturns)
 			{
-				String sReturnColName = mapCrudJson2Col.get(sAttrName);
+				String sReturnColName = null;
 				
-				if(sReturnColName==null)
+				if(mapCrudSql.containsKey(sAttrName))
 				{
+					//sql field
 					sReturnColName = sAttrName;
 				}
+				else
+				{
+					sReturnColName = mapCrudJson2Col.get(sAttrName);
+					if(sReturnColName!=null)
+					{
+						//force colname to be uppercase
+						sReturnColName = sReturnColName.toUpperCase();
+					}
+				}
 				
-				listReturnsColname.add(sReturnColName.toUpperCase());
+				//
+				if(sReturnColName==null)
+				{
+					//force unmapped colname to be uppercase
+					sReturnColName = sAttrName.toUpperCase();
+				}
+				
+				listReturnsColname.add(sReturnColName);
 			}
 		}
 		
@@ -491,8 +509,6 @@ public class CRUDMgr {
 		
 		JSONArray jsonArr = new JSONArray();
 		try{
-			
-			Map<String, String> mapCrudSql 	= mapJson2Sql.get(aCrudKey);
 			
 			conn = dbmgr.getConnection();
 			stmt = conn.prepareStatement(sSQL);
@@ -533,9 +549,10 @@ public class CRUDMgr {
 				{
 					for(String sJsonName : mapCrudSql.keySet())
 					{
+						
 						if(isFilterByReturns)
 						{
-							if(!listReturnsColname.contains(sJsonName.toUpperCase()))
+							if(!listReturnsColname.contains(sJsonName))
 								//skip
 								continue;
 						}
