@@ -177,7 +177,7 @@ public class CRUDMgrTest {
 	private void test4_Sorting_Returns(CRUDMgr m) throws JsonCrudException
 	{
 		String[] sSorting = new String[]{"displaySeq.desc", "cfgId"};
-		String[] sReturns = new String[]{"displaySeq", "cfgId", "enabled","key"};
+		String[] sReturns = new String[]{"displaySeq", "enabled","key"};
 		
 		long id = getCfgId(m);
 		
@@ -206,7 +206,7 @@ public class CRUDMgrTest {
 			System.out.println("			- "+jsonArrResult.getJSONObject(i));
 		}
 		
-		System.out.println("	4.1 Sorting (\"displaySeq.desc\", \"cfgId\") : ");
+		System.out.println("	4.2 Sorting (\"displaySeq.desc\", \"cfgId\") : ");
 		
 		jsonWhere = new JSONObject();
 		jsonWhere.put("cfgId", id);
@@ -219,7 +219,7 @@ public class CRUDMgrTest {
 		}
 
 		
-		System.out.println("	4.1 Returns (\"displaySeq\", \"cfgId\", \"enabled\",\"key\") : ");
+		System.out.println("	4.3 Returns (\"displaySeq\", \"enabled\",\"key\") : ");
 		jsonArrResult = m.retrieve("crud.jsoncrud_cfg_values", 
 				jsonWhere, null, sReturns);
 		

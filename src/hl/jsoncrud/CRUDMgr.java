@@ -81,7 +81,7 @@ public class CRUDMgr {
 	{
 		JSONObject jsonVer = new JSONObject();
 		jsonVer.put("framework", "jsoncrud");
-		jsonVer.put("version", "0.4.6 beta");
+		jsonVer.put("version", "0.4.7 beta");
 		return jsonVer;
 	}
 	
@@ -464,15 +464,24 @@ public class CRUDMgr {
 		String sJdbcName 	= map.get(JsonCrudConfig._PROP_KEY_DBCONFIG);
 		JdbcDBMgr dbmgr 	= mapDBMgr.get(sJdbcName);
 		
-		List<String> listReturns = new ArrayList<String>();
+		List<String> listReturnsColname = new ArrayList<String>();
 		if(aReturns!=null)
 		{
+			Map<String, String> mapCrudJson2Col = mapJson2ColName.get(aCrudKey);
 			for(String sAttrName : aReturns)
 			{
-				listReturns.add(sAttrName.toUpperCase());
+				String sReturnColName = mapCrudJson2Col.get(sAttrName);
+				
+				if(sReturnColName==null)
+				{
+					sReturnColName = sAttrName;
+				}
+				
+				listReturnsColname.add(sReturnColName.toUpperCase());
 			}
 		}
 		
+		boolean isFilterByReturns = listReturnsColname.size()>0;
 		Connection conn = null;
 		PreparedStatement stmt	= null;
 		ResultSet rs = null;
@@ -504,10 +513,18 @@ public class CRUDMgr {
 				for(int i=0; i<meta.getColumnCount(); i++)
 				{
 					String sColName = meta.getColumnLabel(i+1);
+					
+					if(isFilterByReturns && !listReturnsColname.contains(sColName.toUpperCase()))
+					{
+						//skip
+						continue;
+					}
+					
 					Object oObj = rs.getObject(sColName);
 					if(oObj==null)
 						oObj = JSONObject.NULL;
 					jsonOnbj.put(sColName, oObj);
+	
 				}
 				
 				jsonOnbj = convertCol2Json(aCrudKey, jsonOnbj);
@@ -516,9 +533,10 @@ public class CRUDMgr {
 				{
 					for(String sJsonName : mapCrudSql.keySet())
 					{
-						if(listReturns.size()>0)
+						if(isFilterByReturns)
 						{
-							if(!listReturns.contains(sJsonName.toUpperCase()))
+							if(!listReturnsColname.contains(sJsonName.toUpperCase()))
+								//skip
 								continue;
 						}
 						
@@ -933,23 +951,6 @@ public class CRUDMgr {
 				sbWhere.append(" ORDER BY ").append(sbOrderBy.toString());
 			}
 		}
-
-		if(aReturns!=null && aReturns.length>0)
-		{
-			Map<String, String> mapCrudSql = mapJson2Sql.get(aCrudKey);
-			for(String sReturnAttr : aReturns)
-			{
-				if(mapCrudSql.get(sReturnAttr)!=null)
-					continue;
-				
-				String sColName = mapCrudJsonCol.get(sReturnAttr);
-				if(sColName!=null)
-				{
-					sReturnAttr = sColName;
-				}
-			}
-		}
-		
 		
 		String sSQL = "SELECT * FROM "+sTableName+" WHERE 1=1 "+sbWhere.toString();
 		
