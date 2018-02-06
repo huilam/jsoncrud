@@ -1186,6 +1186,11 @@ public class CRUDMgr {
 		mapTableCols.clear();
 	}
 
+	public JsonCrudConfig getJsonCrudConfig() 
+	{
+		return jsoncrudConfig;
+	}
+	
 	public Map<String, String> getAllConfig() 
 	{
 		return jsoncrudConfig.getAllConfig();
@@ -1267,7 +1272,7 @@ public class CRUDMgr {
 			jsoncrudConfig 	= new JsonCrudConfig(config_prop_filename);
 		}
 		
-		for(String sKey : jsoncrudConfig.getConfigKeys())
+		for(String sKey : jsoncrudConfig.getConfigCrudKeys())
 		{
 			if(!sKey.startsWith(JsonCrudConfig._PROP_KEY_CRUD+"."))
 			{

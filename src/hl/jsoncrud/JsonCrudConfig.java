@@ -175,7 +175,7 @@ public class JsonCrudConfig {
 		return mapAlls;
 	}
 	
-	public String[] getConfigKeys()
+	public String[] getConfigCrudKeys()
 	{
 		Set<String> setKeys = mapJsonCrudConfig.keySet();
 		return setKeys.toArray(new String[setKeys.size()]);
