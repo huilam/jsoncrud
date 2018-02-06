@@ -465,41 +465,16 @@ public class CRUDMgr {
 		String sJdbcName 	= map.get(JsonCrudConfig._PROP_KEY_DBCONFIG);
 		JdbcDBMgr dbmgr 	= mapDBMgr.get(sJdbcName);
 		
-		List<String> listReturnsColname = new ArrayList<String>();
+		List<String> listReturnsAttrName = new ArrayList<String>();
 		if(aReturns!=null)
 		{
-			Map<String, String> mapCrudJson2Col = mapJson2ColName.get(aCrudKey);
 			for(String sAttrName : aReturns)
 			{
-				String sReturnColName = null;
-				
-				if(mapCrudSql.containsKey(sAttrName))
-				{
-					//sql field
-					sReturnColName = sAttrName;
-				}
-				else
-				{
-					sReturnColName = mapCrudJson2Col.get(sAttrName);
-					if(sReturnColName!=null)
-					{
-						//force colname to be uppercase
-						sReturnColName = sReturnColName.toUpperCase();
-					}
-				}
-				
-				//
-				if(sReturnColName==null)
-				{
-					//force unmapped colname to be uppercase
-					sReturnColName = sAttrName.toUpperCase();
-				}
-				
-				listReturnsColname.add(sReturnColName);
+				listReturnsAttrName.add(sAttrName);
 			}
 		}
 		
-		boolean isFilterByReturns = listReturnsColname.size()>0;
+		boolean isFilterByReturns = listReturnsAttrName.size()>0;
 		Connection conn = null;
 		PreparedStatement stmt	= null;
 		ResultSet rs = null;
@@ -528,14 +503,8 @@ public class CRUDMgr {
 				
 				for(int i=0; i<meta.getColumnCount(); i++)
 				{
-					String sColName = meta.getColumnLabel(i+1);
-					
-					if(isFilterByReturns && !listReturnsColname.contains(sColName.toUpperCase()))
-					{
-						//skip
-						continue;
-					}
-					
+					// need to have full result so that subquery can be execute
+					String sColName = meta.getColumnLabel(i+1);					
 					Object oObj = rs.getObject(sColName);
 					if(oObj==null)
 						oObj = JSONObject.NULL;
@@ -552,7 +521,7 @@ public class CRUDMgr {
 						
 						if(isFilterByReturns)
 						{
-							if(!listReturnsColname.contains(sJsonName))
+							if(!listReturnsAttrName.contains(sJsonName))
 								//skip
 								continue;
 						}
@@ -671,6 +640,23 @@ public class CRUDMgr {
 						}
 					}
 				}
+				
+				
+				if(isFilterByReturns)
+				{
+					JSONObject jsonObjReturn = new JSONObject();
+					for(Object oAttrKey : jsonOnbj.keySet())
+					{
+						String sAttKey = oAttrKey.toString();
+						if(listReturnsAttrName.contains(sAttKey))
+						{
+							jsonObjReturn.put(sAttKey, jsonOnbj.get(sAttKey));
+						}
+					}
+					jsonOnbj = jsonObjReturn;
+					
+				}
+				
 				
 				jsonArr.put(jsonOnbj);
 				
