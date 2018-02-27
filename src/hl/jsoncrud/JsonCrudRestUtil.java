@@ -341,9 +341,16 @@ public class JsonCrudRestUtil {
 		{
 			aNameSpace = "CORE";
 			
-			if(mapCrudMgrs.get(aNameSpace)==null)
+			crudmgr = mapCrudMgrs.get(aNameSpace);
+			
+			if(crudmgr==null)
 			{
 				crudmgr = new CRUDMgr((String)null);
+				
+				if(crudmgr!=null)
+				{
+					mapCrudMgrs.put(aNameSpace, crudmgr);
+				}
 			}
 		}
 

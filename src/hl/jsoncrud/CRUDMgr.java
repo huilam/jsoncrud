@@ -91,7 +91,7 @@ public class CRUDMgr {
 	{
 		JSONObject jsonVer = new JSONObject();
 		jsonVer.put("framework", "jsoncrud");
-		jsonVer.put("version", "0.5.0 beta");
+		jsonVer.put("version", "0.5.1 beta");
 		return jsonVer;
 	}
 	
@@ -583,7 +583,21 @@ public class CRUDMgr {
 								{
 									sChildMapping = sChildMapping.trim();
 									
-									if(sChildMapping.startsWith("[") && sChildMapping.endsWith("]"))
+									if(sChildMapping.startsWith("\"") && sChildMapping.endsWith("\""))
+									{
+										JSONObject jsonData = jsonArrayChild.getJSONObject(0);
+										String sData = "";
+										if(jsonData!=null)
+										{
+											String sAttrkey = sChildMapping.substring(1, sChildMapping.length()-1);
+											if(jsonData.has(sAttrkey))
+											{
+												sData = jsonData.getString(sAttrkey);
+											}
+										}
+										jsonOnbj.put(sJsonName, sData);
+									}
+									else if(sChildMapping.startsWith("[") && sChildMapping.endsWith("]"))
 									{
 										JSONArray jArrMappingData = new JSONArray();
 										JSONArray jArrMapping = new JSONArray(sChildMapping);
@@ -635,7 +649,8 @@ public class CRUDMgr {
 										else 
 											throw new JsonCrudException(JsonCrudConfig.ERRCODE_JSONCRUDCFG, 
 													"Invalid Child Mapping : "+sPropKeyMapping+"="+sChildMapping);
-									}	
+									}
+									
 								}
 								else
 								{
