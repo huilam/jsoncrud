@@ -91,7 +91,7 @@ public class CRUDMgr {
 	{
 		JSONObject jsonVer = new JSONObject();
 		jsonVer.put("framework", "jsoncrud");
-		jsonVer.put("version", "0.4.9 beta");
+		jsonVer.put("version", "0.5.0 beta");
 		return jsonVer;
 	}
 	
@@ -1579,7 +1579,7 @@ public class CRUDMgr {
 			if(col.isNumeric())
 			{
 				if(sVal.indexOf('.')>-1)
-					oVal = Float.parseFloat(sVal);
+					oVal = Double.parseDouble(sVal);
 				else
 					oVal = Long.parseLong(sVal);
 			}

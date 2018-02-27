@@ -212,7 +212,8 @@ public class DBColMeta extends JSONObject{
 				case Types.INTEGER 	:
 				case Types.DECIMAL 	:
 				case Types.NUMERIC 	:
-
+					
+				case Types.REAL 	:
 				case Types.DOUBLE 	:
 				case Types.FLOAT 	:
 					return true;
