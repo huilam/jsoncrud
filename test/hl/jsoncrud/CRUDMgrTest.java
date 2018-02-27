@@ -228,6 +228,31 @@ public class CRUDMgrTest {
 			System.out.println("		- "+jsonArrResult.getJSONObject(i));
 		}
 		
+		
+		System.out.println("	4.4  filter.in : ");
+
+		System.out.println("		4.4.1 String : ");
+		jsonWhere = new JSONObject();
+		jsonWhere.put("value.in", "testvalue001_,testvalue000_");
+		jsonArrResult = m.retrieve("crud.jsoncrud_cfg_values", 
+				jsonWhere, null, null);
+		
+		for(int i=0; i<jsonArrResult.length(); i++)
+		{
+			System.out.println("		- "+jsonArrResult.getJSONObject(i));
+		}
+		
+		System.out.println("		4.4.2 Numberic : ");
+		jsonWhere = new JSONObject();
+		jsonWhere.put("displaySeq.in", "1 ,7");
+		jsonArrResult = m.retrieve("crud.jsoncrud_cfg_values", 
+				jsonWhere, null, null);
+		
+		for(int i=0; i<jsonArrResult.length(); i++)
+		{
+			System.out.println("		- "+jsonArrResult.getJSONObject(i));
+		}
+		
 	}
 	
 	private void test5_Null(CRUDMgr m) throws JsonCrudException

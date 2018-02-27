@@ -45,6 +45,7 @@ import hl.common.JdbcDBMgr;
 
 public class CRUDMgr {
 	
+	private final static String JSONFILTER_IN 					= "in";
 	private final static String JSONFILTER_FROM 				= "from";
 	private final static String JSONFILTER_TO 					= "to";
 	private final static String JSONFILTER_STARTWITH			= "startwith";
@@ -53,8 +54,17 @@ public class CRUDMgr {
 	private final static String JSONFILTER_CASE_INSENSITIVE		= "ci";
 	private final static String JSONFILTER_NOT					= "not";
 	
+	private final static String SQL_IN_SEPARATOR				= ",";
 	private final static String SQLLIKE_WILDCARD				= "%";
 	private final static char[] SQLLIKE_RESERVED_CHARS			= new char[]{'%','_'};
+	
+	private final static String REGEX_JSONFILTER = "([a-zA-Z_-]+?)(?:\\.("+JSONFILTER_NOT+"))?"
+			+"(?:\\.("+JSONFILTER_FROM+"|"+JSONFILTER_TO+"|"+JSONFILTER_IN+"|"
+			+JSONFILTER_STARTWITH+"|"+JSONFILTER_ENDWITH+"|"+JSONFILTER_CONTAIN+"|"+JSONFILTER_NOT+"|"
+			+JSONFILTER_CASE_INSENSITIVE+"))"
+		+"(?:\\.("+JSONFILTER_CASE_INSENSITIVE+"|"+JSONFILTER_NOT+"))?"
+		+"(?:\\.("+JSONFILTER_CASE_INSENSITIVE+"|"+JSONFILTER_NOT+"))?";
+	
 
 	private Map<String, JdbcDBMgr> mapDBMgr 					= null;
 	private Map<String, Map<String, String>> mapJson2ColName 	= null;
@@ -81,7 +91,7 @@ public class CRUDMgr {
 	{
 		JSONObject jsonVer = new JSONObject();
 		jsonVer.put("framework", "jsoncrud");
-		jsonVer.put("version", "0.4.8 beta");
+		jsonVer.put("version", "0.4.9 beta");
 		return jsonVer;
 	}
 	
@@ -124,10 +134,10 @@ public class CRUDMgr {
 		pattSQLjsonname 			= Pattern.compile("\\{(.+?)\\}");
 		pattInsertSQLtableFields 	= Pattern.compile("insert\\s+?into\\s+?([a-zA-Z_]+?)\\s+?\\((.+?)\\)");
 		//
-		pattJsonNameFilter 	= Pattern.compile("([a-zA-Z_-]+?)\\.("
-					+JSONFILTER_FROM+"|"+JSONFILTER_TO+"|"
-					+JSONFILTER_STARTWITH+"|"+JSONFILTER_ENDWITH+"|"+JSONFILTER_CONTAIN+"|"+JSONFILTER_NOT+"|"
-					+JSONFILTER_CASE_INSENSITIVE+")"
+		pattJsonNameFilter 	= Pattern.compile("([a-zA-Z_-]+?)(?:\\.("+JSONFILTER_NOT+"))?"
+					+"(?:\\.("+JSONFILTER_FROM+"|"+JSONFILTER_TO+"|"+JSONFILTER_IN+"|"
+						+JSONFILTER_STARTWITH+"|"+JSONFILTER_ENDWITH+"|"+JSONFILTER_CONTAIN+"|"+JSONFILTER_NOT+"|"
+						+JSONFILTER_CASE_INSENSITIVE+"))"
 					+"(?:\\.("+JSONFILTER_CASE_INSENSITIVE+"|"+JSONFILTER_NOT+"))?"
 					+"(?:\\.("+JSONFILTER_CASE_INSENSITIVE+"|"+JSONFILTER_NOT+"))?");
 		
@@ -803,9 +813,10 @@ public class CRUDMgr {
 				if(m.find())
 				{
 					sJsonName = m.group(1);
-					String sJsonOperator = m.group(2);
-					String sJsonCIorNOT_1 = m.group(3);
-					String sJsonCIorNOT_2 = m.group(4);
+					String sJsonNOT 		= m.group(2);
+					String sJsonOperator 	= m.group(3);
+					String sJsonCIorNOT_1 	= m.group(4);
+					String sJsonCIorNOT_2 	= m.group(5);
 
 					if(JSONFILTER_CASE_INSENSITIVE.equalsIgnoreCase(sJsonCIorNOT_1) || JSONFILTER_CASE_INSENSITIVE.equalsIgnoreCase(sJsonCIorNOT_2) 
 							|| JSONFILTER_CASE_INSENSITIVE.equals(sJsonOperator))
@@ -813,7 +824,8 @@ public class CRUDMgr {
 						isCaseInSensitive = true;
 					}
 					
-					if(JSONFILTER_NOT.equalsIgnoreCase(sJsonCIorNOT_1) || JSONFILTER_NOT.equalsIgnoreCase(sJsonCIorNOT_2) 
+					if(JSONFILTER_NOT.equalsIgnoreCase(sJsonNOT)
+							|| JSONFILTER_NOT.equalsIgnoreCase(sJsonCIorNOT_1) || JSONFILTER_NOT.equalsIgnoreCase(sJsonCIorNOT_2) 
 							|| JSONFILTER_NOT.equals(sJsonOperator))
 					{
 						isNotCondition = true;
@@ -830,6 +842,10 @@ public class CRUDMgr {
 					else if(JSONFILTER_TO.equals(sJsonOperator))
 					{
 						sOperator = " <= ";
+					}
+					else if(JSONFILTER_IN.equals(sJsonOperator))
+					{
+						sOperator = " IN ";
 					}
 					else if(oJsonValue!=null && oJsonValue instanceof String)
 					{
@@ -882,13 +898,41 @@ public class CRUDMgr {
 					sbWhere.append(" NOT (");
 				}
 				
+				StringBuffer sbSQLparam = new StringBuffer();
+				sbSQLparam.append("?");
+				
+				if(sOperator.trim().equalsIgnoreCase("IN"))
+				{
+					//multi-value
+					sbSQLparam.setLength(0);
+					String sStrValues = oJsonValue.toString();
+					StringTokenizer tk = new StringTokenizer(sStrValues, SQL_IN_SEPARATOR);
+					while(tk.hasMoreTokens())
+					{
+						String sVal = tk.nextToken();
+						oJsonValue = castJson2DBVal(aCrudKey, sJsonName, sVal.trim());
+						
+						if(sbSQLparam.length()>0)
+							sbSQLparam.append(", ");
+						sbSQLparam.append("?");
+						listValues.add(oJsonValue);
+					}
+					
+				}
+				else
+				{
+					oJsonValue = castJson2DBVal(aCrudKey, sJsonName, oJsonValue);
+					listValues.add(oJsonValue);
+				}
+				
+				
 				if(isCaseInSensitive && (oJsonValue instanceof String))
 				{
-					sbWhere.append(" UPPER(").append(sColName).append(") ").append(sOperator).append(" UPPER(?) ");
+					sbWhere.append(" UPPER(").append(sColName).append(") ").append(sOperator).append(" UPPER(").append(sbSQLparam.toString()).append(")");
 				}
 				else 
 				{
-					sbWhere.append(sColName).append(sOperator).append(" ? ");
+					sbWhere.append(sColName).append(sOperator).append(" (").append(sbSQLparam.toString()).append(")");
 				}
 				
 				
@@ -904,8 +948,7 @@ public class CRUDMgr {
 					sbWhere.append(" )");
 				}
 				// 
-				oJsonValue = castJson2DBVal(aCrudKey, sJsonName, oJsonValue);
-				listValues.add(oJsonValue);
+
 			}
 			else 
 			{
@@ -1526,6 +1569,9 @@ public class CRUDMgr {
 		if(!(aVal instanceof String))
 			return aVal;
 		
+		if(aJsonName.toLowerCase().indexOf(".in")>-1)
+			return aVal;
+		
 		//only cast string value
 		aJsonName = getJsonNameNoFilter(aJsonName);
 		
@@ -1925,5 +1971,4 @@ public class CRUDMgr {
 		
 		return mapDBMgr.get(aJdbcConfigName);		
 	}
-	
 }
