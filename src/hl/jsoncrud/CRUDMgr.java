@@ -134,12 +134,7 @@ public class CRUDMgr {
 		pattSQLjsonname 			= Pattern.compile("\\{(.+?)\\}");
 		pattInsertSQLtableFields 	= Pattern.compile("insert\\s+?into\\s+?([a-zA-Z_]+?)\\s+?\\((.+?)\\)");
 		//
-		pattJsonNameFilter 	= Pattern.compile("([a-zA-Z_-]+?)(?:\\.("+JSONFILTER_NOT+"))?"
-					+"(?:\\.("+JSONFILTER_FROM+"|"+JSONFILTER_TO+"|"+JSONFILTER_IN+"|"
-						+JSONFILTER_STARTWITH+"|"+JSONFILTER_ENDWITH+"|"+JSONFILTER_CONTAIN+"|"+JSONFILTER_NOT+"|"
-						+JSONFILTER_CASE_INSENSITIVE+"))"
-					+"(?:\\.("+JSONFILTER_CASE_INSENSITIVE+"|"+JSONFILTER_NOT+"))?"
-					+"(?:\\.("+JSONFILTER_CASE_INSENSITIVE+"|"+JSONFILTER_NOT+"))?");
+		pattJsonNameFilter 	= Pattern.compile(REGEX_JSONFILTER);
 		
 		try {
 			reloadProps();
