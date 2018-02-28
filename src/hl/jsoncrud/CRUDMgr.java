@@ -91,7 +91,7 @@ public class CRUDMgr {
 	{
 		JSONObject jsonVer = new JSONObject();
 		jsonVer.put("framework", "jsoncrud");
-		jsonVer.put("version", "0.5.2 beta");
+		jsonVer.put("version", "0.5.3 beta");
 		return jsonVer;
 	}
 	
@@ -585,14 +585,27 @@ public class CRUDMgr {
 									
 									if(sChildMapping.startsWith("\"") && sChildMapping.endsWith("\""))
 									{
-										JSONObject jsonData = jsonArrayChild.getJSONObject(0);
 										String sData = "";
-										if(jsonData!=null)
+										if(jsonArrayChild.length()>0)
 										{
-											String sAttrkey = sChildMapping.substring(1, sChildMapping.length()-1);
-											if(jsonData.has(sAttrkey))
+											Object oData = jsonArrayChild.get(0);
+											if(oData!=null)
 											{
-												sData = jsonData.getString(sAttrkey);
+												String sAttrkey = sChildMapping.substring(1, sChildMapping.length()-1);
+												
+												if(oData instanceof JSONObject)
+												{
+													JSONObject jsonData = ((JSONObject)oData);
+													if(jsonData.has(sAttrkey))
+													{
+														sData = String.valueOf(jsonData.get(sAttrkey));
+													}
+												}
+												else
+												{
+													sData = String.valueOf(oData);
+												}
+												
 											}
 										}
 										jsonOnbj.put(sJsonName, sData);
