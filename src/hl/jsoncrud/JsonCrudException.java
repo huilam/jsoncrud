@@ -39,8 +39,7 @@ public class JsonCrudException extends Exception {
 	{
 		super(aErrMessage, aThrowable);
 		error_code = aErrCode;
-		error_msg = aErrMessage;
-		
+		error_msg = getCauseErrMsg(aThrowable);
 		aThrowable.printStackTrace();
 	}
 	
@@ -48,7 +47,7 @@ public class JsonCrudException extends Exception {
 	{
 		super(aThrowable);
 		error_code = aErrCode;
-		error_msg = aThrowable.getMessage();
+		error_msg = getCauseErrMsg(aThrowable);
 		
 		aThrowable.printStackTrace();
 	}
@@ -66,5 +65,19 @@ public class JsonCrudException extends Exception {
 	public String getMessage()
 	{
 		return getErrorCode()+":"+getErrorMsg();
+	}
+	
+	private String getCauseErrMsg(Throwable aThrowable)
+	{
+		if(aThrowable==null)
+			return null;
+		
+		Throwable t = aThrowable.getCause();
+		if(t!=null && t.getMessage()!=null)
+		{
+			return  t.getMessage();
+		}
+		
+		return aThrowable.getMessage();
 	}
 }
