@@ -119,7 +119,7 @@ public class JsonCrudRestUtil {
 	{
 		String sConfigKey = JsonCrudConfig._PROP_KEY_CRUD+"."+aCrudKey;
 		
-		JSONObject jsonOutput = getCRUDMgr().retrieve(
+		JSONObject jsonOutput = getCRUDMgr().retrieveBySQL(
 				sConfigKey, aSQL, aObjParams, iStartFrom, iFetchSize);
 		
 		if(jsonOutput==null)

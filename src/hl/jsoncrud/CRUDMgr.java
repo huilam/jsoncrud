@@ -35,6 +35,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.StringTokenizer;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -81,6 +83,8 @@ public class CRUDMgr {
 	private JsonCrudConfig jsoncrudConfig 		= null;
 	private String config_prop_filename 		= null;
 	
+	private static Logger logger = Logger.getLogger(CRUDMgr.class.getName());
+	
 	public CRUDMgr()
 	{
 		config_prop_filename = null;
@@ -91,7 +95,7 @@ public class CRUDMgr {
 	{
 		JSONObject jsonVer = new JSONObject();
 		jsonVer.put("framework", "jsoncrud");
-		jsonVer.put("version", "0.5.3 beta");
+		jsonVer.put("version", "0.5.4 beta");
 		return jsonVer;
 	}
 	
@@ -451,13 +455,20 @@ public class CRUDMgr {
 	}
 	
 	
-	public JSONObject retrieve(String aCrudKey, String aSQL, Object[] aObjParams,
+	public JSONObject retrieveBySQL(String aCrudKey, String aSQL, Object[] aObjParams,
 			long aStartFrom, long aFetchSize) throws JsonCrudException
 	{
-		return retrieve(aCrudKey, aSQL, aObjParams, aStartFrom, aFetchSize, null);
+		return retrieveBySQL(aCrudKey, aSQL, aObjParams, aStartFrom, aFetchSize, null);
 	}
 	
-	private JSONObject retrieve(String aCrudKey, String aSQL, Object[] aObjParams,
+	public JSONObject retrieveBySQL(String aCrudKey, String aSQL, Object[] aSQLObjParams,
+			long aStartFrom, long aFetchSize, String[] aReturns) throws JsonCrudException
+	{
+		return retrieveBySQL(aCrudKey, aSQL, aSQLObjParams, null, aStartFrom, aFetchSize, aReturns);
+	}
+	
+	private JSONObject retrieveBySQL(String aCrudKey, String aSQL, Object[] aObjParams,
+			JSONObject aJsonWhere,
 			long aStartFrom, long aFetchSize, String[] aReturns) throws JsonCrudException
 	{
 		JSONObject jsonReturn 			= null;
@@ -797,9 +808,17 @@ public class CRUDMgr {
 		return jsonArr2;
 	}
 	
-	
 	public JSONObject retrieve(String aCrudKey, JSONObject aWhereJson, 
 			long aStartFrom, long aFetchSize, String[] aSorting, String[] aReturns) throws JsonCrudException
+	{
+		return retrieveBySQL(aCrudKey, null, aWhereJson, aStartFrom, aFetchSize, aSorting, aReturns);
+	}
+	
+	public JSONObject retrieveBySQL(String aCrudKey, 
+			String aTableViewSQL,
+			JSONObject aWhereJson, 
+			long aStartFrom, long aFetchSize, 
+			String[] aSorting, String[] aReturns) throws JsonCrudException
 	{
 		JSONObject jsonWhere = castJson2DBVal(aCrudKey, aWhereJson);
 		if(jsonWhere==null)
@@ -1021,9 +1040,14 @@ public class CRUDMgr {
 			}
 		}
 		
+		if(aTableViewSQL!=null && aTableViewSQL.length()>0)
+		{
+			sTableName = "("+aTableViewSQL+") AS TBL ";
+		}
+		
 		String sSQL = "SELECT * FROM "+sTableName+" WHERE 1=1 "+sbWhere.toString();
 		
-		JSONObject jsonReturn 	= retrieve(
+		JSONObject jsonReturn 	= retrieveBySQL(
 				aCrudKey, sSQL, 
 				listValues.toArray(new Object[listValues.size()]), 
 				aStartFrom, aFetchSize, aReturns);
@@ -1418,14 +1442,14 @@ public class CRUDMgr {
 				}
 
 				String sTableName = mapCrudConfig.get(JsonCrudConfig._PROP_KEY_TABLENAME);
-				System.out.print("[init] "+sKey+" - "+sTableName+" ... ");
+				logger.log(Level.INFO,"[init] "+sKey+" - "+sTableName+" ... ");
 				
 				if(sTableName!=null && sTableName.trim().length()>0)
 				{
 					Map<String, DBColMeta> mapCols = getTableMetaData(sKey, dbmgr, sTableName);
 					if(mapCols!=null)
 					{
-						System.out.println(mapCols.size()+" cols meta loaded.");
+						logger.log(Level.INFO, mapCols.size()+" cols meta loaded.");
 						mapTableCols.put(sKey, mapCols);
 						
 						for(String sColName : mapCols.keySet())

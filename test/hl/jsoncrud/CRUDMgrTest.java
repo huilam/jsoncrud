@@ -161,16 +161,26 @@ public class CRUDMgrTest {
 		System.out.println();
 		System.out.println("3. Custom SQL");
 		System.out.println("	3.1 Count & Group By ");
-		JSONObject jsonResult = m.retrieve("crud.jsoncrud_cfg", sbSQL.toString(), null, 0, 0);
+		JSONObject jsonResult = m.retrieveBySQL("crud.jsoncrud_cfg", sbSQL.toString(), null, 0, 0);
 		System.out.println("		- "+jsonResult);
 		
-		System.out.println("	3.2 Sequence ");
-		jsonResult = m.retrieve("crud.jsoncrud_cfg", "select nextval(?)", new Object[]{"jsoncrud_cfg_cfg_id_seq"}, 0, 0);
+		JSONObject jsonWhere = new JSONObject();
+		jsonWhere.put("moduleCode.in", "unit-test-1");
+		jsonWhere.put("appNamespace.endwith", "framework");
+		System.out.println("	3.2 Count & Group By with filters ");
+		jsonResult = m.retrieveBySQL("crud.jsoncrud_cfg", 
+				sbSQL.toString(), 
+				jsonWhere, 0, 0, null, null);
 		System.out.println("		- "+jsonResult);
 		
 		
-		System.out.println("	3.3 Test Empty result SQL ");
-		jsonResult = m.retrieve("crud.jsoncrud_cfg", "select * from jsoncrud_cfg where 1=2", null, 0, 0);
+		System.out.println("	3.3 Sequence ");
+		jsonResult = m.retrieveBySQL("crud.jsoncrud_cfg", "select nextval(?)", new Object[]{"jsoncrud_cfg_cfg_id_seq"}, 0, 0);
+		System.out.println("		- "+jsonResult);
+		
+		
+		System.out.println("	3.4 Test Empty result SQL ");
+		jsonResult = m.retrieveBySQL("crud.jsoncrud_cfg", "select * from jsoncrud_cfg where 1=2", null, 0, 0);
 		System.out.println("		- "+jsonResult);
 	}
 	
@@ -314,7 +324,7 @@ public class CRUDMgrTest {
 		//////
 		System.out.println("	5.5 Retrieve NULL SQL result ");
 		String sSQL = "select cfg_key, cfg_value from jsoncrud_cfg_values where cfg_key = ?";
-		jsonResult = m.retrieve("crud.jsoncrud_cfg_values", 
+		jsonResult = m.retrieveBySQL("crud.jsoncrud_cfg_values", 
 				sSQL, new Object[] {"not-suchrec-!#@#%!$#'"}, 0 ,0);
 		System.out.println("		- "+jsonResult);
 		
