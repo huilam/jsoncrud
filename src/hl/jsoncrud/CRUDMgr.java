@@ -95,7 +95,7 @@ public class CRUDMgr {
 	{
 		JSONObject jsonVer = new JSONObject();
 		jsonVer.put("framework", "jsoncrud");
-		jsonVer.put("version", "0.5.4 beta");
+		jsonVer.put("version", "0.5.5 beta");
 		return jsonVer;
 	}
 	
@@ -1505,7 +1505,7 @@ public class CRUDMgr {
 						////// Check if Nullable //////////
 						if(!col.getColnullable())
 						{
-							if(oVal==null || oVal.toString().trim().length()==0)
+							if(oVal==JSONObject.NULL || oVal==null || oVal.toString().trim().length()==0)
 							{
 								sbErrInfo.setLength(0);
 								sbErrInfo.append(JsonCrudConfig.ERRCODE_NOT_NULLABLE);								
@@ -1517,7 +1517,7 @@ public class CRUDMgr {
 							}
 						}
 
-						if(oVal!=null)
+						if(oVal!=null && oVal!=JSONObject.NULL)
 						{						
 							////// Check Data Type //////////
 							boolean isInvalidDataType = false;
