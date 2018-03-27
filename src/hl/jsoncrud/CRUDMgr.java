@@ -95,7 +95,7 @@ public class CRUDMgr {
 	{
 		JSONObject jsonVer = new JSONObject();
 		jsonVer.put("framework", "jsoncrud");
-		jsonVer.put("version", "0.5.6 beta");
+		jsonVer.put("version", "0.5.7 beta");
 		return jsonVer;
 	}
 	
@@ -454,11 +454,6 @@ public class CRUDMgr {
 		return (JSONArray) json.get(JsonCrudConfig._LIST_RESULT);
 	}
 	
-	public JSONObject executeSQL(String aCrudKey, String aSQL, Object[] aSQLObjParams) throws JsonCrudException
-	{
-		return retrieveBySQL(aCrudKey, aSQL, aSQLObjParams, null, 0, 0, null);
-	}
-	
 	public JSONObject retrieveBySQL(String aCrudKey, String aSQL, Object[] aObjParams,
 			long aStartFrom, long aFetchSize) throws JsonCrudException
 	{
@@ -471,12 +466,54 @@ public class CRUDMgr {
 		return retrieveBySQL(aCrudKey, aSQL, aSQLObjParams, null, aStartFrom, aFetchSize, aReturns);
 	}
 	
+	public long executeSQL(String aCrudKey, String aSQL, Object[] aObjParams) throws JsonCrudException
+	{
+		long lAffectRows = 0;
+		
+		Map<String, String> map 		= jsoncrudConfig.getConfig(aCrudKey);
+		if(map==null)
+			return 0;
+		
+		String sSQL 		= aSQL;
+		
+		String sJdbcName 	= map.get(JsonCrudConfig._PROP_KEY_DBCONFIG);
+		JdbcDBMgr dbmgr 	= mapDBMgr.get(sJdbcName);
+		
+		Connection conn 		= null;
+		PreparedStatement stmt	= null;
+		
+		try{
+			
+			conn = dbmgr.getConnection();
+			stmt = conn.prepareStatement(sSQL);
+			stmt = JdbcDBMgr.setParams(stmt, aObjParams);
+			lAffectRows  = stmt.executeUpdate();
+		}
+		catch(SQLException sqlEx)
+		{
+			throw new JsonCrudException(JsonCrudConfig.ERRCODE_SQLEXCEPTION, "crudKey:"+aCrudKey+", sql:"+sSQL+", params:"+listParamsToString(aObjParams), sqlEx);
+		}
+		finally
+		{
+			try {
+				if(dbmgr!=null)
+					dbmgr.closeQuietly(conn, stmt, null);
+			} catch (SQLException e) {
+				throw new JsonCrudException(JsonCrudConfig.ERRCODE_SQLEXCEPTION, e);
+			}
+		}
+		
+		return lAffectRows;
+	}
+	
 	private JSONObject retrieveBySQL(String aCrudKey, String aSQL, Object[] aObjParams,
 			JSONObject aJsonWhere,
 			long aStartFrom, long aFetchSize, String[] aReturns) throws JsonCrudException
 	{
 		JSONObject jsonReturn 			= null;
 		Map<String, String> map 		= jsoncrudConfig.getConfig(aCrudKey);
+		if(map==null)
+			return null;
 		
 		Map<String, String> mapCrudSql 	= mapJson2Sql.get(aCrudKey);
 		
@@ -742,7 +779,8 @@ public class CRUDMgr {
 		{
 			
 			try {
-				dbmgr.closeQuietly(conn, stmt, rs);
+				if(dbmgr!=null)
+					dbmgr.closeQuietly(conn, stmt, rs);
 			} catch (SQLException e) {
 				throw new JsonCrudException(JsonCrudConfig.ERRCODE_SQLEXCEPTION, e);
 			}
