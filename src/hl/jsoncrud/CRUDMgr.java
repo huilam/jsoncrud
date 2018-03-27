@@ -95,7 +95,7 @@ public class CRUDMgr {
 	{
 		JSONObject jsonVer = new JSONObject();
 		jsonVer.put("framework", "jsoncrud");
-		jsonVer.put("version", "0.5.5 beta");
+		jsonVer.put("version", "0.5.6 beta");
 		return jsonVer;
 	}
 	
@@ -454,6 +454,10 @@ public class CRUDMgr {
 		return (JSONArray) json.get(JsonCrudConfig._LIST_RESULT);
 	}
 	
+	public JSONObject executeSQL(String aCrudKey, String aSQL, Object[] aSQLObjParams) throws JsonCrudException
+	{
+		return retrieveBySQL(aCrudKey, aSQL, aSQLObjParams, null, 0, 0, null);
+	}
 	
 	public JSONObject retrieveBySQL(String aCrudKey, String aSQL, Object[] aObjParams,
 			long aStartFrom, long aFetchSize) throws JsonCrudException
