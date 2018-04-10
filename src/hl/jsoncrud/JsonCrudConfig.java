@@ -72,6 +72,12 @@ public class JsonCrudConfig {
 	public static String _PROP_KEY_JDBC_PWD 		= "pwd";
 	public static String _PROP_KEY_JDBC_URL 		= "url";
 	public static String _PROP_KEY_JDBC_CONNPOOL	= "connpool";
+	
+	public static String _PROP_KEY_JDBC_FETCHSIZE				= "fetchsize";
+	public static String _PROP_KEY_JDBC_MAXCONNS				= "maxconn";
+	public static String _PROP_KEY_JDBC_CONN_WAIT_INTERVAL_MS 	= "conn.wait-interval.ms";
+	public static String _PROP_KEY_JDBC_CONN_TIMEOUT_MS			= "conn.timeout.ms";
+	
 	//
 	public static String _PROP_KEY_JDBC			= "jdbc";
 	public static String _PROP_KEY_DBCONFIG		= "dbconfig";
