@@ -95,7 +95,7 @@ public class CRUDMgr {
 	{
 		JSONObject jsonVer = new JSONObject();
 		jsonVer.put("framework", "jsoncrud");
-		jsonVer.put("version", "0.5.7 beta");
+		jsonVer.put("version", "0.5.8 beta");
 		return jsonVer;
 	}
 	
