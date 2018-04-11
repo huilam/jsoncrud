@@ -43,7 +43,6 @@ import java.util.regex.Pattern;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
-import hl.common.DBMgr;
 import hl.common.JdbcDBMgr;
 
 public class CRUDMgr {
@@ -80,10 +79,7 @@ public class CRUDMgr {
 	private Pattern pattJsonSQL 		= null;
 	private Pattern pattJsonNameFilter			= null;
 	private Pattern pattInsertSQLtableFields 	= null;
-	
-	private Pattern pattSelectCount 	= Pattern.compile("((?:SELECT|select|Select) .+? (?:FROM|from|From) )");
-	
-	
+		
 	private JsonCrudConfig jsoncrudConfig 		= null;
 	private String config_prop_filename 		= null;
 	
@@ -504,8 +500,54 @@ public class CRUDMgr {
 		return lAffectRows;
 	}
 	
+	private long getTotalSQLCount(String aCrudKey, String aSQL, Object[] aObjParams) throws JsonCrudException
+	{
+		Map<String, String> map 		= jsoncrudConfig.getConfig(aCrudKey);
+		if(map==null)
+			return 0;
+		String sJdbcName 	= map.get(JsonCrudConfig._PROP_KEY_DBCONFIG);
+		JdbcDBMgr dbmgr 	= mapDBMgr.get(sJdbcName);
+		
+		long lTotalCount = 0;
+		
+		Connection conn = null;
+		PreparedStatement stmt	= null;
+		ResultSet rs = null;
+		try {
+			conn = dbmgr.getConnection();
+			stmt = conn.prepareStatement(aSQL);
+			stmt = JdbcDBMgr.setParams(stmt, aObjParams);
+			rs = stmt.executeQuery();
+			if(rs.next())
+			{
+				lTotalCount = rs.getLong(1);
+			}
+		} 
+		catch (SQLException sqlEx) 
+		{
+			System.err.println(aSQL);
+			throw new JsonCrudException(JsonCrudConfig.ERRCODE_SQLEXCEPTION, 
+					"crudKey:"+aCrudKey+", sql:"+aSQL+", params:"+listParamsToString(aObjParams), sqlEx);	
+		}
+		finally
+		{
+			try {
+				dbmgr.closeQuietly(conn, stmt, rs);
+			} catch (SQLException e) {
+			}
+		}
+		return lTotalCount;
+	}
+	
 	private JSONObject retrieveBySQL(String aCrudKey, String aSQL, Object[] aObjParams,
 			long aStartFrom, long aFetchSize, String[] aReturns) throws JsonCrudException
+	{
+		return retrieveBySQL(aCrudKey, aSQL, aObjParams, aStartFrom, aFetchSize, aReturns, 0);
+	}
+	
+	private JSONObject retrieveBySQL(String aCrudKey, String aSQL, Object[] aObjParams,
+			long aStartFrom, long aFetchSize, String[] aReturns, 
+			long aTotalRecordCount) throws JsonCrudException
 	{
 		JSONObject jsonReturn 			= null;
 		Map<String, String> map 		= jsoncrudConfig.getConfig(aCrudKey);
@@ -537,10 +579,12 @@ public class CRUDMgr {
 		if(aStartFrom<=0)
 			aStartFrom = 1;
 		
+		
 		JSONArray jsonArr = new JSONArray();
 		try{
 			
-			conn = dbmgr.getConnection();			
+			conn = dbmgr.getConnection();
+			
 			stmt = conn.prepareStatement(sSQL);
 			stmt = JdbcDBMgr.setParams(stmt, aObjParams);
 			if(iFetchSize>0)
@@ -754,11 +798,19 @@ public class CRUDMgr {
 			}
 			
 			long lTotalCount = lTotalResult;
-			while(rs.next())
-			{
-				lTotalCount++;	
-			}
 			
+			
+			if(aTotalRecordCount<=0)
+			{
+				while(rs.next())
+				{
+					lTotalCount++;	
+				}
+			}
+			else
+			{
+				lTotalCount = aTotalRecordCount;
+			}
 			
 			if(jsonArr!=null)
 			{
@@ -784,6 +836,7 @@ public class CRUDMgr {
 		{
 			if(conn!=null)
 			{
+				//
 				if(iFetchSize>0)
 				{
 					try {
@@ -1062,6 +1115,8 @@ public class CRUDMgr {
 			}
 		}
 		
+		List<String> listSelectFields = new ArrayList();
+		
 		StringBuffer sbOrderBy = new StringBuffer();
 		if(aSorting!=null && aSorting.length>0)
 		{
@@ -1090,15 +1145,18 @@ public class CRUDMgr {
 					sbOrderBy.append(sOrderColName);
 					if(sOrderSeqKeyword.length()>0)
 						sbOrderBy.append(" ").append(sOrderSeqKeyword);
+					
+					
+					if(!listSelectFields.contains(sOrderColName.toUpperCase()))
+					{
+						listSelectFields.add(sOrderColName.toUpperCase());
+					}
+
 				}
 				else
 				{
 					throw new JsonCrudException(JsonCrudConfig.ERRCODE_INVALID_SORTING, "Invalid sorting - "+aCrudKey+" : "+sJsonAttr);
 				}
-			}
-			if(sbOrderBy.length()>0)
-			{
-				sbWhere.append(" ORDER BY ").append(sbOrderBy.toString());
 			}
 		}
 		
@@ -1107,12 +1165,58 @@ public class CRUDMgr {
 			sTableName = "("+aTableViewSQL+") AS TBL ";
 		}
 		
-		String sSQL = "SELECT * FROM "+sTableName+" WHERE 1=1 "+sbWhere.toString();
+		if(aReturns!=null)
+		{
+			for(String sReturn : aReturns)
+			{
+				String sDBColName = mapCrudJsonCol.get(sReturn);
+				if(sDBColName==null)
+					sDBColName = sReturn;
+				
+				if(!listSelectFields.contains(sDBColName.toUpperCase()))
+				{
+					listSelectFields.add(sDBColName.toUpperCase());
+				}
+			}
+		}
+		
+		StringBuffer sbSelectFields = new StringBuffer();
+		if(aTableViewSQL==null || aTableViewSQL.length()==0)
+		{
+			if(listSelectFields.size()>0)
+			{
+				for(String aField : listSelectFields)
+				{
+					if(sbSelectFields.length()>0)
+						sbSelectFields.append(", ");
+					sbSelectFields.append(aField);
+				}
+			}
+		}
+		
+		if(sbSelectFields.length()==0)
+		{
+			sbSelectFields.append("*");
+		}
+		
+		Object[] objParams = listValues.toArray(new Object[listValues.size()]);
+		StringBuffer sbSQL = new StringBuffer();
+		sbSQL.append("SELECT COUNT(*) FROM ").append(sTableName).append(" WHERE 1=1 ").append(sbWhere.toString());
+		
+		long lTotalRecordCount = getTotalSQLCount(aCrudKey, sbSQL.toString(), objParams);
+		
+		sbSQL.setLength(0);
+		sbSQL.append(" SELECT ").append(sbSelectFields.toString()).append(" FROM ").append(sTableName);
+		sbSQL.append(" WHERE 1=1 ").append(sbWhere.toString());
+		if(sbOrderBy.length()>0)
+		{
+			sbSQL.append(" ORDER BY ").append(sbOrderBy.toString());
+		}
 		
 		JSONObject jsonReturn 	= retrieveBySQL(
-				aCrudKey, sSQL, 
-				listValues.toArray(new Object[listValues.size()]), 
-				aStartFrom, aFetchSize, aReturns);
+				aCrudKey, sbSQL.toString(), 
+				objParams, 
+				aStartFrom, aFetchSize, aReturns, lTotalRecordCount);
 		
 		if(jsonReturn!=null && jsonReturn.has(JsonCrudConfig._LIST_META))
 		{
