@@ -43,6 +43,7 @@ import java.util.regex.Pattern;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
+import hl.common.DBMgr;
 import hl.common.JdbcDBMgr;
 
 public class CRUDMgr {
@@ -79,6 +80,9 @@ public class CRUDMgr {
 	private Pattern pattJsonSQL 		= null;
 	private Pattern pattJsonNameFilter			= null;
 	private Pattern pattInsertSQLtableFields 	= null;
+	
+	private Pattern pattSelectCount 	= Pattern.compile("((?:SELECT|select|Select) .+? (?:FROM|from|From) )");
+	
 	
 	private JsonCrudConfig jsoncrudConfig 		= null;
 	private String config_prop_filename 		= null;
@@ -460,12 +464,6 @@ public class CRUDMgr {
 		return retrieveBySQL(aCrudKey, aSQL, aObjParams, aStartFrom, aFetchSize, null);
 	}
 	
-	public JSONObject retrieveBySQL(String aCrudKey, String aSQL, Object[] aSQLObjParams,
-			long aStartFrom, long aFetchSize, String[] aReturns) throws JsonCrudException
-	{
-		return retrieveBySQL(aCrudKey, aSQL, aSQLObjParams, null, aStartFrom, aFetchSize, aReturns);
-	}
-	
 	public long executeSQL(String aCrudKey, String aSQL, Object[] aObjParams) throws JsonCrudException
 	{
 		long lAffectRows = 0;
@@ -507,7 +505,6 @@ public class CRUDMgr {
 	}
 	
 	private JSONObject retrieveBySQL(String aCrudKey, String aSQL, Object[] aObjParams,
-			JSONObject aJsonWhere,
 			long aStartFrom, long aFetchSize, String[] aReturns) throws JsonCrudException
 	{
 		JSONObject jsonReturn 			= null;
@@ -531,6 +528,7 @@ public class CRUDMgr {
 			}
 		}
 		
+		int iFetchSize = dbmgr.getDBFetchSize();
 		boolean isFilterByReturns = listReturnsAttrName.size()>0;
 		Connection conn = null;
 		PreparedStatement stmt	= null;
@@ -542,9 +540,15 @@ public class CRUDMgr {
 		JSONArray jsonArr = new JSONArray();
 		try{
 			
-			conn = dbmgr.getConnection();
+			conn = dbmgr.getConnection();			
 			stmt = conn.prepareStatement(sSQL);
 			stmt = JdbcDBMgr.setParams(stmt, aObjParams);
+			if(iFetchSize>0)
+			{
+				conn.setAutoCommit(false);
+				stmt.setFetchSize(iFetchSize);
+			}
+			
 			rs   = stmt.executeQuery();
 			
 			ResultSetMetaData meta 	= rs.getMetaData();
@@ -609,7 +613,6 @@ public class CRUDMgr {
 								
 							}
 							
-							
 							String sSQL2FetchLimit = map.get("jsonattr."+sJsonName+".sql.fetch.limit");
 							long lFetchLimit = 0;
 							if(sSQL2FetchLimit!=null)
@@ -623,7 +626,7 @@ public class CRUDMgr {
 								}
 							}
 							
-							JSONArray jsonArrayChild = retrieveChild(dbmgr, sSQL2, listParams2, 1, lFetchLimit);
+							JSONArray jsonArrayChild = retrieveChild(dbmgr, conn, sSQL2, listParams2, 1, lFetchLimit);
 							
 							if(jsonArrayChild!=null)
 							{
@@ -742,7 +745,6 @@ public class CRUDMgr {
 					
 				}
 				
-				
 				jsonArr.put(jsonOnbj);
 				
 				if(aFetchSize>0 && jsonArr.length()>=aFetchSize)
@@ -751,9 +753,12 @@ public class CRUDMgr {
 				}
 			}
 			
-			while(rs.next()){
-				lTotalResult++;
+			long lTotalCount = lTotalResult;
+			while(rs.next())
+			{
+				lTotalCount++;	
 			}
+			
 			
 			if(jsonArr!=null)
 			{
@@ -761,7 +766,7 @@ public class CRUDMgr {
 				jsonReturn.put(JsonCrudConfig._LIST_RESULT, jsonArr);
 				//
 				JSONObject jsonMeta = new JSONObject();
-				jsonMeta.put(JsonCrudConfig._LIST_TOTAL, lTotalResult);
+				jsonMeta.put(JsonCrudConfig._LIST_TOTAL, lTotalCount);
 				jsonMeta.put(JsonCrudConfig._LIST_START, aStartFrom);
 				//
 				if(aFetchSize>0)
@@ -777,6 +782,23 @@ public class CRUDMgr {
 		}
 		finally
 		{
+			if(conn!=null)
+			{
+				if(iFetchSize>0)
+				{
+					try {
+						conn.commit();
+					} catch (SQLException e1) {
+						e1.printStackTrace();
+					}
+					//
+					try {
+						conn.setAutoCommit(true);
+					} catch (SQLException e) {
+						e.printStackTrace();
+					}
+				}
+			}
 			
 			try {
 				if(dbmgr!=null)
@@ -788,9 +810,8 @@ public class CRUDMgr {
 		return jsonReturn;		
 	}
 	
-	private JSONArray retrieveChild(JdbcDBMgr aJdbcMgr, String aSQL, List<Object> aObjParamList, long iFetchStart, long iFetchSize) throws SQLException
+	private JSONArray retrieveChild(JdbcDBMgr aJdbcMgr, Connection aConnection, String aSQL, List<Object> aObjParamList, long iFetchStart, long iFetchSize) throws SQLException
 	{
-		Connection conn2 	= null;
 		PreparedStatement stmt2	= null;
 		ResultSet rs2 = null;
 		int iTotalCols = 0;
@@ -798,8 +819,7 @@ public class CRUDMgr {
 		JSONArray jsonArr2 	= null;
 
 		try{
-			conn2 = aJdbcMgr.getConnection();
-			stmt2 = conn2.prepareStatement(aSQL);
+			stmt2 = aConnection.prepareStatement(aSQL);
 			stmt2 = JdbcDBMgr.setParams(stmt2, aObjParamList);
 			rs2   = stmt2.executeQuery();
 			
@@ -845,7 +865,7 @@ public class CRUDMgr {
 			throw new SQLException("sql:"+aSQL+", params:"+listParamsToString(aObjParamList), sqlEx);
 		}
 		finally{
-			aJdbcMgr.closeQuietly(conn2, stmt2, rs2);
+			aJdbcMgr.closeQuietly(null, stmt2, rs2);
 		}
 		return jsonArr2;
 	}
@@ -1366,6 +1386,33 @@ public class CRUDMgr {
 			{
 				try {
 					dbmgr = new JdbcDBMgr(sJdbcClassName, sJdbcUrl, sJdbcUid, sJdbcPwd);
+					
+					long lJdbcFetchSize 		= strToLong(mapJdbcConfig.get(JsonCrudConfig._PROP_KEY_JDBC_FETCHSIZE),0);
+					long lJdbcMaxConn 			= strToLong(mapJdbcConfig.get(JsonCrudConfig._PROP_KEY_JDBC_MAXCONNS),0);
+					long lJdbcWaitIntervalMs 	= strToLong(mapJdbcConfig.get(JsonCrudConfig._PROP_KEY_JDBC_CONN_WAIT_INTERVAL_MS),0);
+					long lJdbcTimeoutMs 		= strToLong(mapJdbcConfig.get(JsonCrudConfig._PROP_KEY_JDBC_CONN_TIMEOUT_MS),0);
+					
+					if(lJdbcMaxConn>0)
+					{
+						dbmgr.setMaxDBConn((int)lJdbcMaxConn);
+					}
+					
+					if(lJdbcWaitIntervalMs>0)
+					{
+						dbmgr.setWaitingIntervalMs(lJdbcWaitIntervalMs);
+					}
+					
+					if(lJdbcTimeoutMs>0)
+					{
+						dbmgr.setTimeoutMs(lJdbcTimeoutMs);
+					}
+					
+					if(lJdbcFetchSize>0)
+					{
+						dbmgr.setDBFetchSize((int)lJdbcFetchSize);
+					}
+					
+					
 				}catch(Exception ex)
 				{
 					throw new SQLException("Error initialize JDBC - "+aJdbcConfigKey, ex);
@@ -1393,6 +1440,21 @@ public class CRUDMgr {
 			}
 		}
 		return dbmgr;
+	}
+	
+	private static long strToLong(String aString, long aDefaultVal)
+	{
+		long lValue = aDefaultVal;
+		if(aString!=null)
+		{
+			try {
+				lValue = Long.parseLong(aString);
+			}catch(NumberFormatException ex)
+			{
+				lValue = aDefaultVal;
+			}
+		}
+		return lValue;
 	}
 	
 	public void reloadProps() throws Exception 
