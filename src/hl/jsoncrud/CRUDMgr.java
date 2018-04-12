@@ -380,10 +380,10 @@ public class CRUDMgr {
 						List<Object[]> listParams2 	= getSubQueryParams(mapCrudCfg, jsonReturn, sJsonName2);
 						String sObjInsertSQL 		= mapCrudCfg.get("jsonattr."+sJsonName2+"."+JsonCrudConfig._PROP_KEY_CHILD_INSERTSQL);
 						
-						long lupdatedRow = 0;
+						long lupdatedRow 	= 0;
 						
 						try {
-							lupdatedRow = updateChildObject(dbmgr, sObjInsertSQL, listParams2);
+							lupdatedRow 	= updateChildObject(dbmgr, sObjInsertSQL, listParams2);
 						}
 						catch(Throwable ex)
 						{
@@ -1751,7 +1751,9 @@ public class CRUDMgr {
 								sbErrInfo.append(JsonCrudConfig.ERRCODE_INVALID_TYPE);								
 								if(isDebugMode)
 								{
-									sbErrInfo.append(" - '").append(col.getColname()).append("' invalid type, expect:").append(col.getColtypename()).append(" actual:").append(oVal.getClass().getSimpleName()).append(". ").append(col);
+									sbErrInfo.append(" - '").append(col.getColname()).append("' invalid type,");
+									sbErrInfo.append(" expect:").append(col.getColtypename());
+									sbErrInfo.append(" actual:").append(oVal.getClass().getSimpleName()).append(". ").append(col);
 								}
 								listErr.add(sbErrInfo.toString());
 							}
@@ -1767,7 +1769,9 @@ public class CRUDMgr {
 									sbErrInfo.append(JsonCrudConfig.ERRCODE_EXCEED_SIZE);								
 									if(isDebugMode)
 									{
-										sbErrInfo.append(" - '").append(col.getColname()).append("' exceed allowed size, expect:").append(col.getColsize()).append(" actual:").append(sVal.length()).append(". ").append(col);
+										sbErrInfo.append(" - '").append(col.getColname()).append("' exceed allowed size,");
+										sbErrInfo.append(" expect:").append(col.getColsize());
+										sbErrInfo.append(" actual:").append(sVal.length()).append(". ").append(col);
 									}
 									listErr.add(sbErrInfo.toString());
 								}
@@ -1869,13 +1873,17 @@ public class CRUDMgr {
 		aJsonName = getJsonNameNoFilter(aJsonName);
 		//
 		Map<String,DBColMeta> cols = mapTableCols.get(aCrudKey);
-		Map<String,String> mapCol2Json = mapColName2Json.get(aCrudKey);
-		for(DBColMeta col : cols.values())
+		if(cols!=null)
 		{
-			String sColJsonName = mapCol2Json.get(col.getColname());
-			if(sColJsonName!=null && sColJsonName.equalsIgnoreCase(aJsonName))
+			Map<String,String> mapCol2Json = mapColName2Json.get(aCrudKey);
+			if(mapCol2Json!=null && mapCol2Json.size()>0)
+			for(DBColMeta col : cols.values())
 			{
-				return col;
+				String sColJsonName = mapCol2Json.get(col.getColname());
+				if(sColJsonName!=null && sColJsonName.equalsIgnoreCase(aJsonName))
+				{
+					return col;
+				}
 			}
 		}
 		return null;
