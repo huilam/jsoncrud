@@ -130,7 +130,17 @@ public class JsonCrudConfig {
 		mapJsonCrudConfig = new HashMap<String,Map<String, String>>();
 		patJsonDaoKey = Pattern.compile("(.+?\\..+?)\\.");
 		
-		loadProp(aProperties);
+		Properties prop = new Properties();
+		if(aProperties!=null)
+		{
+			for(Object oKey : aProperties.keySet())
+			{
+				String sKey = oKey.toString();
+				String sVal = aProperties.getProperty(sKey);
+				prop.setProperty(sKey, sVal.trim());
+			}
+		}
+		loadProp(prop);
 	}	
 	
 	public void loadProp(Properties aProp) throws IOException
