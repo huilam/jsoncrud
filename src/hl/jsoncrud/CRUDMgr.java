@@ -95,7 +95,7 @@ public class CRUDMgr {
 	{
 		JSONObject jsonVer = new JSONObject();
 		jsonVer.put("framework", "jsoncrud");
-		jsonVer.put("version", "0.5.8 beta");
+		jsonVer.put("version", "0.5.9 beta");
 		return jsonVer;
 	}
 	
@@ -1183,7 +1183,9 @@ public class CRUDMgr {
 		StringBuffer sbSelectFields = new StringBuffer();
 		if(aTableViewSQL==null || aTableViewSQL.length()==0)
 		{
-			if(listSelectFields.size()>0)
+			//limit result when return fields are specified
+			if(listSelectFields.size()>0 
+					&& aReturns!=null && aReturns.length>0)
 			{
 				for(String aField : listSelectFields)
 				{
