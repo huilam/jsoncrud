@@ -526,9 +526,9 @@ public class CRUDMgr {
 		} 
 		catch (SQLException sqlEx) 
 		{
-			System.err.println(aSQL);
-			throw new JsonCrudException(JsonCrudConfig.ERRCODE_SQLEXCEPTION, 
-					"crudKey:"+aCrudKey+", sql:"+aSQL+", params:"+listParamsToString(aObjParams), sqlEx);	
+			String sDebug = "crudKey:"+aCrudKey+", sql:"+aSQL+", params:"+listParamsToString(aObjParams);
+			logger.log(Level.SEVERE, sDebug, sqlEx);
+			throw new JsonCrudException(JsonCrudConfig.ERRCODE_SQLEXCEPTION, sDebug, sqlEx);	
 		}
 		finally
 		{
@@ -1861,6 +1861,7 @@ public class CRUDMgr {
 		if(!(aVal instanceof String))
 			return aVal;
 		
+		//multi-values
 		if(aJsonName.toLowerCase().indexOf(".in")>-1)
 			return aVal;
 		
