@@ -270,4 +270,18 @@ public class DBColMeta extends JSONObject{
 			}catch(JSONException ex){}
 		}
 	}	
+	
+	public String toString()
+	{
+		StringBuffer sb = new StringBuffer();
+		sb.append("jsonname=").append(getJsonname());
+		sb.append(",tablename=").append(getTablename());
+		sb.append(",col.name=").append(getColname());
+		sb.append(",col.type=").append(getColtype());
+		sb.append(",col.classname=").append(getColclassname());
+		sb.append(",col.size=").append(getColsize());
+		sb.append(",col.autoincrement=").append(getColautoincrement());
+		sb.append(",col.nullable=").append(getColnullable());
+		return sb.toString();
+	}
 }

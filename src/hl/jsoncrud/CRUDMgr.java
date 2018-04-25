@@ -1986,6 +1986,23 @@ public class CRUDMgr {
 		else
 		{
 			mapSQLmeta.add(aSQL);
+			
+			String sShortSQL = null;
+			if(aSQL.length()>50)
+			{
+				sShortSQL = aSQL.subSequence(0, 50)+"...";
+			}else
+			{
+				sShortSQL = aSQL;
+			}
+			
+			logger.log(Level.INFO, "Register dbcol metadata : "+sShortSQL);
+			for(String sColName : mapDBColJson.keySet())
+			{
+				DBColMeta col = mapDBColJson.get(sColName);
+				logger.log(Level.INFO, "  - "+sColName+":"+col);
+			}
+			
 			return mapDBColJson;
 		}
 		
