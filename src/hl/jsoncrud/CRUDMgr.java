@@ -1708,6 +1708,27 @@ public class CRUDMgr {
 				mapCols.putAll(mapNewCols);
 			}
 			mapTableCols.put(sKey, mapCols);
+			
+			// debug
+			if(logger.getLevel()==Level.FINEST)
+			{
+				String sShortSQL = null;
+				if(aSQL.length()>50)
+				{
+					sShortSQL = aSQL.subSequence(0, 50)+"...";
+				}else
+				{
+					sShortSQL = aSQL;
+				}
+				
+				logger.log(Level.FINEST, "Register db metadata : "+sKey+" - "+sShortSQL);
+				for(String sColName : mapCols.keySet())
+				{
+					DBColMeta col = mapCols.get(sColName);
+					logger.log(Level.FINEST, "   - "+sColName+":"+col);
+				}
+			}
+			
 		}
 		return mapCols;
 	}
@@ -1986,23 +2007,6 @@ public class CRUDMgr {
 		else
 		{
 			mapSQLmeta.add(aSQL);
-			
-			String sShortSQL = null;
-			if(aSQL.length()>50)
-			{
-				sShortSQL = aSQL.subSequence(0, 50)+"...";
-			}else
-			{
-				sShortSQL = aSQL;
-			}
-			
-			logger.log(Level.INFO, "Register dbcol metadata : "+sShortSQL);
-			for(String sColName : mapDBColJson.keySet())
-			{
-				DBColMeta col = mapDBColJson.get(sColName);
-				logger.log(Level.INFO, "  - "+sColName+":"+col);
-			}
-			
 			return mapDBColJson;
 		}
 		
