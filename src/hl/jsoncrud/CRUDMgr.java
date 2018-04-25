@@ -67,6 +67,7 @@ public class CRUDMgr {
 		+"(?:\\.("+JSONFILTER_CASE_INSENSITIVE+"|"+JSONFILTER_NOT+"))?"
 		+"(?:\\.("+JSONFILTER_CASE_INSENSITIVE+"|"+JSONFILTER_NOT+"))?";
 	
+	private List<String> mapSQLmeta 							= new ArrayList<String>();
 
 	private Map<String, JdbcDBMgr> mapDBMgr 					= null;
 	private Map<String, Map<String, String>> mapJson2ColName 	= null;
@@ -95,7 +96,7 @@ public class CRUDMgr {
 	{
 		JSONObject jsonVer = new JSONObject();
 		jsonVer.put("framework", "jsoncrud");
-		jsonVer.put("version", "0.5.9 beta");
+		jsonVer.put("version", "0.6.0 beta");
 		return jsonVer;
 	}
 	
@@ -935,6 +936,14 @@ public class CRUDMgr {
 			long aStartFrom, long aFetchSize, 
 			String[] aSorting, String[] aReturns) throws JsonCrudException
 	{
+		
+		try {
+			cacheTableMetaDataBySQL(aCrudKey, aTableViewSQL);
+		} catch (SQLException e) {
+			// Silent, as this is just a pre-process
+			logger.log(Level.SEVERE, e.getMessage(), e);
+		}
+		
 		JSONObject jsonWhere = castJson2DBVal(aCrudKey, aWhereJson);
 		if(jsonWhere==null)
 			jsonWhere = new JSONObject();
@@ -1115,7 +1124,7 @@ public class CRUDMgr {
 			}
 		}
 		
-		List<String> listSelectFields = new ArrayList();
+		List<String> listSelectFields = new ArrayList<String>();
 		
 		StringBuffer sbOrderBy = new StringBuffer();
 		if(aSorting!=null && aSorting.length>0)
@@ -1652,15 +1661,15 @@ public class CRUDMgr {
 				}
 
 				String sTableName = mapCrudConfig.get(JsonCrudConfig._PROP_KEY_TABLENAME);
-				logger.log(Level.INFO,"[init] "+sKey+" - "+sTableName+" ... ");
+				logger.log(Level.INFO,"[init] "+sKey+" - tablename:"+sTableName+" ... ");
 				
 				if(sTableName!=null && sTableName.trim().length()>0)
 				{
-					Map<String, DBColMeta> mapCols = getTableMetaData(sKey, dbmgr, sTableName);
+					Map<String, DBColMeta> mapCols = cacheTableMetaDataBySQL(sKey, "SELECT * FROM "+sTableName+" WHERE 1=2");
 					if(mapCols!=null)
-					{
-						logger.log(Level.INFO, mapCols.size()+" cols meta loaded.");
-						mapTableCols.put(sKey, mapCols);
+					{	
+
+						logger.log(Level.INFO, sKey+"."+sTableName+" : "+mapCols.size()+" cols meta loaded.");
 						
 						for(String sColName : mapCols.keySet())
 						{
@@ -1681,6 +1690,28 @@ public class CRUDMgr {
 			}
 		}
 	}
+	
+	private Map<String, DBColMeta> cacheTableMetaDataBySQL(String sKey, String aSQL) throws SQLException
+	{
+		Map<String, DBColMeta> mapCols = null;
+		Map<String, DBColMeta> mapNewCols = getTableMetaDataBySQL(sKey, aSQL);
+		if(mapNewCols!=null)
+		{
+			
+			mapCols = mapTableCols.get(sKey);
+			if(mapCols==null)
+			{
+				mapCols = mapNewCols;
+			}
+			else
+			{
+				mapCols.putAll(mapNewCols);
+			}
+			mapTableCols.put(sKey, mapCols);
+		}
+		return mapCols;
+	}
+	
 	
 	public Map<String, String[]> validateDataWithSchema(String aCrudKey, JSONObject aJsonData)
 	{
@@ -1891,21 +1922,32 @@ public class CRUDMgr {
 		return null;
 	}
 	
-	private Map<String, DBColMeta> getTableMetaData(String aKey, JdbcDBMgr aDBMgr, String aTableName) throws SQLException
+	private Map<String, DBColMeta> getTableMetaDataBySQL(String aCrudKey, String aSQL) throws SQLException
 	{
+		if(aSQL==null || aSQL.length()==0)
+			return null;
+		
+		if(mapSQLmeta.contains(aSQL))
+			return null;
+		
 		Map<String, DBColMeta> mapDBColJson = new HashMap<String, DBColMeta>();
-		String sSQL = "SELECT * FROM "+aTableName+" WHERE 1=2";
+		String sSQL = aSQL;
 
+		Map<String, String> mapConfig = jsoncrudConfig.getConfig(aCrudKey);
+		String sJdbcKey = mapConfig.get("dbconfig");
+		
+		JdbcDBMgr jdbcMgr = mapDBMgr.get(sJdbcKey);
+		
 		Connection conn = null;
 		PreparedStatement stmt	= null;
 		ResultSet rs = null;
 		
 		try{
-			conn = aDBMgr.getConnection();
+			conn = jdbcMgr.getConnection();
 			stmt = conn.prepareStatement(sSQL);
 			rs = stmt.executeQuery();
 			
-			Map<String, String> mapColJsonName = mapColName2Json.get(aKey);
+			Map<String, String> mapColJsonName = mapColName2Json.get(aCrudKey);
 			if(mapColJsonName==null)
 				mapColJsonName = new HashMap<String,String>();
 			
@@ -1935,15 +1977,17 @@ public class CRUDMgr {
 		}
 		finally
 		{
-			aDBMgr.closeQuietly(conn, stmt, rs);
+			jdbcMgr.closeQuietly(conn, stmt, rs);
 		}
 		
 		if(mapDBColJson.size()==0)
 			return null;
 		else
 		{
+			mapSQLmeta.add(aSQL);
 			return mapDBColJson;
 		}
+		
 	}
 	
 	public boolean isDebugMode(String aCrudConfigKey)
