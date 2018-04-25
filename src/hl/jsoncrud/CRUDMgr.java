@@ -96,7 +96,7 @@ public class CRUDMgr {
 	{
 		JSONObject jsonVer = new JSONObject();
 		jsonVer.put("framework", "jsoncrud");
-		jsonVer.put("version", "0.6.0 beta");
+		jsonVer.put("version", "0.6.1 beta");
 		return jsonVer;
 	}
 	
@@ -1697,7 +1697,6 @@ public class CRUDMgr {
 		Map<String, DBColMeta> mapNewCols = getTableMetaDataBySQL(sKey, aSQL);
 		if(mapNewCols!=null)
 		{
-			
 			mapCols = mapTableCols.get(sKey);
 			if(mapCols==null)
 			{
@@ -1729,6 +1728,10 @@ public class CRUDMgr {
 				}
 			}
 			
+		}
+		else
+		{
+			mapCols = mapTableCols.get(sKey);
 		}
 		return mapCols;
 	}
