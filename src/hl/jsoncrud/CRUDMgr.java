@@ -67,7 +67,7 @@ public class CRUDMgr {
 		+"(?:\\.("+JSONFILTER_CASE_INSENSITIVE+"|"+JSONFILTER_NOT+"))?"
 		+"(?:\\.("+JSONFILTER_CASE_INSENSITIVE+"|"+JSONFILTER_NOT+"))?";
 	
-	private List<String> mapSQLmeta 							= new ArrayList<String>();
+	private Map<String, Map<String,DBColMeta>> mapSQLmeta 		=  new HashMap<String, Map<String,DBColMeta>>();
 
 	private Map<String, JdbcDBMgr> mapDBMgr 					= null;
 	private Map<String, Map<String, String>> mapJson2ColName 	= null;
@@ -1952,8 +1952,10 @@ public class CRUDMgr {
 		if(aSQL==null || aSQL.length()==0)
 			return null;
 		
-		if(mapSQLmeta.contains(aSQL))
-			return null;
+		if(mapSQLmeta.containsKey(aSQL))
+		{
+			return mapSQLmeta.get(aSQL);
+		}
 		
 		Map<String, DBColMeta> mapDBColJson = new HashMap<String, DBColMeta>();
 		String sSQL = aSQL;
@@ -2009,7 +2011,7 @@ public class CRUDMgr {
 			return null;
 		else
 		{
-			mapSQLmeta.add(aSQL);
+			mapSQLmeta.put(aSQL, mapDBColJson);
 			return mapDBColJson;
 		}
 		
