@@ -1861,7 +1861,7 @@ public class CRUDMgr {
 	}
 	
 	
-	public JSONObject castJson2DBVal(String aCrudKey, JSONObject aDataObj)
+	public JSONObject castJson2DBVal(String aCrudKey, JSONObject aDataObj) throws JsonCrudException
 	{
 		if(aDataObj==null)
 			return null;
@@ -1877,7 +1877,7 @@ public class CRUDMgr {
 		return jsonObj;
 	}
 	
-	public Object castJson2DBVal(String aCrudKey, String aJsonName, Object aVal)
+	public Object castJson2DBVal(String aCrudKey, String aJsonName, Object aVal) throws JsonCrudException
 	{
 		if(aVal == null)
 			return JSONObject.NULL;
@@ -1896,6 +1896,9 @@ public class CRUDMgr {
 		DBColMeta col = getDBColMetaByJsonName(aCrudKey, aJsonName);
 		if(col!=null)
 		{
+			boolean isFormatOk = false;
+			String sErrMsg = "";
+			
 			String sVal = String.valueOf(aVal);
 			if(col.isNumeric())
 			{
@@ -1904,16 +1907,41 @@ public class CRUDMgr {
 						oVal = Double.parseDouble(sVal);
 					else
 						oVal = Long.parseLong(sVal);
+					
+					isFormatOk = true;
 				}
 				catch(NumberFormatException numEx)
 				{
+					sErrMsg = "Expecting numeric value for "+aJsonName+" - "+sVal;
 					logger.log(Level.FINEST, numEx.getMessage(), numEx);
-					oVal = sVal;
 				}
 			}
 			else if(col.isBoolean() || col.isBit())
 			{
-				oVal = Boolean.parseBoolean(sVal);
+				if(sVal.length()==1)
+				{
+					isFormatOk = ("1".equals(sVal) || "0".equals(sVal));
+				}
+				else
+				{
+					isFormatOk = ("true".equalsIgnoreCase(sVal) || "false".equalsIgnoreCase(sVal));
+				}
+				
+				if(isFormatOk)
+				{
+					oVal = Boolean.parseBoolean(sVal);
+				}
+				else
+				{
+					sErrMsg = "Expecting boolean value for "+aJsonName+" - "+sVal;
+				}
+			}
+			
+			//////
+			if(!isFormatOk)
+			{
+
+				throw new JsonCrudException(JsonCrudConfig.ERRCODE_INVALID_TYPE, sErrMsg);
 			}
 		}
 		return oVal;
