@@ -96,7 +96,7 @@ public class CRUDMgr {
 	{
 		JSONObject jsonVer = new JSONObject();
 		jsonVer.put("framework", "jsoncrud");
-		jsonVer.put("version", "0.6.2 beta");
+		jsonVer.put("version", "0.6.3 beta");
 		return jsonVer;
 	}
 	
@@ -355,7 +355,7 @@ public class CRUDMgr {
 		if(jArrCreated.length()>0)
 		{
 			JSONObject jsonCreated = jArrCreated.getJSONObject(0);
-			jsonCreated = convertCol2Json(aCrudKey, jsonCreated);
+			jsonCreated = convertCol2Json(aCrudKey, jsonCreated, false);
 			for(String sAttrName : jsonCreated.keySet())
 			{
 				jsonData.put(sAttrName, jsonCreated.get(sAttrName));
@@ -552,9 +552,13 @@ public class CRUDMgr {
 	{
 		JSONObject jsonReturn 			= null;
 		Map<String, String> map 		= jsoncrudConfig.getConfig(aCrudKey);
+		
 		if(map==null)
 			return null;
 		
+		String sExcludeNonMappedFields 	= map.get(JsonCrudConfig._PROP_KEY_EXCLUDE_NON_MAPPED_FIELDS);
+		boolean isExcludeNonMappedField = "true".equalsIgnoreCase(sExcludeNonMappedFields);
+
 		Map<String, String> mapCrudSql 	= mapJson2Sql.get(aCrudKey);
 		
 		String sSQL 		= aSQL;
@@ -618,7 +622,7 @@ public class CRUDMgr {
 	
 				}
 				
-				jsonOnbj = convertCol2Json(aCrudKey, jsonOnbj);
+				jsonOnbj = convertCol2Json(aCrudKey, jsonOnbj, isExcludeNonMappedField);
 				
 				if(mapCrudSql.size()>0)
 				{
@@ -741,16 +745,29 @@ public class CRUDMgr {
 										int iKeys = jsonChildMapping.keySet().size();
 										if(iKeys>0)
 										{
+											boolean isKVmapping = (iKeys==1);
+											
 											jsonMappingData = new JSONObject();
 											for(int i=0; i<jsonArrayChild.length(); i++)
 											{		
 												JSONObject jsonData = jsonArrayChild.getJSONObject(i);
 												for(String sKey : jsonChildMapping.keySet())
 												{
-													String sMapKey = jsonData.getString(sKey);
-													Object oMapVal = jsonData.get(jsonChildMapping.getString(sKey));
+													String sMapKey = null;
+													Object oMapVal = null;
+													if(isKVmapping)
+													{
+														sMapKey = jsonData.getString(sKey);
+														oMapVal = jsonData.get(jsonChildMapping.getString(sKey));
+													}
+													else
+													{
+														sMapKey = sKey;
+														oMapVal = jsonData.get(sKey);
+													}
 													
 													jsonMappingData.put(sMapKey, oMapVal);
+													
 												}
 											}
 										}
@@ -1671,10 +1688,13 @@ public class CRUDMgr {
 
 						logger.log(Level.INFO, sKey+"."+sTableName+" : "+mapCols.size()+" cols meta loaded.");
 						
+						String sExludeNonMappedFields 		= mapCrudConfig.get(JsonCrudConfig._PROP_KEY_EXCLUDE_NON_MAPPED_FIELDS);
+						boolean isExcludeNonMappedFields 	= "true".equalsIgnoreCase(sExludeNonMappedFields);
+						
 						for(String sColName : mapCols.keySet())
 						{
 							//No DB Mapping configured
-							if(mapCrudCol2Json.get(sColName)==null)
+							if(mapCrudCol2Json.get(sColName)==null && !isExcludeNonMappedFields)
 							{
 								mapCrudJson2Col.put(sColName, sColName);
 								mapCrudCol2Json.put(sColName, sColName);
@@ -1940,8 +1960,12 @@ public class CRUDMgr {
 			//////
 			if(!isFormatOk)
 			{
-
-				throw new JsonCrudException(JsonCrudConfig.ERRCODE_INVALID_TYPE, sErrMsg);
+				if(col.isString())
+				{
+					oVal = sVal;
+				}
+				else
+					throw new JsonCrudException(JsonCrudConfig.ERRCODE_INVALID_TYPE, sErrMsg);
 			}
 		}
 		return oVal;
@@ -2286,7 +2310,7 @@ public class CRUDMgr {
 		
 	}
 	
-	public JSONObject convertCol2Json(String aCrudKey, JSONObject aJSONObject)
+	public JSONObject convertCol2Json(String aCrudKey, JSONObject aJSONObject, boolean excludeIfNoMapped)
 	{
 		if(!aCrudKey.startsWith(JsonCrudConfig._PROP_KEY_CRUD+"."))
 		{
@@ -2306,13 +2330,17 @@ public class CRUDMgr {
 		{
 			String sMappedKey = mapCrudCol2Json.get(sColName);
 			if(sMappedKey==null)
+			{
+				if(excludeIfNoMapped)
+					continue;
 				sMappedKey = sColName;
+			}
 			
 			Object obj = aJSONObject.get(sColName);
 			
 			if(obj instanceof JSONObject)
 			{
-				obj = convertCol2Json(aCrudKey, (JSONObject) obj);
+				obj = convertCol2Json(aCrudKey, (JSONObject) obj, excludeIfNoMapped);
 			}
 			else if(obj instanceof JSONArray)
 			{
@@ -2323,7 +2351,7 @@ public class CRUDMgr {
 					Object obj2 = jArr.get(i);
 					if(obj2 instanceof JSONObject)
 					{
-						obj2 = convertCol2Json(aCrudKey, (JSONObject) obj2);
+						obj2 = convertCol2Json(aCrudKey, (JSONObject) obj2, excludeIfNoMapped);
 					}
 					jArrNew.put(obj2);
 				}
