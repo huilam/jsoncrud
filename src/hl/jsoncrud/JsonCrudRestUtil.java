@@ -27,6 +27,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -35,6 +37,7 @@ import org.json.JSONObject;
 public class JsonCrudRestUtil {
 	
 	private static Map<String, CRUDMgr> mapCrudMgrs = new HashMap<String, CRUDMgr>();
+	private static Logger logger = Logger.getLogger(JsonCrudRestUtil.class.getName());
 	
 	
 	public static JSONObject create(String aCrudKey, String aJsonContent) throws JsonCrudException
@@ -196,8 +199,6 @@ public class JsonCrudRestUtil {
 	
 	public static JSONObject getListMeta(JSONObject aJsonObject)
 	{
-		CRUDMgr crudMgr = getCRUDMgr();
-		
 		if(aJsonObject.has(JsonCrudConfig._LIST_META))
 		{
 			return aJsonObject.getJSONObject(JsonCrudConfig._LIST_META);
@@ -210,8 +211,6 @@ public class JsonCrudRestUtil {
 	
 	public static JSONArray getListResult(JSONObject aJsonObject)
 	{
-		CRUDMgr crudMgr = getCRUDMgr();
-		
 		if(aJsonObject.has(JsonCrudConfig._LIST_RESULT))
 		{
 			return aJsonObject.getJSONArray(JsonCrudConfig._LIST_RESULT);
@@ -357,4 +356,31 @@ public class JsonCrudRestUtil {
 		return crudmgr;
 	}
     
+	
+	public static double getCrudConfigNumbericVal(String aCrudKey, String aConfigKey, double aDefaultVal) throws JsonCrudException
+	{
+		if(!aCrudKey.startsWith(JsonCrudConfig._PROP_KEY_CRUD+"."))
+		{
+			aCrudKey = JsonCrudConfig._PROP_KEY_CRUD+"."+aCrudKey;
+		}
+		
+		Map<String, String> mapConfig = getCRUDMgr(null).getCrudConfigs(aCrudKey);
+		if(mapConfig!=null)
+		{
+			String sVal = mapConfig.get(aConfigKey);
+			if(sVal==null)
+			{
+				logger.log(Level.WARNING,"Invalid configuration value:"+sVal+" for crudkey:"+aCrudKey+", key:"+aConfigKey);
+				return aDefaultVal;
+			}
+			
+			try {
+				return Double.parseDouble(sVal);
+			}catch(NumberFormatException ex)
+			{
+				logger.log(Level.WARNING,"Invalid configuration value:"+sVal+" for crudkey:"+aCrudKey+", key:"+aConfigKey);
+			}
+		}		
+		return aDefaultVal;
+	}
 }
