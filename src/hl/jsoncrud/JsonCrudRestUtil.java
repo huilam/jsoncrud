@@ -370,7 +370,7 @@ public class JsonCrudRestUtil {
 			String sVal = mapConfig.get(aConfigKey);
 			if(sVal==null)
 			{
-				logger.log(Level.WARNING,"Invalid configuration value:"+sVal+" for crudkey:"+aCrudKey+", key:"+aConfigKey);
+				//logger.log(Level.WARNING,"No configuration value:"+sVal+" for crudkey:"+aCrudKey+", key:"+aConfigKey);
 				return aDefaultVal;
 			}
 			
