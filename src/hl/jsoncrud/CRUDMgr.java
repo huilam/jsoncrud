@@ -96,7 +96,7 @@ public class CRUDMgr {
 	{
 		JSONObject jsonVer = new JSONObject();
 		jsonVer.put("framework", "jsoncrud");
-		jsonVer.put("version", "0.6.3 beta");
+		jsonVer.put("version", "0.6.4 beta");
 		return jsonVer;
 	}
 	
@@ -953,13 +953,28 @@ public class CRUDMgr {
 			long aStartFrom, long aFetchSize, 
 			String[] aSorting, String[] aReturns) throws JsonCrudException
 	{
-		
 		try {
-			cacheTableMetaDataBySQL(aCrudKey, aTableViewSQL);
+			if(aTableViewSQL!=null && mapSQLmeta.get(aTableViewSQL)==null)
+			{
+				Map<String, DBColMeta> mapNewCols 		= getTableMetaDataBySQL(aCrudKey, aTableViewSQL);
+				Map<String, DBColMeta> mapExistingCols 	= mapTableCols.get(aCrudKey);
+				
+				for(String sColName : mapNewCols.keySet())
+				{
+					if(mapExistingCols.get(sColName)==null)
+					{
+						mapExistingCols.put(sColName, mapNewCols.get(sColName));
+					}
+				}
+				
+				mapTableCols.put(aCrudKey, mapExistingCols);
+			}
+			
 		} catch (SQLException e) {
 			// Silent, as this is just a pre-process
 			logger.log(Level.SEVERE, e.getMessage(), e);
 		}
+		
 		
 		JSONObject jsonWhere = castJson2DBVal(aCrudKey, aWhereJson);
 		if(jsonWhere==null)
@@ -1682,10 +1697,13 @@ public class CRUDMgr {
 				
 				if(sTableName!=null && sTableName.trim().length()>0)
 				{
-					Map<String, DBColMeta> mapCols = cacheTableMetaDataBySQL(sKey, "SELECT * FROM "+sTableName+" WHERE 1=2");
+					String sSQL = "SELECT * FROM "+sTableName+" WHERE 1=2";
+					
+					Map<String, DBColMeta> mapCols = getTableMetaDataBySQL(sKey, sSQL);
 					if(mapCols!=null)
 					{	
-
+						mapTableCols.put(sKey, mapCols);
+						
 						logger.log(Level.INFO, sKey+"."+sTableName+" : "+mapCols.size()+" cols meta loaded.");
 						
 						String sExludeNonMappedFields 		= mapCrudConfig.get(JsonCrudConfig._PROP_KEY_EXCLUDE_NON_MAPPED_FIELDS);
@@ -1710,52 +1728,6 @@ public class CRUDMgr {
 			}
 		}
 	}
-	
-	private Map<String, DBColMeta> cacheTableMetaDataBySQL(String sKey, String aSQL) throws SQLException
-	{
-		Map<String, DBColMeta> mapCols = null;
-		Map<String, DBColMeta> mapNewCols = getTableMetaDataBySQL(sKey, aSQL);
-		if(mapNewCols!=null)
-		{
-			mapCols = mapTableCols.get(sKey);
-			if(mapCols==null)
-			{
-				mapCols = mapNewCols;
-			}
-			else
-			{
-				mapCols.putAll(mapNewCols);
-			}
-			mapTableCols.put(sKey, mapCols);
-			
-			// debug
-			if(logger.getLevel()==Level.FINEST)
-			{
-				String sShortSQL = null;
-				if(aSQL.length()>50)
-				{
-					sShortSQL = aSQL.subSequence(0, 50)+"...";
-				}else
-				{
-					sShortSQL = aSQL;
-				}
-				
-				logger.log(Level.FINEST, "Register db metadata : "+sKey+" - "+sShortSQL);
-				for(String sColName : mapCols.keySet())
-				{
-					DBColMeta col = mapCols.get(sColName);
-					logger.log(Level.FINEST, "   - "+sColName+":"+col);
-				}
-			}
-			
-		}
-		else
-		{
-			mapCols = mapTableCols.get(sKey);
-		}
-		return mapCols;
-	}
-	
 	
 	public Map<String, String[]> validateDataWithSchema(String aCrudKey, JSONObject aJsonData)
 	{
@@ -2066,7 +2038,9 @@ public class CRUDMgr {
 		}
 		
 		if(mapDBColJson.size()==0)
+		{
 			return null;
+		}
 		else
 		{
 			mapSQLmeta.put(aSQL, mapDBColJson);

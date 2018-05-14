@@ -339,7 +339,10 @@ public class JsonCrudRestUtil {
 		if(aNameSpace==null || aNameSpace.trim().length()==0)
 		{
 			aNameSpace = "CORE";
-			
+		}
+		
+		synchronized(mapCrudMgrs)
+		{						
 			crudmgr = mapCrudMgrs.get(aNameSpace);
 			
 			if(crudmgr==null)
@@ -351,8 +354,8 @@ public class JsonCrudRestUtil {
 					mapCrudMgrs.put(aNameSpace, crudmgr);
 				}
 			}
+			
 		}
-
 		return crudmgr;
 	}
     
