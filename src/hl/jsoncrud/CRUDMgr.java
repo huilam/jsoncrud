@@ -67,8 +67,8 @@ public class CRUDMgr {
 		+"(?:\\.("+JSONFILTER_CASE_INSENSITIVE+"|"+JSONFILTER_NOT+"))?"
 		+"(?:\\.("+JSONFILTER_CASE_INSENSITIVE+"|"+JSONFILTER_NOT+"))?";
 	
-	private Map<String, Map<String,DBColMeta>> mapSQLmeta 		=  new HashMap<String, Map<String,DBColMeta>>();
-
+	
+	private List<String> listProcessedDynamicSQL				= new ArrayList<String>();
 	private Map<String, JdbcDBMgr> mapDBMgr 					= null;
 	private Map<String, Map<String, String>> mapJson2ColName 	= null;
 	private Map<String, Map<String, String>> mapColName2Json 	= null;
@@ -946,28 +946,39 @@ public class CRUDMgr {
 	{
 		return retrieveBySQL(aCrudKey, null, aWhereJson, aStartFrom, aFetchSize, aSorting, aReturns);
 	}
-	
+
+
 	public JSONObject retrieveBySQL(String aCrudKey, 
 			String aTableViewSQL,
 			JSONObject aWhereJson, 
 			long aStartFrom, long aFetchSize, 
 			String[] aSorting, String[] aReturns) throws JsonCrudException
 	{
+		
 		try {
-			if(aTableViewSQL!=null && mapSQLmeta.get(aTableViewSQL)==null)
+			if(aTableViewSQL!=null)
 			{
-				Map<String, DBColMeta> mapNewCols 		= getTableMetaDataBySQL(aCrudKey, aTableViewSQL);
-				Map<String, DBColMeta> mapExistingCols 	= mapTableCols.get(aCrudKey);
-				
-				for(String sColName : mapNewCols.keySet())
+				if(!listProcessedDynamicSQL.contains(aTableViewSQL))
 				{
-					if(mapExistingCols.get(sColName)==null)
+					listProcessedDynamicSQL.add(aTableViewSQL);
+					synchronized(listProcessedDynamicSQL)
 					{
-						mapExistingCols.put(sColName, mapNewCols.get(sColName));
+						if(!listProcessedDynamicSQL.contains(aTableViewSQL))
+						{
+							Map<String, DBColMeta> mapNewCols 		= getTableMetaDataBySQL(aCrudKey, aTableViewSQL);
+							Map<String, DBColMeta> mapExistingCols 	= mapTableCols.get(aCrudKey);
+							
+							for(String sColName : mapNewCols.keySet())
+							{
+								if(mapExistingCols.get(sColName)==null)
+								{
+									mapExistingCols.put(sColName, mapNewCols.get(sColName));
+								}
+							}
+							mapTableCols.put(aCrudKey, mapExistingCols);
+						}		
 					}
 				}
-				
-				mapTableCols.put(aCrudKey, mapExistingCols);
 			}
 			
 		} catch (SQLException e) {
@@ -1982,11 +1993,6 @@ public class CRUDMgr {
 		if(aSQL==null || aSQL.length()==0)
 			return null;
 		
-		if(mapSQLmeta.containsKey(aSQL))
-		{
-			return mapSQLmeta.get(aSQL);
-		}
-		
 		Map<String, DBColMeta> mapDBColJson = new HashMap<String, DBColMeta>();
 		String sSQL = aSQL;
 
@@ -2036,14 +2042,13 @@ public class CRUDMgr {
 		{
 			jdbcMgr.closeQuietly(conn, stmt, rs);
 		}
-		
+
 		if(mapDBColJson.size()==0)
 		{
 			return null;
 		}
 		else
 		{
-			mapSQLmeta.put(aSQL, mapDBColJson);
 			return mapDBColJson;
 		}
 		
