@@ -96,7 +96,7 @@ public class CRUDMgr {
 	{
 		JSONObject jsonVer = new JSONObject();
 		jsonVer.put("framework", "jsoncrud");
-		jsonVer.put("version", "0.6.4 beta");
+		jsonVer.put("version", "0.6.6 beta");
 		return jsonVer;
 	}
 	
@@ -256,9 +256,15 @@ public class CRUDMgr {
 		
 		JSONObject jsonMappedObj = new JSONObject();
 		
-		Map<String, String> mapCrudJsonSql = mapJson2Sql.get(aCrudKey);
-		Map<String, String> mapCrudJsonCol = mapJson2ColName.get(aCrudKey);
-		Map<String, DBColMeta> mapCrudDBCols = mapTableCols.get(aCrudKey);
+		Map<String, String> mapCrudJsonSql 		= mapJson2Sql.get(aCrudKey);
+		Map<String, String> mapCrudJsonCol 		= mapJson2ColName.get(aCrudKey);
+		Map<String, DBColMeta> mapCrudDBCols 	= mapTableCols.get(aCrudKey);
+		
+		if(mapCrudJsonCol==null)
+			return aDataJson;
+		
+		if(mapCrudDBCols==null)
+			mapCrudDBCols = new HashMap<String, DBColMeta>();
 		
 		for(String sJsonAttr : aDataJson.keySet())
 		{
