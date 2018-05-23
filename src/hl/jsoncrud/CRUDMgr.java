@@ -29,6 +29,7 @@ import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -68,7 +69,8 @@ public class CRUDMgr {
 		+"(?:\\.("+JSONFILTER_CASE_INSENSITIVE+"|"+JSONFILTER_NOT+"))?";
 	
 	
-	private List<String> listProcessedDynamicSQL				= new ArrayList<String>();
+	private Object initLock = new Object();
+	private List<String> listProcessedDynamicSQL				= Collections.synchronizedList(new ArrayList<String>());
 	private Map<String, JdbcDBMgr> mapDBMgr 					= null;
 	private Map<String, Map<String, String>> mapJson2ColName 	= null;
 	private Map<String, Map<String, String>> mapColName2Json 	= null;
@@ -96,7 +98,7 @@ public class CRUDMgr {
 	{
 		JSONObject jsonVer = new JSONObject();
 		jsonVer.put("framework", "jsoncrud");
-		jsonVer.put("version", "0.6.6 beta");
+		jsonVer.put("version", "0.6.7 beta");
 		return jsonVer;
 	}
 	
@@ -124,38 +126,42 @@ public class CRUDMgr {
 		init();
 	}
 
-	private void init()
+	private synchronized void init()
 	{
-		mapDBMgr 			= new HashMap<String, JdbcDBMgr>();
-		mapJson2ColName 	= new HashMap<String, Map<String, String>>();
-		mapColName2Json 	= new HashMap<String, Map<String, String>>();
-		mapJson2Sql 		= new HashMap<String, Map<String, String>>();
-		mapTableCols 		= new HashMap<String, Map<String, DBColMeta>>();
-		
-		//
-		pattJsonColMapping 	= Pattern.compile("jsonattr\\.([a-zA-Z_-]+?)\\.colname");
-		pattJsonSQL 		= Pattern.compile("jsonattr\\.([a-zA-Z_-]+?)\\.sql");
-		//
-		pattSQLjsonname 			= Pattern.compile("\\{(.+?)\\}");
-		pattInsertSQLtableFields 	= Pattern.compile("insert\\s+?into\\s+?([a-zA-Z_]+?)\\s+?\\((.+?)\\)");
-		//
-		pattJsonNameFilter 	= Pattern.compile(REGEX_JSONFILTER);
-		
-		try {
-			reloadProps();
+		synchronized (initLock) {
+
+			mapDBMgr 			= new HashMap<String, JdbcDBMgr>();
+			mapJson2ColName 	= new HashMap<String, Map<String, String>>();
+			mapColName2Json 	= new HashMap<String, Map<String, String>>();
+			mapJson2Sql 		= new HashMap<String, Map<String, String>>();
 			
-			if(jsoncrudConfig.getAllConfig().size()==0)
-			{
-				throw new IOException("Fail to load properties file - "+config_prop_filename);
+			mapTableCols		= new HashMap<String, Map<String, DBColMeta>>();
+			
+			//
+			pattJsonColMapping 	= Pattern.compile("jsonattr\\.([a-zA-Z_-]+?)\\.colname");
+			pattJsonSQL 		= Pattern.compile("jsonattr\\.([a-zA-Z_-]+?)\\.sql");
+			//
+			pattSQLjsonname 			= Pattern.compile("\\{(.+?)\\}");
+			pattInsertSQLtableFields 	= Pattern.compile("insert\\s+?into\\s+?([a-zA-Z_]+?)\\s+?\\((.+?)\\)");
+			//
+			pattJsonNameFilter 	= Pattern.compile(REGEX_JSONFILTER);
+			
+			try {
+				reloadProps();
+				
+				if(jsoncrudConfig.getAllConfig().size()==0)
+				{
+					throw new IOException("Fail to load properties file - "+config_prop_filename);
+				}
+				
+				
+			} catch (Exception e) {
+				throw new RuntimeException(e.getMessage(), e);
 			}
 			
-			
-		} catch (Exception e) {
-			throw new RuntimeException(e.getMessage(), e);
+			initPaginationConfig();
+			initValidationErrCodeConfig();
 		}
-		
-		initPaginationConfig();
-		initValidationErrCodeConfig();
 	}
 
 	private void initValidationErrCodeConfig()
@@ -966,22 +972,27 @@ public class CRUDMgr {
 			{
 				if(!listProcessedDynamicSQL.contains(aTableViewSQL))
 				{
-					listProcessedDynamicSQL.add(aTableViewSQL);
 					synchronized(listProcessedDynamicSQL)
 					{
 						if(!listProcessedDynamicSQL.contains(aTableViewSQL))
 						{
-							Map<String, DBColMeta> mapNewCols 		= getTableMetaDataBySQL(aCrudKey, aTableViewSQL);
-							Map<String, DBColMeta> mapExistingCols 	= mapTableCols.get(aCrudKey);
+							listProcessedDynamicSQL.add(aTableViewSQL);
 							
-							for(String sColName : mapNewCols.keySet())
+							synchronized(initLock)
 							{
-								if(mapExistingCols.get(sColName)==null)
+								Map<String, DBColMeta> mapNewCols 		= getTableMetaDataBySQL(aCrudKey, aTableViewSQL);
+								Map<String, DBColMeta> mapExistingCols 	= mapTableCols.get(aCrudKey);
+								
+								for(String sColName : mapNewCols.keySet())
 								{
-									mapExistingCols.put(sColName, mapNewCols.get(sColName));
+									if(mapExistingCols.get(sColName)==null)
+									{
+										//logger.log(Level.INFO, "[+]"+sColName+":"+mapNewCols.get(sColName));
+										mapExistingCols.put(sColName, mapNewCols.get(sColName));
+									}
 								}
+								mapTableCols.put(aCrudKey, mapExistingCols);
 							}
-							mapTableCols.put(aCrudKey, mapExistingCols);
 						}		
 					}
 				}
@@ -1632,116 +1643,120 @@ public class CRUDMgr {
 		
 		for(String sKey : jsoncrudConfig.getConfigCrudKeys())
 		{
-			if(!sKey.startsWith(JsonCrudConfig._PROP_KEY_CRUD+"."))
+			synchronized(mapTableCols)
 			{
 				
-				if(sKey.startsWith(JsonCrudConfig._PROP_KEY_JDBC))
+				if(!sKey.startsWith(JsonCrudConfig._PROP_KEY_CRUD+"."))
 				{
-					Map<String, String> map = jsoncrudConfig.getConfig(sKey);
-					initNRegJdbcDBMgr(sKey, map);
+					
+					if(sKey.startsWith(JsonCrudConfig._PROP_KEY_JDBC))
+					{
+						Map<String, String> map = jsoncrudConfig.getConfig(sKey);
+						initNRegJdbcDBMgr(sKey, map);
+					}
+					
+					//only process crud.xxx
+					continue;
 				}
 				
-				//only process crud.xxx
-				continue;
-			}
-			
-			JdbcDBMgr dbmgr = null;
-			Map<String, String> mapCrudConfig = jsoncrudConfig.getConfig(sKey);
-			String sDBConfigName = mapCrudConfig.get(JsonCrudConfig._PROP_KEY_DBCONFIG);
-			//
-			if(sDBConfigName!=null && sDBConfigName.trim().length()>0)
-			{
-				dbmgr = mapDBMgr.get(sDBConfigName);
-				if(dbmgr==null)
+				JdbcDBMgr dbmgr = null;
+				Map<String, String> mapCrudConfig = jsoncrudConfig.getConfig(sKey);
+				String sDBConfigName = mapCrudConfig.get(JsonCrudConfig._PROP_KEY_DBCONFIG);
+				//
+				if(sDBConfigName!=null && sDBConfigName.trim().length()>0)
 				{
-					Map<String, String> mapDBConfig = jsoncrudConfig.getConfig(sDBConfigName);
-					
-					if(mapDBConfig==null)
-						throw new JsonCrudException(JsonCrudConfig.ERRCODE_JSONCRUDCFG, "Invalid "+JsonCrudConfig._PROP_KEY_DBCONFIG+" - "+sDBConfigName);
-									
-					String sJdbcClassname = mapDBConfig.get(JsonCrudConfig._PROP_KEY_JDBC_CLASSNAME);
-					
-					if(sJdbcClassname!=null)
+					dbmgr = mapDBMgr.get(sDBConfigName);
+					if(dbmgr==null)
 					{
-						dbmgr = initNRegJdbcDBMgr(sDBConfigName, mapDBConfig);
-					}
-					else
-					{
-						throw new JsonCrudException(JsonCrudConfig.ERRCODE_JSONCRUDCFG, "Invalid "+JsonCrudConfig._PROP_KEY_JDBC_CLASSNAME+" - "+sJdbcClassname);
-					}
-				}
-			}
-			
-			if(dbmgr!=null)
-			{
-				Map<String, String> mapCrudJson2Col = new HashMap<String, String> ();
-				Map<String, String> mapCrudCol2Json = new HashMap<String, String> ();
-				Map<String, String> mapCrudJsonSql 	= new HashMap<String, String> ();
-				
-				for(String sCrudCfgKey : mapCrudConfig.keySet())
-				{
-					Matcher m = pattJsonColMapping.matcher(sCrudCfgKey);
-					if(m.find())
-					{
-						String jsonname  = m.group(1);
-						String dbcolname = mapCrudConfig.get(sCrudCfgKey);		
-						mapCrudJson2Col.put(jsonname, dbcolname);
-						mapCrudCol2Json.put(dbcolname, jsonname);
-						continue;
-					}
-					//
-					m = pattJsonSQL.matcher(sCrudCfgKey);
-					if(m.find())
-					{
-						String jsonname = m.group(1);
-						String sql 		= mapCrudConfig.get(sCrudCfgKey);
+						Map<String, String> mapDBConfig = jsoncrudConfig.getConfig(sDBConfigName);
 						
-						if(sql==null) sql = "";
-							else sql = sql.trim();
+						if(mapDBConfig==null)
+							throw new JsonCrudException(JsonCrudConfig.ERRCODE_JSONCRUDCFG, "Invalid "+JsonCrudConfig._PROP_KEY_DBCONFIG+" - "+sDBConfigName);
+										
+						String sJdbcClassname = mapDBConfig.get(JsonCrudConfig._PROP_KEY_JDBC_CLASSNAME);
 						
-						if(sql.length()>0)
+						if(sJdbcClassname!=null)
 						{
-							mapCrudJsonSql.put(jsonname, sql);
+							dbmgr = initNRegJdbcDBMgr(sDBConfigName, mapDBConfig);
 						}
-						continue;
-						
-					}
-					//
-				}
-
-				String sTableName = mapCrudConfig.get(JsonCrudConfig._PROP_KEY_TABLENAME);
-				logger.log(Level.INFO,"[init] "+sKey+" - tablename:"+sTableName+" ... ");
-				
-				if(sTableName!=null && sTableName.trim().length()>0)
-				{
-					String sSQL = "SELECT * FROM "+sTableName+" WHERE 1=2";
-					
-					Map<String, DBColMeta> mapCols = getTableMetaDataBySQL(sKey, sSQL);
-					if(mapCols!=null)
-					{	
-						mapTableCols.put(sKey, mapCols);
-						
-						logger.log(Level.INFO, sKey+"."+sTableName+" : "+mapCols.size()+" cols meta loaded.");
-						
-						String sExludeNonMappedFields 		= mapCrudConfig.get(JsonCrudConfig._PROP_KEY_EXCLUDE_NON_MAPPED_FIELDS);
-						boolean isExcludeNonMappedFields 	= "true".equalsIgnoreCase(sExludeNonMappedFields);
-						
-						for(String sColName : mapCols.keySet())
+						else
 						{
-							//No DB Mapping configured
-							if(mapCrudCol2Json.get(sColName)==null && !isExcludeNonMappedFields)
+							throw new JsonCrudException(JsonCrudConfig.ERRCODE_JSONCRUDCFG, "Invalid "+JsonCrudConfig._PROP_KEY_JDBC_CLASSNAME+" - "+sJdbcClassname);
+						}
+					}
+				}
+				
+				if(dbmgr!=null)
+				{
+					Map<String, String> mapCrudJson2Col = new HashMap<String, String> ();
+					Map<String, String> mapCrudCol2Json = new HashMap<String, String> ();
+					Map<String, String> mapCrudJsonSql 	= new HashMap<String, String> ();
+					
+					for(String sCrudCfgKey : mapCrudConfig.keySet())
+					{
+						Matcher m = pattJsonColMapping.matcher(sCrudCfgKey);
+						if(m.find())
+						{
+							String jsonname  = m.group(1);
+							String dbcolname = mapCrudConfig.get(sCrudCfgKey);		
+							mapCrudJson2Col.put(jsonname, dbcolname);
+							mapCrudCol2Json.put(dbcolname, jsonname);
+							continue;
+						}
+						//
+						m = pattJsonSQL.matcher(sCrudCfgKey);
+						if(m.find())
+						{
+							String jsonname = m.group(1);
+							String sql 		= mapCrudConfig.get(sCrudCfgKey);
+							
+							if(sql==null) sql = "";
+								else sql = sql.trim();
+							
+							if(sql.length()>0)
 							{
-								mapCrudJson2Col.put(sColName, sColName);
-								mapCrudCol2Json.put(sColName, sColName);
+								mapCrudJsonSql.put(jsonname, sql);
+							}
+							continue;
+							
+						}
+						//
+					}
+	
+					String sTableName = mapCrudConfig.get(JsonCrudConfig._PROP_KEY_TABLENAME);
+					logger.log(Level.INFO,"[init] "+sKey+" - tablename:"+sTableName+" ... ");
+					
+					if(sTableName!=null && sTableName.trim().length()>0)
+					{
+						String sSQL = "SELECT * FROM "+sTableName+" WHERE 1=2";
+						
+						Map<String, DBColMeta> mapCols = getTableMetaDataBySQL(sKey, sSQL);
+						if(mapCols!=null)
+						{	
+							mapTableCols.put(sKey, mapCols);
+							
+							logger.log(Level.INFO, sKey+"."+sTableName+" : "+mapCols.size()+" cols meta loaded.");
+							
+							String sExludeNonMappedFields 		= mapCrudConfig.get(JsonCrudConfig._PROP_KEY_EXCLUDE_NON_MAPPED_FIELDS);
+							boolean isExcludeNonMappedFields 	= "true".equalsIgnoreCase(sExludeNonMappedFields);
+							
+							for(String sColName : mapCols.keySet())
+							{
+								//No DB Mapping configured
+								if(mapCrudCol2Json.get(sColName)==null && !isExcludeNonMappedFields)
+								{
+									mapCrudJson2Col.put(sColName, sColName);
+									mapCrudCol2Json.put(sColName, sColName);
+								}
 							}
 						}
 					}
+					
+					mapJson2ColName.put(sKey, mapCrudJson2Col);
+					mapColName2Json.put(sKey, mapCrudCol2Json);
+					mapJson2Sql.put(sKey, mapCrudJsonSql);
+					//
 				}
-				
-				mapJson2ColName.put(sKey, mapCrudJson2Col);
-				mapColName2Json.put(sKey, mapCrudCol2Json);
-				mapJson2Sql.put(sKey, mapCrudJsonSql);
-				//
 			}
 		}
 	}
@@ -2000,8 +2015,20 @@ public class CRUDMgr {
 			return null;
 		
 		Map<String, DBColMeta> mapDBColJson = new HashMap<String, DBColMeta>();
-		String sSQL = aSQL;
+		String sSQL = aSQL.replaceAll(" [Ww][Hh][Ee][Rr][Ee] ", " WHERE 1=2 AND ");
 
+		if(sSQL.indexOf(" WHERE ")==-1)
+		{
+			// ORDER BY ?
+			sSQL = sSQL.replaceAll(" [Oo][Rr][Dd][Ee][Rr] [Bb][Yy] ", " WHERE 1=2 ORDER BY ");
+		}
+		
+		if(sSQL.indexOf(" WHERE ")==-1)
+		{
+			// GROUP BY ?
+			sSQL = sSQL.replaceAll(" [Gg][Rr][Oo][Uu][Pp] [Bb][Yy] ", " WHERE 1=2 GROUP BY ");
+		}
+		
 		Map<String, String> mapConfig = jsoncrudConfig.getConfig(aCrudKey);
 		String sJdbcKey = mapConfig.get("dbconfig");
 		
@@ -2014,6 +2041,8 @@ public class CRUDMgr {
 		try{
 			conn = jdbcMgr.getConnection();
 			stmt = conn.prepareStatement(sSQL);
+			conn.setAutoCommit(false);
+			stmt.setFetchSize(1);
 			rs = stmt.executeQuery();
 			
 			Map<String, String> mapColJsonName = mapColName2Json.get(aCrudKey);
@@ -2046,6 +2075,7 @@ public class CRUDMgr {
 		}
 		finally
 		{
+			conn.setAutoCommit(true);
 			jdbcMgr.closeQuietly(conn, stmt, rs);
 		}
 
