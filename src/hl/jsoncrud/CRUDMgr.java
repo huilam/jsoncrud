@@ -593,7 +593,7 @@ public class CRUDMgr {
 	private JSONObject retrieveBySQL(String aCrudKey, String aSQL, Object[] aObjParams,
 			long aStartFrom, long aFetchSize, String[] aReturns) throws JsonCrudException
 	{
-		return retrieveBySQL(aCrudKey, aSQL, aObjParams, aStartFrom, aFetchSize, aReturns, 0);
+		return retrieveBySQL(aCrudKey, aSQL, aObjParams, aStartFrom, aFetchSize, aReturns, -1);
 	}
 	
 	private JSONObject retrieveBySQL(String aCrudKey, String aSQL, Object[] aObjParams,
@@ -868,7 +868,7 @@ public class CRUDMgr {
 			long lTotalCount = lTotalResult;
 			
 			
-			if(aTotalRecordCount<=0)
+			if(aTotalRecordCount<0)
 			{
 				while(rs.next())
 				{
