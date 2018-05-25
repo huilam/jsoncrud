@@ -86,7 +86,6 @@ public class CRUDMgr {
 	private JsonCrudConfig jsoncrudConfig 		= null;
 	private String config_prop_filename 		= null;
 	
-	private static Pattern pattleftJoin = Pattern.compile("([Ll][Ee][Ff][Tt] .+? .+? (.+?) +?[Oo][Nn] .+?)(\\)|[Ll][Ee][Ff][Tt])");
 	private static Logger logger = Logger.getLogger(CRUDMgr.class.getName());
 	
 	public CRUDMgr()
@@ -524,39 +523,6 @@ public class CRUDMgr {
 		
 		long lTotalCount = 0;
 		String sSQL = aSQL;
-		Matcher m = pattleftJoin.matcher(aSQL);
-		
-		int idx = 0;
-		while(m.find(idx))
-		{
-			String sleftJoinStmt 	= m.group(1);
-			String sTableAlias 		= m.group(2);
-			String sEnding 			= m.group(3);
-
-			
-			if("LEFT".equalsIgnoreCase(sEnding))
-			{
-				idx = m.end()-4;
-			}
-			else
-			{
-				if(sleftJoinStmt.indexOf("(")>-1)
-				{
-					sleftJoinStmt = sleftJoinStmt + sEnding;
-				}
-				idx = m.end();
-			}
-
-			sleftJoinStmt = sleftJoinStmt.replaceAll("\\.", "\\\\.");
-			sleftJoinStmt = sleftJoinStmt.replaceAll("\\(", "\\\\(");
-			sleftJoinStmt = sleftJoinStmt.replaceAll("\\)", "\\\\)");
-			// remove LEFT OUTTER JOIN and table alias from SELECT
-			sSQL = sSQL.replaceAll(sleftJoinStmt, "");
-			if(sTableAlias!=null && sTableAlias.trim().length()>0)
-			{
-				sSQL = sSQL.replaceAll(",.+?"+sTableAlias+"\\..+? ", " ");
-			}
-		}
 		
 		Connection conn = null;
 		PreparedStatement stmt	= null;
@@ -565,8 +531,9 @@ public class CRUDMgr {
 			conn = dbmgr.getConnection();
 			stmt = conn.prepareStatement(sSQL);
 			stmt = JdbcDBMgr.setParams(stmt, aObjParams);
-			conn.setAutoCommit(false);
-			stmt.setFetchSize(1);
+			
+			conn.setReadOnly(true);
+			stmt.setFetchSize(10);
 			rs = stmt.executeQuery();
 			if(rs.next())
 			{
@@ -582,7 +549,7 @@ public class CRUDMgr {
 		finally
 		{
 			try {
-				conn.setAutoCommit(true);
+				conn.setReadOnly(false);
 				dbmgr.closeQuietly(conn, stmt, rs);
 			} catch (SQLException e) {
 			}
@@ -2423,4 +2390,27 @@ public class CRUDMgr {
 		return mapDBMgr.get(aJdbcConfigName);		
 	}
 	
+    public static void main(String args[]) throws JsonCrudException
+    {
+          StringBuffer sb = new StringBuffer();
+          sb.append("     SELECT ");
+          sb.append("     a.*, c.alert_category_name ");
+          sb.append("     ,t.alert_type_name "); 
+          sb.append("     ,      s.alert_status_name ");
+          sb.append("     ,r.resource_name,r.device_id,p.priority_name ");
+          sb.append("     FROM alert a ");
+          sb.append("     LEFT OUTER JOIN alert_category c ON c.alert_category_id = a.category_id   ");
+          sb.append(" LEFT JOIN alert_status s ON(s.alert_status_id  = a.status_id )");
+          sb.append("     LEFT OUTER JOIN alert_type t ON t.alert_type_id = a.alert_type_id");
+          sb.append(" LEFT JOIN resource r ON   (  r.resource_id = a.resource_id)");
+          sb.append("     LEFT JOIN priority p ON p.priority_id = a.priority_id");
+          
+          CRUDMgr mgr = new CRUDMgr();
+          
+          long lStart = System.currentTimeMillis();
+          System.out.println(mgr.getTotalSQLCount("crud.iisit", "SELECT COUNT(*) FROM ("+sb.toString()+") TBL", null)+" - "+(System.currentTimeMillis()-lStart));
+          
+          
+    }
+
 }
