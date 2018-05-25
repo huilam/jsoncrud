@@ -86,6 +86,7 @@ public class CRUDMgr {
 	private JsonCrudConfig jsoncrudConfig 		= null;
 	private String config_prop_filename 		= null;
 	
+	private static Pattern pattleftJoin = Pattern.compile("([Ll][Ee][Ff][Tt] .+? .+? (.+?) +?[Oo][Nn] .+?)(\\)|[Ll][Ee][Ff][Tt])");
 	private static Logger logger = Logger.getLogger(CRUDMgr.class.getName());
 	
 	public CRUDMgr()
@@ -98,7 +99,7 @@ public class CRUDMgr {
 	{
 		JSONObject jsonVer = new JSONObject();
 		jsonVer.put("framework", "jsoncrud");
-		jsonVer.put("version", "0.6.7 beta");
+		jsonVer.put("version", "0.7.0 beta");
 		return jsonVer;
 	}
 	
@@ -522,14 +523,50 @@ public class CRUDMgr {
 		JdbcDBMgr dbmgr 	= mapDBMgr.get(sJdbcName);
 		
 		long lTotalCount = 0;
+		String sSQL = aSQL;
+		Matcher m = pattleftJoin.matcher(aSQL);
+		
+		int idx = 0;
+		while(m.find(idx))
+		{
+			String sleftJoinStmt 	= m.group(1);
+			String sTableAlias 		= m.group(2);
+			String sEnding 			= m.group(3);
+
+			
+			if("LEFT".equalsIgnoreCase(sEnding))
+			{
+				idx = m.end()-4;
+			}
+			else
+			{
+				if(sleftJoinStmt.indexOf("(")>-1)
+				{
+					sleftJoinStmt = sleftJoinStmt + sEnding;
+				}
+				idx = m.end();
+			}
+
+			sleftJoinStmt = sleftJoinStmt.replaceAll("\\.", "\\\\.");
+			sleftJoinStmt = sleftJoinStmt.replaceAll("\\(", "\\\\(");
+			sleftJoinStmt = sleftJoinStmt.replaceAll("\\)", "\\\\)");
+			// remove LEFT OUTTER JOIN and table alias from SELECT
+			sSQL = sSQL.replaceAll(sleftJoinStmt, "");
+			if(sTableAlias!=null && sTableAlias.trim().length()>0)
+			{
+				sSQL = sSQL.replaceAll(",.+?"+sTableAlias+"\\..+? ", " ");
+			}
+		}
 		
 		Connection conn = null;
 		PreparedStatement stmt	= null;
 		ResultSet rs = null;
 		try {
 			conn = dbmgr.getConnection();
-			stmt = conn.prepareStatement(aSQL);
+			stmt = conn.prepareStatement(sSQL);
 			stmt = JdbcDBMgr.setParams(stmt, aObjParams);
+			conn.setAutoCommit(false);
+			stmt.setFetchSize(1);
 			rs = stmt.executeQuery();
 			if(rs.next())
 			{
@@ -538,13 +575,14 @@ public class CRUDMgr {
 		} 
 		catch (SQLException sqlEx) 
 		{
-			String sDebug = "crudKey:"+aCrudKey+", sql:"+aSQL+", params:"+listParamsToString(aObjParams);
+			String sDebug = "crudKey:"+aCrudKey+", sql:"+sSQL+", params:"+listParamsToString(aObjParams);
 			logger.log(Level.SEVERE, sDebug, sqlEx);
 			throw new JsonCrudException(JsonCrudConfig.ERRCODE_SQLEXCEPTION, sDebug, sqlEx);	
 		}
 		finally
 		{
 			try {
+				conn.setAutoCommit(true);
 				dbmgr.closeQuietly(conn, stmt, rs);
 			} catch (SQLException e) {
 			}
@@ -2384,4 +2422,5 @@ public class CRUDMgr {
 		
 		return mapDBMgr.get(aJdbcConfigName);		
 	}
+	
 }
