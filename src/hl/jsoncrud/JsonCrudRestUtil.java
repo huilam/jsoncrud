@@ -158,9 +158,19 @@ public class JsonCrudRestUtil {
 	
 	public static JSONObject retrieveList(
 			String aCrudKey, JSONObject aJsonWhere,
-			long iStartFrom, long iFetchSize, 
+			long iStartFrom, long iFetchSize,
 			List<String> listSorting,
 			List<String> listReturns) throws JsonCrudException
+	{
+		return retrieveList(aCrudKey, aJsonWhere, iStartFrom, iFetchSize, listSorting, listReturns, false);
+	}
+	
+	public static JSONObject retrieveList(
+			String aCrudKey, JSONObject aJsonWhere,
+			long iStartFrom, long iFetchSize, 
+			List<String> listSorting,
+			List<String> listReturns,
+			boolean isReturnsExclude) throws JsonCrudException
 	{
 		CRUDMgr crudMgr = getCRUDMgr();
 		
@@ -177,7 +187,7 @@ public class JsonCrudRestUtil {
 				sConfigKey, aJsonWhere, iStartFrom, iFetchSize, 
 				listSorting.toArray(new String[listSorting.size()]),
 				listReturns.toArray(new String[listReturns.size()]),
-				false);
+				isReturnsExclude);
 		
 		if(jsonOutput==null)
 		{
