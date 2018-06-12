@@ -1329,7 +1329,7 @@ public class CRUDMgr {
 				aCrudKey, sbSQL.toString(), 
 				objParams, 
 				aStartFrom, aFetchSize, 
-				aReturns, false, 
+				aReturns, isReturnsExcludes, 
 				lTotalRecordCount);
 		
 		if(jsonReturn!=null && jsonReturn.has(JsonCrudConfig._LIST_META))
