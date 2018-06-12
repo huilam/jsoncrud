@@ -29,7 +29,7 @@ import org.json.JSONObject;
 import hl.jsoncrud.CRUDMgr;
 
 public class CRUDMgrTest {
-	
+	 
 	private void test1_CRUD(CRUDMgr m) throws JsonCrudException
 	{
 		String sTestData = "{\"moduleCode\": \"testpost180117-1\",\"kvpair\":" + 
@@ -173,13 +173,20 @@ public class CRUDMgrTest {
 				jsonWhere, 0, 0, null, null);
 		System.out.println("		- "+jsonResult);
 		
+		sbSQL.setLength(0);
+		sbSQL.append(" SELECT cfg.*, val.* ");
+		sbSQL.append(" FROM jsoncrud_cfg cfg LEFT OUTER JOIN jsoncrud_cfg_values val ON (val.cfg_id = cfg.cfg_id)");
+		System.out.println("	3.4 Left Outer Join ");
+		jsonResult = m.retrieveBySQL("crud.jsoncrud_cfg", sbSQL.toString(), null, 0, 0, null, null);
+		System.out.println("		- "+jsonResult);		
 		
-		System.out.println("	3.3 Sequence ");
+		
+		System.out.println("	3.5 Sequence ");
 		jsonResult = m.retrieveBySQL("crud.jsoncrud_cfg", "select nextval(?)", new Object[]{"jsoncrud_cfg_cfg_id_seq"}, 0, 0);
 		System.out.println("		- "+jsonResult);
 		
 		
-		System.out.println("	3.4 Test Empty result SQL ");
+		System.out.println("	3.6 Test Empty result SQL ");
 		jsonResult = m.retrieveBySQL("crud.jsoncrud_cfg", "select * from jsoncrud_cfg where 1=2", null, 0, 0);
 		System.out.println("		- "+jsonResult);
 	}
@@ -414,18 +421,21 @@ public class CRUDMgrTest {
 			jArr = m.delete("crud.jsoncrud_cfg", new JSONObject());
 			if(jArr==null) jArr = new JSONArray();
 			System.out.println(jArr.length());
+
 			//
 			test.test1_CRUD(m);
 			//
-			test.test2_SchemaValidation(m);
+			//test.test2_SchemaValidation(m);
 			//
 			test.test3_CustomSQL(m);
 			//
-			test.test4_Sorting_Returns(m);
+			//test.test4_Sorting_Returns(m);
 			//
-			test.test5_Null(m);
+			//test.test5_Null(m);
 			//
-			test.test6_ExtraAttrs(m);
+			//test.test6_ExtraAttrs(m);
+			
+
 			//////////////////////////
 
 
@@ -441,7 +451,6 @@ public class CRUDMgrTest {
 			System.out.println("delete.sample_users:"+m.delete("crud.sample_users", new JSONObject()));
 			System.out.println("delete.sample_roles:"+m.delete("crud.sample_roles", new JSONObject()));
 			*/
-			
 		}
 
 		System.out.println();

@@ -98,7 +98,7 @@ public class CRUDMgr {
 	{
 		JSONObject jsonVer = new JSONObject();
 		jsonVer.put("framework", "jsoncrud");
-		jsonVer.put("version", "0.7.0 beta");
+		jsonVer.put("version", "0.7.1 beta");
 		return jsonVer;
 	}
 	
@@ -449,7 +449,7 @@ public class CRUDMgr {
 	
 	public JSONArray retrieve(String aCrudKey, JSONObject aWhereJson) throws JsonCrudException
 	{
-		JSONObject json = retrieve(aCrudKey, aWhereJson, 0, 0, null, null);
+		JSONObject json = retrieve(aCrudKey, aWhereJson, 0, 0, null, null, false);
 		if(json==null)
 		{
 			return new JSONArray();
@@ -457,9 +457,15 @@ public class CRUDMgr {
 		return (JSONArray) json.get(JsonCrudConfig._LIST_RESULT);
 	}
 	
-	public JSONArray retrieve(String aCrudKey, JSONObject aWhereJson, String[] aSorting, String[] aReturns) throws JsonCrudException
+	public JSONArray retrieve(String aCrudKey, JSONObject aWhereJson, String[] aSorting, String[] aReturns) throws JsonCrudException 
 	{
-		JSONObject json = retrieve(aCrudKey, aWhereJson, 0, 0, aSorting, aReturns);
+		return retrieve(aCrudKey, aWhereJson, aSorting, aReturns, false);
+	}
+	
+	public JSONArray retrieve(String aCrudKey, JSONObject aWhereJson, String[] aSorting, String[] aReturns, boolean isReturnsExcludes) 
+			throws JsonCrudException
+	{
+		JSONObject json = retrieve(aCrudKey, aWhereJson, 0, 0, aSorting, aReturns, isReturnsExcludes);
 		if(json==null)
 		{
 			return new JSONArray();
@@ -560,11 +566,11 @@ public class CRUDMgr {
 	private JSONObject retrieveBySQL(String aCrudKey, String aSQL, Object[] aObjParams,
 			long aStartFrom, long aFetchSize, String[] aReturns) throws JsonCrudException
 	{
-		return retrieveBySQL(aCrudKey, aSQL, aObjParams, aStartFrom, aFetchSize, aReturns, -1);
+		return retrieveBySQL(aCrudKey, aSQL, aObjParams, aStartFrom, aFetchSize, aReturns, false, -1);
 	}
 	
 	private JSONObject retrieveBySQL(String aCrudKey, String aSQL, Object[] aObjParams,
-			long aStartFrom, long aFetchSize, String[] aReturns, 
+			long aStartFrom, long aFetchSize, String[] aReturns, boolean isReturnsExcludes,
 			long aTotalRecordCount) throws JsonCrudException
 	{
 		JSONObject jsonReturn 			= null;
@@ -584,6 +590,7 @@ public class CRUDMgr {
 		JdbcDBMgr dbmgr 	= mapDBMgr.get(sJdbcName);
 		
 		List<String> listReturnsAttrName = new ArrayList<String>();
+		
 		if(aReturns!=null)
 		{
 			for(String sAttrName : aReturns)
@@ -648,9 +655,23 @@ public class CRUDMgr {
 						
 						if(isFilterByReturns)
 						{
-							if(!listReturnsAttrName.contains(sJsonName))
-								//skip
-								continue;
+							boolean isReturnsContain = listReturnsAttrName.contains(sJsonName);							
+
+							//is exclude list
+							if(isReturnsExcludes)
+							{
+								if(isReturnsContain)
+								{
+									continue; //skip to exclude
+								}
+							}
+							else //include list
+							{
+								if(!isReturnsContain)
+								{
+									continue; //skip as not include
+								}
+							}
 						}
 						
 						if(!jsonOnbj.has(sJsonName))
@@ -961,15 +982,30 @@ public class CRUDMgr {
 	public JSONObject retrieve(String aCrudKey, JSONObject aWhereJson, 
 			long aStartFrom, long aFetchSize, String[] aSorting, String[] aReturns) throws JsonCrudException
 	{
-		return retrieveBySQL(aCrudKey, null, aWhereJson, aStartFrom, aFetchSize, aSorting, aReturns);
+		return retrieveBySQL(aCrudKey, null, aWhereJson, aStartFrom, aFetchSize, aSorting, aReturns, false);
+	}
+	
+	public JSONObject retrieve(String aCrudKey, JSONObject aWhereJson, 
+			long aStartFrom, long aFetchSize, String[] aSorting, String[] aReturns, boolean isReturnsExcludes) throws JsonCrudException
+	{
+		return retrieveBySQL(aCrudKey, null, aWhereJson, aStartFrom, aFetchSize, aSorting, aReturns, isReturnsExcludes);
 	}
 
-
+	
 	public JSONObject retrieveBySQL(String aCrudKey, 
 			String aTableViewSQL,
 			JSONObject aWhereJson, 
 			long aStartFrom, long aFetchSize, 
 			String[] aSorting, String[] aReturns) throws JsonCrudException
+	{
+		return retrieveBySQL(aCrudKey, aTableViewSQL, aWhereJson, aStartFrom, aFetchSize, aSorting, aReturns, false);
+	}
+
+	public JSONObject retrieveBySQL(String aCrudKey, 
+			String aTableViewSQL,
+			JSONObject aWhereJson, 
+			long aStartFrom, long aFetchSize, 
+			String[] aSorting, String[] aReturns, boolean isReturnsExcludes) throws JsonCrudException
 	{
 		
 		try {
@@ -1292,7 +1328,9 @@ public class CRUDMgr {
 		JSONObject jsonReturn 	= retrieveBySQL(
 				aCrudKey, sbSQL.toString(), 
 				objParams, 
-				aStartFrom, aFetchSize, aReturns, lTotalRecordCount);
+				aStartFrom, aFetchSize, 
+				aReturns, false, 
+				lTotalRecordCount);
 		
 		if(jsonReturn!=null && jsonReturn.has(JsonCrudConfig._LIST_META))
 		{

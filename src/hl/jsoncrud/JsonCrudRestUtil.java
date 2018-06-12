@@ -176,8 +176,8 @@ public class JsonCrudRestUtil {
 		JSONObject jsonOutput = crudMgr.retrieve(
 				sConfigKey, aJsonWhere, iStartFrom, iFetchSize, 
 				listSorting.toArray(new String[listSorting.size()]),
-				listReturns.toArray(new String[listReturns.size()])
-				);
+				listReturns.toArray(new String[listReturns.size()]),
+				false);
 		
 		if(jsonOutput==null)
 		{
