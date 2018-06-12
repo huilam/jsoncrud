@@ -657,17 +657,19 @@ public class CRUDMgr {
 						{
 							boolean isReturnsContain = listReturnsAttrName.contains(sJsonName);							
 
-							//is exclude list
-							if(isReturnsExcludes)
+							
+							if(isReturnsContain)
 							{
-								if(isReturnsContain)
+								//is exclude list
+								if(isReturnsExcludes)
 								{
 									continue; //skip to exclude
 								}
 							}
-							else //include list
+							else 
 							{
-								if(!isReturnsContain)
+								//include list
+								if(!isReturnsExcludes)
 								{
 									continue; //skip as not include
 								}
@@ -836,10 +838,27 @@ public class CRUDMgr {
 					for(Object oAttrKey : jsonOnbj.keySet())
 					{
 						String sAttKey = oAttrKey.toString();
-						if(listReturnsAttrName.contains(sAttKey))
+						
+						boolean isReturnsContain = listReturnsAttrName.contains(sAttKey);
+						
+						if(isReturnsContain)
 						{
-							jsonObjReturn.put(sAttKey, jsonOnbj.get(sAttKey));
+							//exclude list
+							if(isReturnsExcludes)
+							{
+								continue;
+							}
 						}
+						else 
+						{
+							//include list
+							if(!isReturnsExcludes)
+							{
+								continue;
+							}
+						}
+						
+						jsonObjReturn.put(sAttKey, jsonOnbj.get(sAttKey));
 					}
 					jsonOnbj = jsonObjReturn;
 					
@@ -1275,7 +1294,7 @@ public class CRUDMgr {
 			sTableName = "("+aTableViewSQL+") AS TBL ";
 		}
 		
-		if(aReturns!=null)
+		if(aReturns!=null && !isReturnsExcludes)
 		{
 			for(String sReturn : aReturns)
 			{
@@ -1291,21 +1310,25 @@ public class CRUDMgr {
 		}
 		
 		StringBuffer sbSelectFields = new StringBuffer();
-		if(aTableViewSQL==null || aTableViewSQL.length()==0)
+		
+		if(!isReturnsExcludes)
 		{
-			//limit result when return fields are specified
-			if(listSelectFields.size()>0 
-					&& aReturns!=null && aReturns.length>0)
+			if(aTableViewSQL==null || aTableViewSQL.length()==0)
 			{
-				for(String aField : listSelectFields)
+				//limit result when return include fields are specified
+				if(listSelectFields.size()>0 			
+					&& aReturns!=null && aReturns.length>0)
 				{
-					if(sbSelectFields.length()>0)
-						sbSelectFields.append(", ");
-					sbSelectFields.append(aField);
+					for(String aField : listSelectFields)
+					{
+						if(sbSelectFields.length()>0)
+							sbSelectFields.append(", ");
+						sbSelectFields.append(aField);
+					}
 				}
+				
 			}
 		}
-		
 		if(sbSelectFields.length()==0)
 		{
 			sbSelectFields.append("*");
