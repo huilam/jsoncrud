@@ -47,19 +47,35 @@ import org.json.JSONObject;
 import hl.common.JdbcDBMgr;
 
 public class CRUDMgr {
-	
-	private final static String JSONFILTER_IN 					= "in";
-	private final static String JSONFILTER_FROM 				= "from";
-	private final static String JSONFILTER_TO 					= "to";
-	private final static String JSONFILTER_STARTWITH			= "startwith";
-	private final static String JSONFILTER_ENDWITH				= "endwith";
-	private final static String JSONFILTER_CONTAIN				= "contain";
-	private final static String JSONFILTER_CASE_INSENSITIVE		= "ci";
-	private final static String JSONFILTER_NOT					= "not";
-	
-	private final static String SQL_IN_SEPARATOR				= ",";
-	private final static String SQLLIKE_WILDCARD				= "%";
-	private final static char[] SQLLIKE_RESERVED_CHARS			= new char[]{'%','_'};
+	//
+	public final static String JSONFILTER_IN 				= "in";
+	public final static String JSONFILTER_FROM 				= "from";
+	public final static String JSONFILTER_TO 				= "to";
+	public final static String JSONFILTER_STARTWITH			= "startwith";
+	public final static String JSONFILTER_ENDWITH			= "endwith";
+	public final static String JSONFILTER_CONTAIN			= "contain";
+	public final static String JSONFILTER_CASE_INSENSITIVE	= "ci";
+	public final static String JSONFILTER_NOT				= "not";
+
+	private static List<String> listFilterOperator	= new ArrayList<String>();
+	static 
+	{
+		listFilterOperator.add(CRUDMgr.JSONFILTER_IN);
+		listFilterOperator.add(CRUDMgr.JSONFILTER_FROM);
+		listFilterOperator.add(CRUDMgr.JSONFILTER_TO);
+		listFilterOperator.add(CRUDMgr.JSONFILTER_STARTWITH);
+		listFilterOperator.add(CRUDMgr.JSONFILTER_ENDWITH);
+		listFilterOperator.add(CRUDMgr.JSONFILTER_CONTAIN);
+		listFilterOperator.add(CRUDMgr.JSONFILTER_CASE_INSENSITIVE);
+		listFilterOperator.add(CRUDMgr.JSONFILTER_NOT);
+	}
+	//
+	public final static String JSONSORTING_ASC				= "asc";
+	public final static String JSONSORTING_DESC				= "desc";
+	//
+	private final static String SQL_IN_SEPARATOR			= ",";
+	private final static String SQLLIKE_WILDCARD			= "%";
+	private final static char[] SQLLIKE_RESERVED_CHARS		= new char[]{'%','_'};
 	
 	private final static String REGEX_JSONFILTER = "([a-zA-Z_-]+?)(?:\\.("+JSONFILTER_NOT+"))?"
 			+"(?:\\.("+JSONFILTER_FROM+"|"+JSONFILTER_TO+"|"+JSONFILTER_IN+"|"
@@ -98,7 +114,7 @@ public class CRUDMgr {
 	{
 		JSONObject jsonVer = new JSONObject();
 		jsonVer.put("framework", "jsoncrud");
-		jsonVer.put("version", "0.7.1 beta");
+		jsonVer.put("version", "0.7.2 beta");
 		return jsonVer;
 	}
 	
@@ -197,6 +213,10 @@ public class CRUDMgr {
 			if(sMetaKey!=null)
 				JsonCrudConfig.ERRCODE_JSONCRUDCFG = sMetaKey;
 			
+			sMetaKey = mapErrCodes.get(JsonCrudConfig.ERRCODE_DBCONNEXCEPTION);
+			if(sMetaKey!=null)
+				JsonCrudConfig.ERRCODE_DBCONNEXCEPTION = sMetaKey;		
+			
 			sMetaKey = mapErrCodes.get(JsonCrudConfig.ERRCODE_SQLEXCEPTION);
 			if(sMetaKey!=null)
 				JsonCrudConfig.ERRCODE_SQLEXCEPTION = sMetaKey;		
@@ -205,13 +225,21 @@ public class CRUDMgr {
 			if(sMetaKey!=null)
 				JsonCrudConfig.ERRCODE_PLUGINEXCEPTION = sMetaKey;		
 			
-			sMetaKey = mapErrCodes.get(JsonCrudConfig.ERRCODE_INVALID_FILTER);
+			sMetaKey = mapErrCodes.get(JsonCrudConfig.ERRCODE_INVALID_FILTERS);
 			if(sMetaKey!=null)
-				JsonCrudConfig.ERRCODE_INVALID_FILTER = sMetaKey;
+				JsonCrudConfig.ERRCODE_INVALID_FILTERS = sMetaKey;
 			
 			sMetaKey = mapErrCodes.get(JsonCrudConfig.ERRCODE_INVALID_SORTING);
 			if(sMetaKey!=null)
-				JsonCrudConfig.ERRCODE_INVALID_SORTING = sMetaKey;		
+				JsonCrudConfig.ERRCODE_INVALID_SORTING = sMetaKey;
+			
+			sMetaKey = mapErrCodes.get(JsonCrudConfig.ERRCODE_INVALID_PAGINATION);
+			if(sMetaKey!=null)
+				JsonCrudConfig.ERRCODE_INVALID_PAGINATION = sMetaKey;	
+			
+			sMetaKey = mapErrCodes.get(JsonCrudConfig.ERRCODE_INVALID_RETURNS);
+			if(sMetaKey!=null)
+				JsonCrudConfig.ERRCODE_INVALID_RETURNS = sMetaKey;	
 		}
 	}
 
@@ -360,7 +388,10 @@ public class CRUDMgr {
 		}
 		catch(Throwable ex)
 		{
-			throw new JsonCrudException(JsonCrudConfig.ERRCODE_SQLEXCEPTION, "sql:"+sSQL+", params:"+listParamsToString(listValues), ex);
+			String sDebugMsg = "crudKey:"+aCrudKey+", sql:"+sSQL+", params:"+listParamsToString(listValues);
+			JsonCrudException e = new JsonCrudException(JsonCrudConfig.ERRCODE_SQLEXCEPTION, ex);
+			e.setErrorDebugInfo(sDebugMsg);
+			throw e;
 		}
 
 		
@@ -400,6 +431,7 @@ public class CRUDMgr {
 						}
 						catch(Throwable ex)
 						{
+							String sDebugMsg = null;							
 							try {
 								//rollback parent
 								sbRollbackParentSQL.insert(0, "DELETE FROM "+sTableName+" WHERE 1=1 ");
@@ -412,10 +444,18 @@ public class CRUDMgr {
 							}
 							catch(Throwable ex2)
 							{
-								throw new JsonCrudException(JsonCrudConfig.ERRCODE_SQLEXCEPTION, "[Rollback Failed], parent:[sql:"+sbRollbackParentSQL.toString()+",params:"+listParamsToString(listValues)+"], child:[sql:"+sObjInsertSQL+",params:"+listParamsToString(listParams2)+"]", ex);
+								sDebugMsg = "[Rollback Failed], parent:[sql:"+sbRollbackParentSQL.toString()+",params:"+listParamsToString(listValues)+"], child:[sql:"+sObjInsertSQL+",params:"+listParamsToString(listParams2)+"]";
+								ex = ex2;
 							}
 							
-							throw new JsonCrudException(JsonCrudConfig.ERRCODE_SQLEXCEPTION, "[Rollback Success] : child : sql:"+sObjInsertSQL+", params:"+listParamsToString(listParams2), ex);
+							if(sDebugMsg==null)
+							{
+								sDebugMsg = "[Rollback Success] : child : sql:"+sObjInsertSQL+", params:"+listParamsToString(listParams2);
+							}
+							
+							JsonCrudException e = new JsonCrudException(JsonCrudConfig.ERRCODE_SQLEXCEPTION, ex);
+							e.setErrorDebugInfo(sDebugMsg);
+							throw e;
 						}
 							
 					}
@@ -504,7 +544,16 @@ public class CRUDMgr {
 		}
 		catch(SQLException sqlEx)
 		{
-			throw new JsonCrudException(JsonCrudConfig.ERRCODE_SQLEXCEPTION, "crudKey:"+aCrudKey+", sql:"+sSQL+", params:"+listParamsToString(aObjParams), sqlEx);
+			if(conn==null)
+			{
+				JsonCrudException e = new JsonCrudException(JsonCrudConfig.ERRCODE_DBCONNEXCEPTION, sqlEx);
+				throw e;
+			}
+			
+			String sDebugMsg = "crudKey:"+aCrudKey+", sql:"+sSQL+", params:"+listParamsToString(aObjParams);
+			JsonCrudException e = new JsonCrudException(JsonCrudConfig.ERRCODE_SQLEXCEPTION, sqlEx);
+			e.setErrorDebugInfo(sDebugMsg);
+			throw e;		
 		}
 		finally
 		{
@@ -512,11 +561,79 @@ public class CRUDMgr {
 				if(dbmgr!=null)
 					dbmgr.closeQuietly(conn, stmt, null);
 			} catch (SQLException e) {
-				throw new JsonCrudException(JsonCrudConfig.ERRCODE_SQLEXCEPTION, e);
+				//ignore
+				logger.log(Level.WARNING, e.getMessage(), e);
 			}
 		}
 		
 		return lAffectRows;
+	}
+	
+	private List<String> getSQLJsonAttrs(String aCrudKey, String aSQL, Object[] aObjParams) throws JsonCrudException
+	{
+		Map<String, String> map = jsoncrudConfig.getConfig(aCrudKey);
+		if(map==null)
+			return null;
+		
+		List<String> listfields = new ArrayList<String>();
+
+		String sJdbcName 	= map.get(JsonCrudConfig._PROP_KEY_DBCONFIG);
+		JdbcDBMgr dbmgr 	= mapDBMgr.get(sJdbcName);
+		
+		String sSQL = aSQL;
+		
+		Map<String, String> mapCrudColJson = mapColName2Json.get(aCrudKey);
+		if(mapCrudColJson==null)
+			mapCrudColJson = new HashMap<String,String>();
+		
+		Connection conn = null;
+		PreparedStatement stmt	= null;
+		ResultSet rs = null;
+		try {
+			conn = dbmgr.getConnection();
+			stmt = conn.prepareStatement(sSQL);
+			stmt = JdbcDBMgr.setParams(stmt, aObjParams);
+			
+			conn.setReadOnly(true);
+			stmt.setFetchSize(10);
+			rs = stmt.executeQuery();
+			ResultSetMetaData meta = rs.getMetaData();
+			
+			for(int i=1; i<=meta.getColumnCount();i++)
+			{
+				String sColName = meta.getColumnLabel(i);
+				String sJsonName = mapCrudColJson.get(sColName);
+				if(sJsonName==null)
+					sJsonName = sColName;
+				//
+				listfields.add(sJsonName);
+			}
+			
+		} 
+		catch (SQLException sqlEx) 
+		{
+			if(conn==null)
+			{
+				JsonCrudException e = new JsonCrudException(JsonCrudConfig.ERRCODE_DBCONNEXCEPTION, sqlEx);
+				throw e;
+			}
+			
+			String sDebugMsg = "crudKey:"+aCrudKey+", sql:"+sSQL+", params:"+listParamsToString(aObjParams);
+			JsonCrudException e = new JsonCrudException(JsonCrudConfig.ERRCODE_SQLEXCEPTION, sqlEx);
+			e.setErrorDebugInfo(sDebugMsg);
+			throw e;
+		}
+		finally
+		{
+			try {
+				conn.setReadOnly(false);
+				dbmgr.closeQuietly(conn, stmt, rs);
+			} catch (SQLException e) {
+				//ignore
+				logger.log(Level.WARNING, e.getMessage(), e);
+			}
+		}
+		return listfields;
 	}
 	
 	private long getTotalSQLCount(String aCrudKey, String aSQL, Object[] aObjParams) throws JsonCrudException
@@ -548,9 +665,16 @@ public class CRUDMgr {
 		} 
 		catch (SQLException sqlEx) 
 		{
-			String sDebug = "crudKey:"+aCrudKey+", sql:"+sSQL+", params:"+listParamsToString(aObjParams);
-			logger.log(Level.SEVERE, sDebug, sqlEx);
-			throw new JsonCrudException(JsonCrudConfig.ERRCODE_SQLEXCEPTION, sDebug, sqlEx);	
+			if(conn==null)
+			{
+				JsonCrudException e = new JsonCrudException(JsonCrudConfig.ERRCODE_DBCONNEXCEPTION, sqlEx);
+				throw e;
+			}
+			
+			String sDebugMsg = "crudKey:"+aCrudKey+", sql:"+sSQL+", params:"+listParamsToString(aObjParams);
+			JsonCrudException e = new JsonCrudException(JsonCrudConfig.ERRCODE_SQLEXCEPTION, sqlEx);
+			e.setErrorDebugInfo(sDebugMsg);
+			throw e;
 		}
 		finally
 		{
@@ -558,6 +682,8 @@ public class CRUDMgr {
 				conn.setReadOnly(false);
 				dbmgr.closeQuietly(conn, stmt, rs);
 			} catch (SQLException e) {
+				//ignore
+				logger.log(Level.WARNING, e.getMessage(), e);
 			}
 		}
 		return lTotalCount;
@@ -622,9 +748,19 @@ public class CRUDMgr {
 				stmt.setFetchSize(iFetchSize);
 			}
 			
-			rs   = stmt.executeQuery();
+			try {
+				rs   = stmt.executeQuery();
+			}
+			catch(SQLException sqlEx)
+			{
+				throw sqlEx;
+			}
+			
 			
 			ResultSetMetaData meta 	= rs.getMetaData();
+			
+			JSONObject jsonObjTempl = null;
+			
 			long lTotalResult 		= 0;
 			while(rs.next())
 			{	
@@ -633,20 +769,21 @@ public class CRUDMgr {
 				if(lTotalResult < aStartFrom)
 					continue;
 				
-				JSONObject jsonOnbj = new JSONObject();
-				
-				for(int i=0; i<meta.getColumnCount(); i++)
+				if(jsonObjTempl==null)
 				{
-					// need to have full result so that subquery can be execute
-					String sColName = meta.getColumnLabel(i+1);					
-					Object oObj = rs.getObject(sColName);
-					if(oObj==null)
-						oObj = JSONObject.NULL;
-					jsonOnbj.put(sColName, oObj);
-	
+					jsonObjTempl = new JSONObject();
+					for(int i=0; i<meta.getColumnCount(); i++)
+					{
+						// need to have full result so that subquery can be execute
+						String sColName = meta.getColumnLabel(i+1);					
+						Object oObj = rs.getObject(sColName);
+						if(oObj==null)
+							oObj = JSONObject.NULL;
+						jsonObjTempl.put(sColName, oObj);
+					}
+					jsonObjTempl = convertCol2Json(aCrudKey, jsonObjTempl, isExcludeNonMappedField);
 				}
-				
-				jsonOnbj = convertCol2Json(aCrudKey, jsonOnbj, isExcludeNonMappedField);
+				JSONObject jsonObj = new JSONObject(jsonObjTempl);
 				
 				if(mapCrudSql.size()>0)
 				{
@@ -657,7 +794,6 @@ public class CRUDMgr {
 						{
 							boolean isReturnsContain = listReturnsAttrName.contains(sJsonName);							
 
-							
 							if(isReturnsContain)
 							{
 								//is exclude list
@@ -676,7 +812,7 @@ public class CRUDMgr {
 							}
 						}
 						
-						if(!jsonOnbj.has(sJsonName))
+						if(!jsonObj.has(sJsonName))
 						{
 							List<Object> listParams2 = new ArrayList<Object>();
 							String sSQL2 = mapCrudSql.get(sJsonName);
@@ -684,9 +820,9 @@ public class CRUDMgr {
 							while(m.find())
 							{
 								String sBracketJsonName = m.group(1);
-								if(jsonOnbj.has(sBracketJsonName))
+								if(jsonObj.has(sBracketJsonName))
 								{
-									listParams2.add(jsonOnbj.get(sBracketJsonName));
+									listParams2.add(jsonObj.get(sBracketJsonName));
 								}
 							}
 							sSQL2 = sSQL2.replaceAll("\\{.+?\\}", "?");
@@ -752,7 +888,7 @@ public class CRUDMgr {
 												
 											}
 										}
-										jsonOnbj.put(sJsonName, sData);
+										jsonObj.put(sJsonName, sData);
 									}
 									else if(sChildMapping.startsWith("[") && sChildMapping.endsWith("]"))
 									{
@@ -776,7 +912,7 @@ public class CRUDMgr {
 												}
 											}
 										}
-										jsonOnbj.put(sJsonName, jArrMappingData);
+										jsonObj.put(sJsonName, jArrMappingData);
 									}
 									else if(sChildMapping.startsWith("{") && sChildMapping.endsWith("}"))
 									{
@@ -814,7 +950,7 @@ public class CRUDMgr {
 										
 										if(jsonMappingData!=null)
 										{
-											jsonOnbj.put(sJsonName, jsonMappingData);
+											jsonObj.put(sJsonName, jsonMappingData);
 										}
 										else 
 											throw new JsonCrudException(JsonCrudConfig.ERRCODE_JSONCRUDCFG, 
@@ -824,7 +960,7 @@ public class CRUDMgr {
 								}
 								else
 								{
-									jsonOnbj.put(sJsonName, jsonArrayChild);			
+									jsonObj.put(sJsonName, jsonArrayChild);			
 								}
 							}
 						}
@@ -835,7 +971,7 @@ public class CRUDMgr {
 				if(isFilterByReturns)
 				{
 					JSONObject jsonObjReturn = new JSONObject();
-					for(Object oAttrKey : jsonOnbj.keySet())
+					for(Object oAttrKey : jsonObj.keySet())
 					{
 						String sAttKey = oAttrKey.toString();
 						
@@ -858,13 +994,13 @@ public class CRUDMgr {
 							}
 						}
 						
-						jsonObjReturn.put(sAttKey, jsonOnbj.get(sAttKey));
+						jsonObjReturn.put(sAttKey, jsonObj.get(sAttKey));
 					}
-					jsonOnbj = jsonObjReturn;
+					jsonObj = jsonObjReturn;
 					
 				}
 				
-				jsonArr.put(jsonOnbj);
+				jsonArr.put(jsonObj);
 				
 				if(aFetchSize>0 && jsonArr.length()>=aFetchSize)
 				{
@@ -905,7 +1041,16 @@ public class CRUDMgr {
 		}
 		catch(SQLException sqlEx)
 		{
-			throw new JsonCrudException(JsonCrudConfig.ERRCODE_SQLEXCEPTION, "crudKey:"+aCrudKey+", sql:"+sSQL+", params:"+listParamsToString(aObjParams), sqlEx);
+			if(conn==null)
+			{
+				JsonCrudException e = new JsonCrudException(JsonCrudConfig.ERRCODE_DBCONNEXCEPTION, sqlEx);
+				throw e;
+			}
+			
+			String sDebugMsg = "crudKey:"+aCrudKey+", sql:"+sSQL+", params:"+listParamsToString(aObjParams);
+			JsonCrudException e = new JsonCrudException(JsonCrudConfig.ERRCODE_SQLEXCEPTION, sqlEx);
+			e.setErrorDebugInfo(sDebugMsg);
+			throw e;
 		}
 		finally
 		{
@@ -932,7 +1077,8 @@ public class CRUDMgr {
 				if(dbmgr!=null)
 					dbmgr.closeQuietly(conn, stmt, rs);
 			} catch (SQLException e) {
-				throw new JsonCrudException(JsonCrudConfig.ERRCODE_SQLEXCEPTION, e);
+				//ignore 
+				logger.log(Level.WARNING, e.getMessage(), e);
 			}
 		}
 		return jsonReturn;		
@@ -1063,6 +1209,8 @@ public class CRUDMgr {
 			logger.log(Level.SEVERE, e.getMessage(), e);
 		}
 		
+		if(aReturns==null)
+			aReturns = new String[]{};
 		
 		JSONObject jsonWhere = castJson2DBVal(aCrudKey, aWhereJson);
 		if(jsonWhere==null)
@@ -1103,7 +1251,7 @@ public class CRUDMgr {
 					String sJsonOperator 	= m.group(3);
 					String sJsonCIorNOT_1 	= m.group(4);
 					String sJsonCIorNOT_2 	= m.group(5);
-
+										
 					if(JSONFILTER_CASE_INSENSITIVE.equalsIgnoreCase(sJsonCIorNOT_1) || JSONFILTER_CASE_INSENSITIVE.equalsIgnoreCase(sJsonCIorNOT_2) 
 							|| JSONFILTER_CASE_INSENSITIVE.equals(sJsonOperator))
 					{
@@ -1162,6 +1310,21 @@ public class CRUDMgr {
 						{
 							sOperator = " like ";
 							oJsonValue = SQLLIKE_WILDCARD+sJsonValue+SQLLIKE_WILDCARD;
+						}
+					}
+				}
+				else
+				{
+					int iPos = sJsonName.indexOf(".");
+					if(iPos>-1)
+					{
+						String sFilterOps = sJsonName.substring(iPos);
+						if(sFilterOps.length()>0)
+						{
+							//invalid operators
+							throw new JsonCrudException(
+									JsonCrudConfig.ERRCODE_INVALID_FILTERS, 
+									"Invalid filters operator - "+sJsonName);
 						}
 					}
 				}
@@ -1240,7 +1403,9 @@ public class CRUDMgr {
 			{
 				Map<String, String> mapJsonSql = mapJson2Sql.get(aCrudKey);
 				if(mapJsonSql==null || mapJsonSql.get(sJsonName)==null)
-					throw new JsonCrudException(JsonCrudConfig.ERRCODE_INVALID_FILTER, "Invalid filter - "+aCrudKey+" : "+sJsonName);
+					throw new JsonCrudException(
+							JsonCrudConfig.ERRCODE_INVALID_FILTERS, 
+							"Invalid filters attribute - "+sJsonName);
 			}
 		}
 		
@@ -1284,7 +1449,8 @@ public class CRUDMgr {
 				}
 				else
 				{
-					throw new JsonCrudException(JsonCrudConfig.ERRCODE_INVALID_SORTING, "Invalid sorting - "+aCrudKey+" : "+sJsonAttr);
+					throw new JsonCrudException(
+							JsonCrudConfig.ERRCODE_INVALID_SORTING, "Invalid sorting attribute - "+sJsonAttr);
 				}
 			}
 		}
@@ -1294,7 +1460,7 @@ public class CRUDMgr {
 			sTableName = "("+aTableViewSQL+") AS TBL ";
 		}
 		
-		if(aReturns!=null && !isReturnsExcludes)
+		if(aReturns.length>0 && !isReturnsExcludes)
 		{
 			for(String sReturn : aReturns)
 			{
@@ -1317,7 +1483,7 @@ public class CRUDMgr {
 			{
 				//limit result when return include fields are specified
 				if(listSelectFields.size()>0 			
-					&& aReturns!=null && aReturns.length>0)
+					&& aReturns.length>0)
 				{
 					for(String aField : listSelectFields)
 					{
@@ -1348,12 +1514,40 @@ public class CRUDMgr {
 			sbSQL.append(" ORDER BY ").append(sbOrderBy.toString());
 		}
 		
-		JSONObject jsonReturn 	= retrieveBySQL(
-				aCrudKey, sbSQL.toString(), 
-				objParams, 
-				aStartFrom, aFetchSize, 
-				aReturns, isReturnsExcludes, 
-				lTotalRecordCount);
+		JSONObject jsonReturn = null;
+		try {
+			jsonReturn 	= retrieveBySQL(
+					aCrudKey, sbSQL.toString(), 
+					objParams, 
+					aStartFrom, aFetchSize, 
+					aReturns, isReturnsExcludes, 
+					lTotalRecordCount);
+		}
+		catch(JsonCrudException jsonEx)
+		{
+			if(jsonEx.getThrowable() instanceof SQLException )
+			{
+				if(aReturns.length>0)
+				{
+					sbSQL.setLength(0);
+					sbSQL.append(" SELECT * FROM ").append(sTableName).append(" WHERE 1=2 ").append(sbWhere.toString());
+					List<String> listJsonAttrs = getSQLJsonAttrs(aCrudKey, sbSQL.toString(), objParams);
+					if(listJsonAttrs==null)
+						listJsonAttrs = new ArrayList<String>();
+					
+					for(int i=0; i<aReturns.length; i++)
+					{
+						String sReturnAttrName = aReturns[i];
+						if(!listJsonAttrs.contains(sReturnAttrName))
+						{
+							throw new JsonCrudException(
+									JsonCrudConfig.ERRCODE_INVALID_RETURNS, "Invalid returns attribute - "+sReturnAttrName);
+						}
+					}
+				}
+			}
+			throw jsonEx;
+		}
 		
 		if(jsonReturn!=null && jsonReturn.has(JsonCrudConfig._LIST_META))
 		{
@@ -2454,12 +2648,12 @@ public class CRUDMgr {
     public static void main(String args[]) throws JsonCrudException
     {
           StringBuffer sb = new StringBuffer();
-          sb.append("     SELECT ");
+          sb.append(" SELECT ");
           sb.append("     a.*, c.alert_category_name ");
           sb.append("     ,t.alert_type_name "); 
-          sb.append("     ,      s.alert_status_name ");
+          sb.append("     ,s.alert_status_name ");
           sb.append("     ,r.resource_name,r.device_id,p.priority_name ");
-          sb.append("     FROM alert a ");
+          sb.append(" FROM alert a ");
           sb.append("     LEFT OUTER JOIN alert_category c ON c.alert_category_id = a.category_id   ");
           sb.append(" LEFT JOIN alert_status s ON(s.alert_status_id  = a.status_id )");
           sb.append("     LEFT OUTER JOIN alert_type t ON t.alert_type_id = a.alert_type_id");
