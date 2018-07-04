@@ -56,13 +56,17 @@ public class JsonCrudConfig {
 	
 	public final static String _JSONCRUD_FRAMEWORK_ERRCODE_CONFIGKEY = "jsoncrud.framework_errcode";
 	public static String ERRCODE_PLUGINEXCEPTION	= "plugin_exception";
+	public static String ERRCODE_DBCONNEXCEPTION		= "dbconn_exception";
 	public static String ERRCODE_SQLEXCEPTION		= "sql_exception";
 	
 	public static String ERRCODE_INVALIDFORMAT		= "invalid_format_exception";
 	
 	public static String ERRCODE_JSONCRUDCFG		= "invalid_jsoncrudcfg";
-	public static String ERRCODE_INVALID_FILTER		= "invalid_filter";
+	
+	public static String ERRCODE_INVALID_FILTERS	= "invalid_filters";
+	public static String ERRCODE_INVALID_RETURNS	= "invalid_returns";
 	public static String ERRCODE_INVALID_SORTING	= "invalid_sorting";
+	public static String ERRCODE_INVALID_PAGINATION	= "invalid_pagination";
 	
 	//
 	public static char[] SQLLIKE_ESCAPE_CHARS		= new char[] {'`','|','#'};
@@ -141,7 +145,15 @@ public class JsonCrudConfig {
 			}
 		}
 		loadProp(prop);
-	}	
+	}
+	
+	public boolean isValidCrudSortingDirection(String aSortOperator)
+	{
+		if(aSortOperator==null)
+			return false;
+		return "asc".equalsIgnoreCase(aSortOperator) || "desc".equalsIgnoreCase(aSortOperator);
+	}
+	
 	
 	public void loadProp(Properties aProp) throws IOException
 	{
