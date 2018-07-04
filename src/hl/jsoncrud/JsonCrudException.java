@@ -25,32 +25,59 @@ package hl.jsoncrud;
 public class JsonCrudException extends Exception {
 
 	private static final long serialVersionUID = -1068899117288657750L;
-	private String error_code = null;
-	private String error_msg = null;
+	private String error_code 	= null;
+	private String error_msg 	= null;	
+	
+	private Throwable throwable 	= null;
+	private String error_debuginfo 	= null;
+	private String error_cause 		= null;
+	private boolean debug_mode 		= false;
 
 	public JsonCrudException(String aErrCode, String aErrMessage)
 	{
 		super(aErrMessage);
-		error_code = aErrCode;
-		error_msg = aErrMessage;
+		init(aErrCode, aErrMessage, null, null);
 	}
 	
 	public JsonCrudException(String aErrCode, String aErrMessage, Throwable aThrowable)
 	{
 		super(aErrMessage, aThrowable);
-		error_code = aErrCode;
-		error_msg = getCauseErrMsg(aThrowable);
-		aThrowable.printStackTrace();
+		init(aErrCode, aErrMessage, null, aThrowable);
 	}
+	
+	public JsonCrudException(String aErrCode, String aErrMessage, String aErrDebugInfo, Throwable aThrowable)
+	{
+		super(aErrMessage, aThrowable);
+		init(aErrCode, aErrMessage, aErrDebugInfo, aThrowable);
+	}
+	
 	
 	public JsonCrudException(String aErrCode, Throwable aThrowable)
 	{
 		super(aThrowable);
-		error_code = aErrCode;
-		error_msg = getCauseErrMsg(aThrowable);
-		
-		aThrowable.printStackTrace();
+		init(aErrCode, null, null, aThrowable);
 	}
+	
+	private void init(String aErrCode, String aErrMessage, String aErrDebugInfo, Throwable aThrowable)
+	{
+		error_code = aErrCode;
+		error_cause = getCauseErrMsg(aThrowable);
+		error_msg = aErrMessage;
+		error_debuginfo = aErrDebugInfo;
+		throwable = aThrowable;
+		
+		if(error_msg==null)
+		{
+			error_msg = error_cause;
+			error_cause = null;
+		}
+		
+		if(aThrowable!=null)
+		{
+			aThrowable.printStackTrace();
+		}
+	}
+
 	
 	public String getErrorCode()
 	{
@@ -62,15 +89,72 @@ public class JsonCrudException extends Exception {
 		return error_msg;
 	}
 	
+	public Throwable getThrowable()
+	{
+		return throwable;
+	}
+	
+	public String getErrorCause()
+	{
+		return error_cause;
+	}
+	
+	public String getErrorDebugInfo()
+	{
+		return error_debuginfo;
+	}
+	
+	public void setErrorMsg(String aErrorMsg)
+	{
+		error_msg = aErrorMsg;
+	}
+	
+	public void setErrorCause(String aErrorCause)
+	{
+		error_cause = aErrorCause;
+	}
+	
+	public void setErrorDebugInfo(String aErrorDebugInfo)
+	{
+		error_debuginfo = aErrorDebugInfo;
+	}
+	
+	public void setDebugMode(boolean isDebug)
+	{
+		debug_mode = isDebug;
+	}
+
 	public String getMessage()
 	{
-		return getErrorCode()+":"+getErrorMsg();
+		String sErrMsg = getErrorMsg();
+		String sErrCause = getErrorCause();
+		
+		StringBuffer sbErr = new StringBuffer();
+		sbErr.append(getErrorCode());
+		sbErr.append(":").append(sErrMsg);
+		//
+		if(sErrCause!=null)
+		{
+			sbErr.append(" (").append(sErrCause).append(")");
+		}
+		//
+		if(debug_mode)
+		{
+			sbErr.append("\n").append(getErrorDebugInfo());
+		}
+		
+		return sbErr.toString();
 	}
 	
 	private String getCauseErrMsg(Throwable aThrowable)
 	{
 		if(aThrowable==null)
 			return null;
+		
+		if(aThrowable instanceof JsonCrudException)
+		{
+			return ((JsonCrudException)aThrowable).error_cause;
+		}
 		
 		Throwable t = aThrowable.getCause();
 		if(t!=null && t.getMessage()!=null)
