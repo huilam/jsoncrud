@@ -759,8 +759,6 @@ public class CRUDMgr {
 			
 			ResultSetMetaData meta 	= rs.getMetaData();
 			
-			JSONObject jsonObjTempl = null;
-			
 			long lTotalResult 		= 0;
 			while(rs.next())
 			{	
@@ -768,23 +766,19 @@ public class CRUDMgr {
 				
 				if(lTotalResult < aStartFrom)
 					continue;
-				
-				if(jsonObjTempl==null)
+
+				JSONObject jsonObj = new JSONObject();
+				for(int i=0; i<meta.getColumnCount(); i++)
 				{
-					jsonObjTempl = new JSONObject();
-					for(int i=0; i<meta.getColumnCount(); i++)
-					{
-						// need to have full result so that subquery can be execute
-						String sColName = meta.getColumnLabel(i+1);					
-						Object oObj = rs.getObject(sColName);
-						if(oObj==null)
-							oObj = JSONObject.NULL;
-						jsonObjTempl.put(sColName, oObj);
-					}
-					jsonObjTempl = convertCol2Json(aCrudKey, jsonObjTempl, isExcludeNonMappedField);
+					// need to have full result so that subquery can be execute
+					String sColName = meta.getColumnLabel(i+1);
+					Object oObj = rs.getObject(sColName);
+					if(oObj==null)
+						oObj = JSONObject.NULL;
+					jsonObj.put(sColName, oObj);
 				}
-				JSONObject jsonObj = new JSONObject(jsonObjTempl);
-				
+				jsonObj = convertCol2Json(aCrudKey, jsonObj, isExcludeNonMappedField);
+
 				if(mapCrudSql.size()>0)
 				{
 					for(String sJsonName : mapCrudSql.keySet())
