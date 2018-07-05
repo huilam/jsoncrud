@@ -118,15 +118,9 @@ public class JsonCrudException extends Exception {
 	public String getErrorMsg()
 	{
 		StringBuffer sb = new StringBuffer();
-		if(getErrorCode()!=null)
-		{
-			sb.append(getErrorCode());
-		}
 		
 		if(getErrorSubject()!=null)
 		{
-			if(sb.length()>0)
-				sb.append(" : ");
 			sb.append(getErrorSubject());
 		}
 		
@@ -182,7 +176,7 @@ public class JsonCrudException extends Exception {
 		//
 		if(debug_mode)
 		{
-			sbErr.append("\n	").append(getErrorDebugInfo());
+			sbErr.append("  ").append(getErrorDebugInfo());
 		}
 		return sbErr.toString();
 	}
