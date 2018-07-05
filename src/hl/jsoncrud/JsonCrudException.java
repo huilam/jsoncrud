@@ -25,30 +25,33 @@ package hl.jsoncrud;
 public class JsonCrudException extends Exception {
 
 	private static final long serialVersionUID = -1068899117288657750L;
-	private String error_code 	= null;
-	private String error_msg 	= null;	
+	private String error_code 		= null;
+	private String error_subject 	= null;
+	private String error_reason 	= null;
+	
+	private String error_debuginfo 	= null;
 	
 	private Throwable throwable 	= null;
-	private String error_debuginfo 	= null;
-	private String error_cause 		= null;
-	private boolean debug_mode 		= false;
+	private String throwable_cause 	= null;
+	
+	public static boolean debug_mode = false;
 
-	public JsonCrudException(String aErrCode, String aErrMessage)
+	public JsonCrudException(String aErrCode, String aErrReason)
 	{
-		super(aErrMessage);
-		init(aErrCode, aErrMessage, null, null);
+		super(aErrReason);
+		init(aErrCode, aErrReason, null, null);
 	}
 	
-	public JsonCrudException(String aErrCode, String aErrMessage, Throwable aThrowable)
+	public JsonCrudException(String aErrCode, String aErrReason, Throwable aThrowable)
 	{
-		super(aErrMessage, aThrowable);
-		init(aErrCode, aErrMessage, null, aThrowable);
+		super(aErrReason, aThrowable);
+		init(aErrCode, aErrReason, null, aThrowable);
 	}
 	
-	public JsonCrudException(String aErrCode, String aErrMessage, String aErrDebugInfo, Throwable aThrowable)
+	public JsonCrudException(String aErrCode, String aErrReason, String aErrDebugInfo, Throwable aThrowable)
 	{
-		super(aErrMessage, aThrowable);
-		init(aErrCode, aErrMessage, aErrDebugInfo, aThrowable);
+		super(aErrReason, aThrowable);
+		init(aErrCode, aErrReason, aErrDebugInfo, aThrowable);
 	}
 	
 	
@@ -58,18 +61,46 @@ public class JsonCrudException extends Exception {
 		init(aErrCode, null, null, aThrowable);
 	}
 	
-	private void init(String aErrCode, String aErrMessage, String aErrDebugInfo, Throwable aThrowable)
+	public void setErrSubjectAndReason(String aErrCode, String aErrSubject, String aErrReason)
+	{
+		this.error_code 	= aErrCode;
+		this.error_subject 	= aErrSubject;
+		this.error_reason 	= aErrReason; 
+	}
+	
+	public String getErrorSubject()
+	{
+		return this.error_subject;
+	}
+	
+	public void setErrorSubject(String aErrSubject)
+	{
+		this.error_subject = aErrSubject;
+	}
+
+
+	public String getErrorReason()
+	{
+		return this.error_reason;
+	}
+
+	public void setErrorReason(String aErrReason)
+	{
+		this.error_reason = aErrReason;
+	}
+
+	private void init(String aErrCode, String aErrReason, String aErrDebugInfo, Throwable aThrowable)
 	{
 		error_code = aErrCode;
-		error_cause = getCauseErrMsg(aThrowable);
-		error_msg = aErrMessage;
+		throwable_cause = getCauseErrMsg(aThrowable);
+		error_reason = aErrReason;
 		error_debuginfo = aErrDebugInfo;
 		throwable = aThrowable;
 		
-		if(error_msg==null)
+		if(error_reason==null)
 		{
-			error_msg = error_cause;
-			error_cause = null;
+			error_reason = throwable_cause;
+			throwable_cause = null;
 		}
 		
 		if(aThrowable!=null)
@@ -86,7 +117,32 @@ public class JsonCrudException extends Exception {
 	
 	public String getErrorMsg()
 	{
-		return error_msg;
+		StringBuffer sb = new StringBuffer();
+		if(getErrorCode()!=null)
+		{
+			sb.append(getErrorCode());
+		}
+		
+		if(getErrorSubject()!=null)
+		{
+			if(sb.length()>0)
+				sb.append(" : ");
+			sb.append(getErrorSubject());
+		}
+		
+		if(getErrorReason()!=null)
+		{
+			if(sb.length()>0)
+				sb.append(" - ");
+			sb.append(getErrorReason());
+		}
+		
+		if(sb.length()==0 && throwable!=null)
+		{
+			sb.append(throwable.getMessage());
+		}
+		
+		return sb.toString();
 	}
 	
 	public Throwable getThrowable()
@@ -96,7 +152,7 @@ public class JsonCrudException extends Exception {
 	
 	public String getErrorCause()
 	{
-		return error_cause;
+		return throwable_cause;
 	}
 	
 	public String getErrorDebugInfo()
@@ -104,14 +160,9 @@ public class JsonCrudException extends Exception {
 		return error_debuginfo;
 	}
 	
-	public void setErrorMsg(String aErrorMsg)
-	{
-		error_msg = aErrorMsg;
-	}
-	
 	public void setErrorCause(String aErrorCause)
 	{
-		error_cause = aErrorCause;
+		throwable_cause = aErrorCause;
 	}
 	
 	public void setErrorDebugInfo(String aErrorDebugInfo)
@@ -126,23 +177,13 @@ public class JsonCrudException extends Exception {
 
 	public String getMessage()
 	{
-		String sErrMsg = getErrorMsg();
-		String sErrCause = getErrorCause();
-		
 		StringBuffer sbErr = new StringBuffer();
-		sbErr.append(getErrorCode());
-		sbErr.append(":").append(sErrMsg);
-		//
-		if(sErrCause!=null)
-		{
-			sbErr.append(" (").append(sErrCause).append(")");
-		}
+		sbErr.append(getErrorMsg());
 		//
 		if(debug_mode)
 		{
-			sbErr.append("\n").append(getErrorDebugInfo());
+			sbErr.append("\n	").append(getErrorDebugInfo());
 		}
-		
 		return sbErr.toString();
 	}
 	
@@ -153,7 +194,7 @@ public class JsonCrudException extends Exception {
 		
 		if(aThrowable instanceof JsonCrudException)
 		{
-			return ((JsonCrudException)aThrowable).error_cause;
+			return ((JsonCrudException)aThrowable).throwable_cause;
 		}
 		
 		Throwable t = aThrowable.getCause();
