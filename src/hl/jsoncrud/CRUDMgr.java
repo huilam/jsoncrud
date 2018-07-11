@@ -565,13 +565,8 @@ public class CRUDMgr {
 		}
 		finally
 		{
-			try {
-				if(dbmgr!=null)
-					dbmgr.closeQuietly(conn, stmt, null);
-			} catch (SQLException e) {
-				//ignore
-				logger.log(Level.WARNING, e.getMessage(), e);
-			}
+			if(dbmgr!=null)
+				dbmgr.closeQuietly(conn, stmt, null);
 		}
 		
 		return lAffectRows;
@@ -1079,13 +1074,7 @@ public class CRUDMgr {
 				}
 			}
 			
-			try {
-				if(dbmgr!=null)
-					dbmgr.closeQuietly(conn, stmt, rs);
-			} catch (SQLException e) {
-				//ignore 
-				logger.log(Level.WARNING, e.getMessage(), e);
-			}
+			dbmgr.closeQuietly(conn, stmt, rs);
 		}
 		return jsonReturn;		
 	}
@@ -2382,7 +2371,10 @@ public class CRUDMgr {
 		}
 		finally
 		{
-			conn.setAutoCommit(true);
+			if(conn!=null)
+			{
+				conn.setAutoCommit(true);
+			}
 			jdbcMgr.closeQuietly(conn, stmt, rs);
 		}
 
