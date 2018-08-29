@@ -682,7 +682,10 @@ public class CRUDMgr {
 		finally
 		{
 			try {
-				conn.setReadOnly(false);
+				if(conn!=null)
+				{
+					conn.setReadOnly(false);
+				}
 				dbmgr.closeQuietly(conn, stmt, rs);
 			} catch (SQLException e) {
 				//ignore
