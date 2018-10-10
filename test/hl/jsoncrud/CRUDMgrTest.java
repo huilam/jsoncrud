@@ -193,7 +193,7 @@ public class CRUDMgrTest {
 	
 	private void test4_Sorting_Returns(CRUDMgr m) throws JsonCrudException
 	{
-		String[] sSorting = new String[]{"displaySeq.desc", "cfgId"};
+		String[] sSorting = new String[]{"displaySeq.desc", "cfgId", "enabled.asc"};
 		String[] sReturns = new String[]{"displaySeq", "enabled","key"};
 		
 		long id = getCfgId(m);
@@ -245,10 +245,20 @@ public class CRUDMgrTest {
 			System.out.println("		- "+jsonArrResult.getJSONObject(i));
 		}
 		
+		sReturns = new String[]{"displaySeq", "enabled"};
+		System.out.println("	4.4 Returns.exclude (\"displaySeq\", \"enabled\") : ");
+		jsonArrResult = m.retrieve("crud.jsoncrud_cfg_values", 
+				jsonWhere, null, sReturns, true);
 		
-		System.out.println("	4.4  filter.in : ");
+		for(int i=0; i<jsonArrResult.length(); i++)
+		{
+			System.out.println("		- "+jsonArrResult.getJSONObject(i));
+		}
+		
+		
+		System.out.println("	4.5  filter.in : ");
 
-		System.out.println("		4.4.1 String : ");
+		System.out.println("		4.5.1 String : ");
 		jsonWhere = new JSONObject();
 		jsonWhere.put("value.in", "testvalue001_,testvalue000_");
 		jsonArrResult = m.retrieve("crud.jsoncrud_cfg_values", 
@@ -259,7 +269,7 @@ public class CRUDMgrTest {
 			System.out.println("		- "+jsonArrResult.getJSONObject(i));
 		}
 		
-		System.out.println("		4.4.2 Numberic : ");
+		System.out.println("		4.5.2 Numberic : ");
 		jsonWhere = new JSONObject();
 		jsonWhere.put("displaySeq.in", "1 ,7");
 		jsonArrResult = m.retrieve("crud.jsoncrud_cfg_values", 
@@ -429,7 +439,7 @@ public class CRUDMgrTest {
 			//
 			test.test3_CustomSQL(m);
 			//
-			//test.test4_Sorting_Returns(m);
+			test.test4_Sorting_Returns(m);
 			//
 			//test.test5_Null(m);
 			//
