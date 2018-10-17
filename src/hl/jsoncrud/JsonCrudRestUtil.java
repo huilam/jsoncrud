@@ -369,6 +369,17 @@ public class JsonCrudRestUtil {
 		return crudmgr;
 	}
     
+	public static Object get(JSONObject aJsonObject, String aAttrName, Object aDefValue)
+	{
+		if(aJsonObject!=null)
+		{
+			if(aJsonObject.has(aAttrName))
+			{
+				return aJsonObject.get(aAttrName);
+			}
+		}
+		return aDefValue;
+	}
 	
 	public static double getCrudConfigNumbericVal(String aCrudKey, String aConfigKey, double aDefaultVal) throws JsonCrudException
 	{
