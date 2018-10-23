@@ -114,7 +114,7 @@ public class CRUDMgr {
 	{
 		JSONObject jsonVer = new JSONObject();
 		jsonVer.put("framework", "jsoncrud");
-		jsonVer.put("version", "0.7.3 beta");
+		jsonVer.put("version", "0.7.4 beta");
 		return jsonVer;
 	}
 	
@@ -335,6 +335,12 @@ public class CRUDMgr {
 			e.setErrorSubject(aCrudKey);
 			throw e;
 		}
+		
+		if ("true".equalsIgnoreCase(mapCrudCfg.get(JsonCrudConfig._PROP_KEY_RETRIEVEONLY)))
+		{
+			return null;
+		}
+		
 		JSONObject jsonData = checkJSONmapping(aCrudKey, aDataJson, mapCrudCfg);
 		jsonData = castJson2DBVal(aCrudKey, jsonData);
 		
@@ -1171,7 +1177,21 @@ public class CRUDMgr {
 			String[] aSorting, String[] aReturns, boolean isReturnsExcludes) throws JsonCrudException
 	{
 		
+		Map<String, String> map = jsoncrudConfig.getConfig(aCrudKey);
+		if(map==null || map.size()==0)
+		{
+			JsonCrudException e = new JsonCrudException(JsonCrudConfig.ERRCODE_JSONCRUDCFG, "Invalid crud configuration key !");
+			e.setErrorSubject(aCrudKey);
+			throw e;
+		}
+
 		try {
+			
+			if(aTableViewSQL==null && "true".equalsIgnoreCase(map.get(JsonCrudConfig._PROP_KEY_RETRIEVEONLY)))
+			{
+				aTableViewSQL = map.getOrDefault(JsonCrudConfig._PROP_KEY_SQL, null);
+			}
+			
 			if(aTableViewSQL!=null)
 			{
 				if(!listProcessedDynamicSQL.contains(aTableViewSQL))
@@ -1214,19 +1234,12 @@ public class CRUDMgr {
 		if(jsonWhere==null)
 			jsonWhere = new JSONObject();
 		
-		Map<String, String> map = jsoncrudConfig.getConfig(aCrudKey);
-		if(map==null || map.size()==0)
-		{
-			JsonCrudException e = new JsonCrudException(JsonCrudConfig.ERRCODE_JSONCRUDCFG, "Invalid crud configuration key !");
-			e.setErrorSubject(aCrudKey);
-			throw e;
-		}
 		List<Object> listValues 			= new ArrayList<Object>();		
 		Map<String, String> mapCrudJsonCol 	= mapJson2ColName.get(aCrudKey);
 
 		String sTableName 	= map.get(JsonCrudConfig._PROP_KEY_TABLENAME);
 
-		if(sTableName==null || sTableName.trim().length()==0)
+		if((aTableViewSQL==null) && (sTableName==null || sTableName.trim().length()==0))
 		{
 			return null;
 		}
@@ -1616,6 +1629,11 @@ public class CRUDMgr {
 			throw e;
 		}
 		
+		if ("true".equalsIgnoreCase(map.get(JsonCrudConfig._PROP_KEY_RETRIEVEONLY)))
+		{
+			return null;
+		}
+
 		JSONObject jsonData = checkJSONmapping(aCrudKey, aDataJson, map);
 		jsonData = castJson2DBVal(aCrudKey, jsonData);
 		JSONObject jsonWhere 	= castJson2DBVal(aCrudKey, aWhereJson);
@@ -1732,6 +1750,11 @@ public class CRUDMgr {
 			JsonCrudException e = new JsonCrudException(JsonCrudConfig.ERRCODE_JSONCRUDCFG, "Invalid crud configuration key !");
 			e.setErrorSubject(aCrudKey);
 			throw e;
+		}
+		
+		if ("true".equalsIgnoreCase(map.get(JsonCrudConfig._PROP_KEY_RETRIEVEONLY)))
+		{
+			return null;
 		}
 		
 		JSONObject jsonWhere = castJson2DBVal(aCrudKey, aWhereJson);
@@ -2017,9 +2040,21 @@ public class CRUDMgr {
 					String sTableName = mapCrudConfig.get(JsonCrudConfig._PROP_KEY_TABLENAME);
 					logger.log(Level.INFO,"[init] "+sKey+" - tablename:"+sTableName+" ... ");
 					
-					if(sTableName!=null && sTableName.trim().length()>0)
+					String sSQL = null;
+					
+					if(sTableName==null)
 					{
-						String sSQL = "SELECT * FROM "+sTableName+" WHERE 1=2";
+						sSQL = mapCrudConfig.get(JsonCrudConfig._PROP_KEY_SQL);
+						logger.log(Level.INFO,"[init] "+sKey+" - sql:"+sSQL+" ... ");
+					}
+					
+					if(sSQL==null && sTableName!=null && sTableName.trim().length()>0)
+					{
+						sSQL = "SELECT * FROM "+sTableName+" WHERE 1=2";
+					}
+
+					if(sSQL!=null)
+					{
 						
 						Map<String, DBColMeta> mapCols = getTableMetaDataBySQL(sKey, sSQL);
 						if(mapCols!=null)
@@ -2695,23 +2730,16 @@ public class CRUDMgr {
 	
     public static void main(String args[]) throws JsonCrudException
     {
-          StringBuffer sb = new StringBuffer();
-          sb.append(" SELECT ");
-          sb.append("     a.*, c.alert_category_name ");
-          sb.append("     ,t.alert_type_name "); 
-          sb.append("     ,s.alert_status_name ");
-          sb.append("     ,r.resource_name,r.device_id,p.priority_name ");
-          sb.append(" FROM alert a ");
-          sb.append("     LEFT OUTER JOIN alert_category c ON c.alert_category_id = a.category_id   ");
-          sb.append(" LEFT JOIN alert_status s ON(s.alert_status_id  = a.status_id )");
-          sb.append("     LEFT OUTER JOIN alert_type t ON t.alert_type_id = a.alert_type_id");
-          sb.append(" LEFT JOIN resource r ON   (  r.resource_id = a.resource_id)");
-          sb.append("     LEFT JOIN priority p ON p.priority_id = a.priority_id");
           
           CRUDMgr mgr = new CRUDMgr();
           
           long lStart = System.currentTimeMillis();
-          System.out.println(mgr.getTotalSQLCount("crud.iisit", "SELECT COUNT(*) FROM ("+sb.toString()+") TBL", null)+" - "+(System.currentTimeMillis()-lStart));
+          
+          JSONArray jArr = mgr.retrieve("crud.appNamespace", null);
+          
+          System.out.println(jArr.toString());
+          
+          System.out.println(System.currentTimeMillis()-lStart);
           
           
     }

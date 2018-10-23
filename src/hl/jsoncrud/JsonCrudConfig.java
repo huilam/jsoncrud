@@ -85,12 +85,13 @@ public class JsonCrudConfig {
 	//
 	public static String _PROP_KEY_JDBC			= "jdbc";
 	public static String _PROP_KEY_DBCONFIG		= "dbconfig";
-	public static String _PROP_KEY_TABLENAME 	= "tablename";	
+	public static String _PROP_KEY_TABLENAME 	= "tablename";
 	public static String _PROP_KEY_JSON 		= "jsonattr";
 	public static String _PROP_KEY_COLNAME 		= "colname";
 	public static String _PROP_KEY_SQL			= "sql";
 	//public static String _PROP_KEY_FORMAT		= "format";
 	public static String _PROP_KEY_DEBUG 		= "debug";
+	public static String _PROP_KEY_RETRIEVEONLY = "retrieve.only";
 	
 	public static String _PROP_KEY_EXCLUDE_NON_MAPPED_FIELDS	= "exclude.non-mapped-fields";
 	public static String _PROP_KEY_EXCEPTION_ON_UNKNOWN_ATTR	= "exception.on-unknown-jsonattr";
