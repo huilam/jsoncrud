@@ -131,13 +131,14 @@ public class CRUDMgrTest {
 		System.out.println();
 		System.out.println("2. SchemaValidation");
 		JSONObject jsonData = new JSONObject();
+		jsonData.put("XXX", 1000);
 		jsonData.put("appNamespace", 1000);
 		jsonData.put("moduleCode", s100+s100+s100);
 		jsonData.put("enabled", "false");
 		jsonData.put("createdTimestamp", "Jul 2017");
 		
 		Map<String, String[]> mapErr = m.validateDataWithSchema("crud.jsoncrud_cfg", jsonData, true);
-		int i = 1;
+		int i = 0;
 		for(String sColName : mapErr.keySet())
 		{
 			String[] sErrors = mapErr.get(sColName);
@@ -245,15 +246,38 @@ public class CRUDMgrTest {
 			System.out.println("		- "+jsonArrResult.getJSONObject(i));
 		}
 		
-		sReturns = new String[]{"displaySeq", "enabled"};
-		System.out.println("	4.4 Returns.exclude (\"displaySeq\", \"enabled\") : ");
-		jsonArrResult = m.retrieve("crud.jsoncrud_cfg_values", 
+		System.out.println("	4.4 Returns.exclude (\"emptysqlresult\", \"kvpair\", \"keys\") : ");		
+		System.out.println("		All : ");
+		jsonArrResult = m.retrieve("crud.jsoncrud_cfg", 
+				jsonWhere, null, null, false);
+		for(int i=0; i<jsonArrResult.length(); i++)
+		{
+			System.out.println("		- "+jsonArrResult.getJSONObject(i));
+		}
+		
+		sReturns = new String[]{"emptysqlresult", "kvpair"};
+		System.out.println("		With returns : [emptysqlresult, kvpair]");
+		jsonArrResult = m.retrieve("crud.jsoncrud_cfg", 
+				jsonWhere, null, sReturns, false);
+		
+		for(int i=0; i<jsonArrResult.length(); i++)
+		{
+			System.out.println("		- "+jsonArrResult.getJSONObject(i));
+		}
+		sReturns = new String[]{"kvpair","keys","emptysqlresult"};
+		System.out.println("		With returns.exclude : [kvpair, keys, emptysqlresult] ");
+		jsonArrResult = m.retrieve("crud.jsoncrud_cfg", 
 				jsonWhere, null, sReturns, true);
 		
 		for(int i=0; i<jsonArrResult.length(); i++)
 		{
 			System.out.println("		- "+jsonArrResult.getJSONObject(i));
 		}
+		
+		
+		
+		
+		
 		
 		
 		System.out.println("	4.5  filter.in : ");
@@ -279,6 +303,7 @@ public class CRUDMgrTest {
 		{
 			System.out.println("		- "+jsonArrResult.getJSONObject(i));
 		}
+		
 		
 	}
 	
@@ -435,15 +460,15 @@ public class CRUDMgrTest {
 			//
 			test.test1_CRUD(m);
 			//
-			//test.test2_SchemaValidation(m);
+			test.test2_SchemaValidation(m);
 			//
 			test.test3_CustomSQL(m);
 			//
 			test.test4_Sorting_Returns(m);
 			//
-			//test.test5_Null(m);
+			test.test5_Null(m);
 			//
-			//test.test6_ExtraAttrs(m);
+			test.test6_ExtraAttrs(m);
 			
 
 			//////////////////////////

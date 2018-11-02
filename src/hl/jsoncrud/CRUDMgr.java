@@ -114,7 +114,7 @@ public class CRUDMgr {
 	{
 		JSONObject jsonVer = new JSONObject();
 		jsonVer.put("framework", "jsoncrud");
-		jsonVer.put("version", "0.7.4 beta");
+		jsonVer.put("version", "0.7.5 beta");
 		return jsonVer;
 	}
 	
@@ -1480,13 +1480,26 @@ public class CRUDMgr {
 			sTableName = "("+aTableViewSQL+") AS TBL ";
 		}
 		
+		StringBuffer sbSelectFields = new StringBuffer();
+		boolean isTableViewSQL = (aTableViewSQL==null || aTableViewSQL.length()==0);
+		
 		if(aReturns.length>0 && !isReturnsExcludes)
 		{
+			
 			for(String sReturn : aReturns)
 			{
 				String sDBColName = mapCrudJsonCol.get(sReturn);
 				if(sDBColName==null)
+				{
 					sDBColName = sReturn;
+				}
+				else if (isTableViewSQL)
+				{
+					//DB column
+					if(sbSelectFields.length()>0)
+						sbSelectFields.append(", ");
+					sbSelectFields.append(sDBColName);
+				}
 				
 				if(!listSelectFields.contains(sDBColName.toUpperCase()))
 				{
@@ -1495,26 +1508,6 @@ public class CRUDMgr {
 			}
 		}
 		
-		StringBuffer sbSelectFields = new StringBuffer();
-		
-		if(!isReturnsExcludes)
-		{
-			if(aTableViewSQL==null || aTableViewSQL.length()==0)
-			{
-				//limit result when return include fields are specified
-				if(listSelectFields.size()>0 			
-					&& aReturns.length>0)
-				{
-					for(String aField : listSelectFields)
-					{
-						if(sbSelectFields.length()>0)
-							sbSelectFields.append(", ");
-						sbSelectFields.append(aField);
-					}
-				}
-				
-			}
-		}
 		if(sbSelectFields.length()==0)
 		{
 			sbSelectFields.append("*");

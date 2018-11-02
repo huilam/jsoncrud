@@ -23,6 +23,7 @@
 package hl.jsoncrud;
 
 import java.io.IOException;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -182,7 +183,12 @@ public class JsonCrudConfig {
 	
 	public Map<String, String> getConfig(String sConfigKey)
 	{
-		return mapJsonCrudConfig.get(sConfigKey);
+		Map<String, String> map = new HashMap<String, String>();
+		if(mapJsonCrudConfig!=null && mapJsonCrudConfig.get(sConfigKey)!=null)
+		{
+			map.putAll(mapJsonCrudConfig.get(sConfigKey));
+		}
+		return Collections.unmodifiableMap(map);
 	}
 	
 	public Map<String, String> getAllConfig()
@@ -201,7 +207,7 @@ public class JsonCrudConfig {
 			}
 		}
 		
-		return mapAlls;
+		return Collections.unmodifiableMap(mapAlls);
 	}
 	
 	public String[] getConfigCrudKeys()
