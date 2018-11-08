@@ -31,6 +31,7 @@ public class DBColMeta extends JSONObject{
 
 	public static String _TABLENAME 		= "tablename";
 	public static String _COL_NAME 			= "col.name";
+	public static String _COL_LABEL			= "col.label";
 	public static String _COL_SIZE 			= "col.size";
 	public static String _COL_SEQ 			= "col.seq";
 	public static String _COL_TYPE 			= "col.type";
@@ -73,6 +74,16 @@ public class DBColMeta extends JSONObject{
 		return get(_COL_NAME, null);
 	}
 	//--
+	public void setCollabel(String aCollabel)
+	{
+		set(_COL_LABEL, aCollabel);
+	}
+	//
+	public String getCollabel()
+	{
+		return get(_COL_LABEL, null);
+	}
+	//-	
 	public void setColautoincrement(boolean aColAutoincrement)
 	{
 		set(_COL_AUTOINCREMENT, String.valueOf(aColAutoincrement));
@@ -276,6 +287,7 @@ public class DBColMeta extends JSONObject{
 		StringBuffer sb = new StringBuffer();
 		sb.append("jsonname=").append(getJsonname());
 		sb.append(",tablename=").append(getTablename());
+		sb.append(",col.label=").append(getCollabel());
 		sb.append(",col.name=").append(getColname());
 		sb.append(",col.type=").append(getColtype());
 		sb.append(",col.classname=").append(getColclassname());

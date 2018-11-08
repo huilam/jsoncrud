@@ -114,7 +114,7 @@ public class CRUDMgr {
 	{
 		JSONObject jsonVer = new JSONObject();
 		jsonVer.put("framework", "jsoncrud");
-		jsonVer.put("version", "0.7.5 beta");
+		jsonVer.put("version", "0.7.6 beta");
 		return jsonVer;
 	}
 	
@@ -178,6 +178,8 @@ public class CRUDMgr {
 			initPaginationConfig();
 			initValidationErrCodeConfig();
 		}
+		
+		logger.log(Level.INFO, "CRUDMgr init completed.");
 	}
 
 	private void initValidationErrCodeConfig()
@@ -1211,7 +1213,7 @@ public class CRUDMgr {
 								{
 									if(mapExistingCols.get(sColName)==null)
 									{
-										//logger.log(Level.INFO, "[+]"+sColName+":"+mapNewCols.get(sColName));
+										//logger.log(Level.FINEST, "[+]"+sColName+":"+mapNewCols.get(sColName));
 										mapExistingCols.put(sColName, mapNewCols.get(sColName));
 									}
 								}
@@ -2031,14 +2033,14 @@ public class CRUDMgr {
 					}
 	
 					String sTableName = mapCrudConfig.get(JsonCrudConfig._PROP_KEY_TABLENAME);
-					logger.log(Level.INFO,"[init] "+sKey+" - tablename:"+sTableName+" ... ");
+					logger.log(Level.FINEST,"[init] "+sKey+" - tablename:"+sTableName+" ... ");
 					
 					String sSQL = null;
 					
 					if(sTableName==null)
 					{
 						sSQL = mapCrudConfig.get(JsonCrudConfig._PROP_KEY_SQL);
-						logger.log(Level.INFO,"[init] "+sKey+" - sql:"+sSQL+" ... ");
+						logger.log(Level.FINEST,"[init] "+sKey+" - sql:"+sSQL+" ... ");
 					}
 					
 					if(sSQL==null && sTableName!=null && sTableName.trim().length()>0)
@@ -2054,7 +2056,7 @@ public class CRUDMgr {
 						{	
 							mapTableCols.put(sKey, mapCols);
 							
-							logger.log(Level.INFO, sKey+"."+sTableName+" : "+mapCols.size()+" cols meta loaded.");
+							logger.log(Level.FINEST, sKey+"."+sTableName+" : "+mapCols.size()+" cols meta loaded.");
 							
 							String sExludeNonMappedFields 		= mapCrudConfig.get(JsonCrudConfig._PROP_KEY_EXCLUDE_NON_MAPPED_FIELDS);
 							boolean isExcludeNonMappedFields 	= "true".equalsIgnoreCase(sExludeNonMappedFields);
@@ -2090,6 +2092,9 @@ public class CRUDMgr {
 		Map<String, String[]> mapError = new HashMap<String, String[]>();
 		if(aJsonData!=null)
 		{
+			Map<String, String> mapCrudConfig = jsoncrudConfig.getConfig(aCrudKey);
+			String sCrudTableName = mapCrudConfig.get(jsoncrudConfig._PROP_KEY_TABLENAME);
+			
 			Map<String, String> mapJsonToCol = mapJson2ColName.get(aCrudKey);
 			StringBuffer sbErrInfo = new StringBuffer();
 			
@@ -2119,7 +2124,7 @@ public class CRUDMgr {
 								sbErrInfo.append(JsonCrudConfig.ERRCODE_NOT_NULLABLE);								
 								if(isDebugMode)
 								{
-									sbErrInfo.append(" - '").append(col.getColname()).append("' cannot be empty. ").append(col);
+									sbErrInfo.append(" - '").append(col.getCollabel()).append("' cannot be empty. ").append(col);
 								}
 								listErr.add(sbErrInfo.toString());
 							}
@@ -2151,7 +2156,7 @@ public class CRUDMgr {
 								sbErrInfo.append(JsonCrudConfig.ERRCODE_INVALID_TYPE);								
 								if(isDebugMode)
 								{
-									sbErrInfo.append(" - '").append(col.getColname()).append("' invalid type,");
+									sbErrInfo.append(" - '").append(col.getCollabel()).append("' invalid type,");
 									sbErrInfo.append(" expect:").append(col.getColtypename());
 									sbErrInfo.append(" actual:").append(oVal.getClass().getSimpleName()).append(". ").append(col);
 								}
@@ -2169,7 +2174,7 @@ public class CRUDMgr {
 									sbErrInfo.append(JsonCrudConfig.ERRCODE_EXCEED_SIZE);								
 									if(isDebugMode)
 									{
-										sbErrInfo.append(" - '").append(col.getColname()).append("' exceed allowed size,");
+										sbErrInfo.append(" - '").append(col.getCollabel()).append("' exceed allowed size,");
 										sbErrInfo.append(" expect:").append(col.getColsize());
 										sbErrInfo.append(" actual:").append(sVal.length()).append(". ").append(col);
 									}
@@ -2179,14 +2184,18 @@ public class CRUDMgr {
 							///// Check if Data is autoincremental //////
 							if(col.getColautoincrement())
 							{
-								// 
-								sbErrInfo.setLength(0);
-								sbErrInfo.append(JsonCrudConfig.ERRCODE_SYSTEM_FIELD);								
-								if(isDebugMode)
+								//Only check validate system if it's same table operation and same col name
+								if(col.getTablename().equalsIgnoreCase(sCrudTableName) && col.getCollabel().equals(col.getColname()))
 								{
-									sbErrInfo.append(" - '").append(col.getColname()).append("' not allowed (auto increment field). ").append(col);
+									// 
+									sbErrInfo.setLength(0);
+									sbErrInfo.append(JsonCrudConfig.ERRCODE_SYSTEM_FIELD);								
+									if(isDebugMode)
+									{
+										sbErrInfo.append(" - '").append(col.getCollabel()).append("' not allowed (auto increment field). ").append(col);
+									}
+									listErr.add(sbErrInfo.toString());
 								}
-								listErr.add(sbErrInfo.toString());
 							}
 						}
 						
@@ -2307,7 +2316,7 @@ public class CRUDMgr {
 		Map<String,DBColMeta> cols = mapTableCols.get(aCrudKey);
 		for(DBColMeta col : cols.values())
 		{
-			if(col.getColname().equalsIgnoreCase(aColName))
+			if(col.getCollabel().equalsIgnoreCase(aColName))
 			{
 				return col;
 			}
@@ -2326,7 +2335,7 @@ public class CRUDMgr {
 			if(mapCol2Json!=null && mapCol2Json.size()>0)
 			for(DBColMeta col : cols.values())
 			{
-				String sColJsonName = mapCol2Json.get(col.getColname());
+				String sColJsonName = mapCol2Json.get(col.getCollabel());
 				if(sColJsonName!=null && sColJsonName.equalsIgnoreCase(aJsonName))
 				{
 					return col;
@@ -2383,7 +2392,8 @@ public class CRUDMgr {
 				DBColMeta coljson = new DBColMeta();
 				coljson.setColseq(idx);
 				coljson.setTablename(meta.getTableName(idx));
-				coljson.setColname(meta.getColumnLabel(idx));
+				coljson.setCollabel(meta.getColumnLabel(idx));
+				coljson.setColname(meta.getColumnName(idx));
 				coljson.setColclassname(meta.getColumnClassName(idx));
 				coljson.setColtypename(meta.getColumnTypeName(idx));
 				coljson.setColtype(String.valueOf(meta.getColumnType(idx)));
@@ -2391,13 +2401,13 @@ public class CRUDMgr {
 				coljson.setColnullable(ResultSetMetaData.columnNullable == meta.isNullable(idx));
 				coljson.setColautoincrement(meta.isAutoIncrement(idx));
 				//
-				String sJsonName = mapColJsonName.get(coljson.getColname());
+				String sJsonName = mapColJsonName.get(coljson.getCollabel());
 				if(sJsonName!=null)
 				{
 					coljson.setJsonname(sJsonName);
 				}
 				//
-				mapDBColJson.put(coljson.getColname(), coljson);
+				mapDBColJson.put(coljson.getCollabel(), coljson);
 			}
 		}
 		finally
