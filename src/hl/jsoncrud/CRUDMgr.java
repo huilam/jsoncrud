@@ -144,6 +144,7 @@ public class CRUDMgr {
 
 	private synchronized void init()
 	{
+		logger.log(Level.INFO, "CRUDMgr.init() start.");
 		synchronized (initLock) {
 
 			mapDBMgr 			= new HashMap<String, JdbcDBMgr>();
@@ -179,7 +180,7 @@ public class CRUDMgr {
 			initValidationErrCodeConfig();
 		}
 		
-		logger.log(Level.INFO, "CRUDMgr init completed.");
+		logger.log(Level.INFO, "CRUDMgr.init() completed.");
 	}
 
 	private void initValidationErrCodeConfig()
