@@ -93,6 +93,8 @@ public class CRUDMgr {
 	private Map<String, Map<String, String>> mapJson2Sql 		= null;
 	private Map<String, Map<String,DBColMeta>> mapTableCols 	= null;
 	
+	private Map<String, Long> mapLastUpdates 					= new HashMap<String, Long>();
+	
 	private Pattern pattSQLjsonname		= null;
 	private Pattern pattJsonColMapping 	= null;
 	private Pattern pattJsonSQL 		= null;
@@ -114,7 +116,7 @@ public class CRUDMgr {
 	{
 		JSONObject jsonVer = new JSONObject();
 		jsonVer.put("framework", "jsoncrud");
-		jsonVer.put("version", "0.7.6 beta");
+		jsonVer.put("version", "0.7.7 beta");
 		return jsonVer;
 	}
 	
@@ -147,6 +149,7 @@ public class CRUDMgr {
 		logger.log(Level.INFO, "CRUDMgr.init() start.");
 		synchronized (initLock) {
 
+			mapLastUpdates		= new HashMap<String, Long>();
 			mapDBMgr 			= new HashMap<String, JdbcDBMgr>();
 			mapJson2ColName 	= new HashMap<String, Map<String, String>>();
 			mapColName2Json 	= new HashMap<String, Map<String, String>>();
@@ -558,6 +561,9 @@ public class CRUDMgr {
 			stmt = conn.prepareStatement(sSQL);
 			stmt = JdbcDBMgr.setParams(stmt, aObjParams);
 			lAffectRows  = stmt.executeUpdate();
+			
+			if(lAffectRows>0)
+				updLastUpdatedTimestamp(aCrudKey, System.currentTimeMillis());
 		}
 		catch(SQLException sqlEx)
 		{
@@ -1692,6 +1698,8 @@ public class CRUDMgr {
 			if(sbSets.length()>0)
 			{
 				jArrUpdated = dbmgr.executeUpdate(sSQL, listValues);
+				if(jArrUpdated.length()>0)
+					updLastUpdatedTimestamp(aCrudKey, System.currentTimeMillis());
 			}
 			
 			if(jArrUpdated.length()>0 || sbSets.length()==0)
@@ -1718,6 +1726,9 @@ public class CRUDMgr {
 						lAffectedRow2 += updateChildObject(dbmgr, sObjInsertSQL, listParams2);
 					}
 				}
+				
+				if(lAffectedRow2>0)
+					updLastUpdatedTimestamp(aCrudKey, System.currentTimeMillis());
 			}
 		}
 		catch(SQLException sqlEx) 
@@ -1789,6 +1800,8 @@ public class CRUDMgr {
 		
 		if(jsonArray.length()>0)
 		{
+			updLastUpdatedTimestamp(aCrudKey, System.currentTimeMillis());
+			
 			JSONArray jArrAffectedRow = new JSONArray();
 			try {
 				jArrAffectedRow = dbmgr.executeUpdate(sSQL, listValues);
@@ -1802,6 +1815,7 @@ public class CRUDMgr {
 			
 			if(jArrAffectedRow.length()>0)
 			{
+				updLastUpdatedTimestamp(aCrudKey, System.currentTimeMillis());
 				return jsonArray;
 			}
 		}
@@ -2732,6 +2746,20 @@ public class CRUDMgr {
 		return mapDBMgr.get(aJdbcConfigName);		
 	}
 	
+	private void updLastUpdatedTimestamp(String aCrudKey, long aUpdatedTime)
+	{
+		Long lLastUpdated = mapLastUpdates.get(aCrudKey);
+		if(lLastUpdated==null || aUpdatedTime>lLastUpdated.longValue())
+		{
+			mapLastUpdates.put(aCrudKey, aUpdatedTime);
+		}
+	}
+	
+	public long getLastUpdatedTimestamp(String aCrudKey)
+	{
+		return mapLastUpdates.get(aCrudKey);
+	}
+	
     public static void main(String args[]) throws JsonCrudException
     {
           
@@ -2744,8 +2772,6 @@ public class CRUDMgr {
           System.out.println(jArr.toString());
           
           System.out.println(System.currentTimeMillis()-lStart);
-          
-          
     }
 
 }
