@@ -116,7 +116,7 @@ public class CRUDMgr {
 	{
 		JSONObject jsonVer = new JSONObject();
 		jsonVer.put("framework", "jsoncrud");
-		jsonVer.put("version", "0.7.8 beta");
+		jsonVer.put("version", "0.7.9 beta");
 		return jsonVer;
 	}
 	
@@ -1371,8 +1371,16 @@ public class CRUDMgr {
 					sbWhere.append(" NOT (");
 				}
 				
+				String sCIPrefix 	= "";
+				String sCIPostfix 	= "";
+				if(isCaseInSensitive && (oJsonValue instanceof String))
+				{
+					sCIPrefix 	= " UPPER(";
+					sCIPostfix = ") ";
+				}
+
 				StringBuffer sbSQLparam = new StringBuffer();
-				sbSQLparam.append("?");
+				sbSQLparam.append(sCIPrefix).append("?").append(sCIPostfix);
 				
 				boolean isINCondition = sOperator.trim().equalsIgnoreCase("IN");
 				if(isINCondition)
@@ -1388,7 +1396,7 @@ public class CRUDMgr {
 						
 						if(sbSQLparam.length()>0)
 							sbSQLparam.append(", ");
-						sbSQLparam.append("?");
+						sbSQLparam.append(sCIPrefix).append("?").append(sCIPostfix);
 						listValues.add(oJsonValue);
 					}
 					
@@ -1399,16 +1407,9 @@ public class CRUDMgr {
 					listValues.add(oJsonValue);
 				}
 				
-				String sCIPrefix 	= "";
-				String sCIPostfix 	= "";
 				String sINPrefix 	= "";
 				String sINPostfix 	= "";
 				
-				if(isCaseInSensitive && (oJsonValue instanceof String))
-				{
-					sCIPrefix 	= " UPPER(";
-					sCIPostfix = ") ";
-				}
 				if(isINCondition)
 				{
 					sINPrefix = " (";
@@ -1416,7 +1417,7 @@ public class CRUDMgr {
 				}
 				
 				sbWhere.append(sCIPrefix).append(sColName).append(sCIPostfix).append(sOperator);
-				sbWhere.append(sINPrefix).append(sCIPrefix).append(sbSQLparam.toString()).append(sCIPostfix).append(sINPostfix);
+				sbWhere.append(sINPrefix).append(sbSQLparam.toString()).append(sINPostfix);
 				
 				
 				if(sOperator.equalsIgnoreCase(" like "))
