@@ -880,6 +880,7 @@ public class CRUDMgr {
 									
 									if(sChildMapping.startsWith("\"") && sChildMapping.endsWith("\""))
 									{
+										//"cfg_key"
 										String sData = "";
 										if(jsonArrayChild.length()>0)
 										{

@@ -132,6 +132,7 @@ public class CRUDMgrTest {
 		System.out.println("2. SchemaValidation");
 		JSONObject jsonData = new JSONObject();
 		jsonData.put("XXX", 1000);
+		jsonData.put("cfgId", 1000);
 		jsonData.put("appNamespace", 1000);
 		jsonData.put("moduleCode", s100+s100+s100);
 		jsonData.put("enabled", "false");
