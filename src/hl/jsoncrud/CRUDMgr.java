@@ -907,6 +907,8 @@ public class CRUDMgr {
 									}
 									else if(sChildMapping.startsWith("[") && sChildMapping.endsWith("]"))
 									{
+										// mapping=["cfg_key"]
+										
 										JSONArray jArrMappingData = new JSONArray();
 										JSONArray jArrMapping = new JSONArray(sChildMapping);
 										for(int i=0; i<jsonArrayChild.length(); i++)
@@ -932,6 +934,8 @@ public class CRUDMgr {
 									}
 									else if(sChildMapping.startsWith("{") && sChildMapping.endsWith("}"))
 									{
+										// mapping={"cfg_key":"cfg_value"}
+										
 										JSONObject jsonMappingData = null;
 										JSONObject jsonChildMapping = new JSONObject(sChildMapping);
 										int iKeys = jsonChildMapping.keySet().size();
