@@ -45,8 +45,12 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 import hl.common.JdbcDBMgr;
+import hl.jsoncrud.ValidationMgr.Validation;
 
 public class CRUDMgr {
+	
+	public final static String JSONATTR_ERRCODE				= "error_code";
+	public final static String JSONATTR_ERRMSG				= "error_msg";
 	//
 	public final static String JSONFILTER_IN 				= "in";
 	public final static String JSONFILTER_FROM 				= "from";
@@ -118,7 +122,7 @@ public class CRUDMgr {
 	{
 		JSONObject jsonVer = new JSONObject();
 		jsonVer.put("framework", "jsoncrud");
-		jsonVer.put("version", "0.8.0 beta");
+		jsonVer.put("version", "0.8.1 beta");
 		return jsonVer;
 	}
 	
@@ -335,8 +339,36 @@ public class CRUDMgr {
 			sMetaKey = mapPagination.get(JsonCrudConfig._LIST_SORTING);
 			if(sMetaKey!=null)
 				JsonCrudConfig._LIST_SORTING = sMetaKey;
-		}		
+		}
+	}
+	
+	public JSONArray validateJSONData(String aCrudKey, JSONObject aDataJson, Map<String, String> aCrudCfgMap) throws JsonCrudException
+	{
+		JSONArray jArrErrors = new JSONArray();
+		for(String sJsonAttr : aDataJson.keySet())
+		{
+			String sValidateCfgKey 		= "jsonattr."+sJsonAttr+".validation.rule";
+			String sValidateRuleName 	= aCrudCfgMap.get(sValidateCfgKey);
+			
+			if(sValidateRuleName!=null && sValidateRuleName.trim().length()>0)
+			{
+				String sJsonVal = String.valueOf(aDataJson.get(sJsonAttr));
+				Validation v = validationMgr.validate(sValidateRuleName, sJsonVal);
+				if(v!=null && !v.isValidated_ok())
+				{
+					JSONObject jsonErr = new JSONObject();
+					jsonErr.put(JSONATTR_ERRCODE, v.getErr_code());
+					jsonErr.put(JSONATTR_ERRMSG, v.getErr_msg());
+					jArrErrors.put(jsonErr);
+				}
+			}			
+		}
 		
+		if(jArrErrors.length()==0)
+		{
+			return null;
+		}
+		return jArrErrors;
 	}
 	
 	public JSONObject checkJSONmapping(String aCrudKey, JSONObject aDataJson, Map<String, String> aCrudCfgMap) throws JsonCrudException
@@ -386,7 +418,6 @@ public class CRUDMgr {
 		return jsonMappedObj;
 	}
 	
-	
 	public JSONObject create(String aCrudKey, JSONObject aDataJson) throws JsonCrudException
 	{
 		Map<String, String> mapCrudCfg = jsoncrudConfig.getConfig(aCrudKey);
@@ -400,6 +431,18 @@ public class CRUDMgr {
 		if ("true".equalsIgnoreCase(mapCrudCfg.get(JsonCrudConfig._PROP_KEY_RETRIEVEONLY)))
 		{
 			return null;
+		}
+		
+		JSONArray jArrErrors = validateJSONData(aCrudKey, aDataJson, mapCrudCfg);
+		if(jArrErrors!=null && jArrErrors.length()>0)
+		{
+			//TODO Throw 1 Error first
+			//System.out.println("[create.validation]"+jArrErrors.toString());
+			for(int i=0; i<jArrErrors.length(); i++)
+			{
+				JSONObject jsonErr = jArrErrors.getJSONObject(i);
+				throw new JsonCrudException(jsonErr.getString(JSONATTR_ERRCODE), jsonErr.getString(JSONATTR_ERRMSG));
+			}
 		}
 		
 		JSONObject jsonData = checkJSONmapping(aCrudKey, aDataJson, mapCrudCfg);
@@ -1707,6 +1750,18 @@ public class CRUDMgr {
 			return null;
 		}
 
+		JSONArray jArrErrors = validateJSONData(aCrudKey, aDataJson, map);
+		if(jArrErrors!=null && jArrErrors.length()>0)
+		{
+			//TODO Throw 1 Error first
+			//System.out.println("[update.validation]"+jArrErrors.toString());
+			for(int i=0; i<jArrErrors.length(); i++)
+			{
+				JSONObject jsonErr = jArrErrors.getJSONObject(i);
+				throw new JsonCrudException(jsonErr.getString(JSONATTR_ERRCODE), jsonErr.getString(JSONATTR_ERRMSG));
+			}
+		}
+		
 		JSONObject jsonData = checkJSONmapping(aCrudKey, aDataJson, map);
 		jsonData = castJson2DBVal(aCrudKey, jsonData);
 		JSONObject jsonWhere 	= castJson2DBVal(aCrudKey, aWhereJson);
