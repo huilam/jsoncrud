@@ -130,7 +130,7 @@ public class ValidationMgr {
 		public boolean validate()
 		{
 			Matcher m = pattValidation.matcher(getInput_String());
-			if(m.find())
+			if(m.matches())
 			{
 				validated_ok = true;
 			}
@@ -213,10 +213,21 @@ public class ValidationMgr {
     {
     	
     	ValidationMgr vMgr = new ValidationMgr();
-    	vMgr.addValitionRule("NUMERIC_ONLY", "[0-9\\.]+", "ERR001", "Invalid format, value should be numberic.");
+    	vMgr.addValitionRule("NUMONLY", "[0-9\\.]+", "ERR001", "Invalid format, value should be numberic.");
     	vMgr.addValitionRule("MASTERCODE", "[A-Za-z0-9_]+", "ERR002", "Invalid Mastercode format !");
     	
-    	Validation v = vMgr.validate("MASTERCODE", "aaaaAA11245664");
+    	Validation v = vMgr.validate("MASTERCODE", "aaaaAA1124566.4");
+    	System.out.println("testvalue : "+v.getInput_String());
+    	System.out.println("rulename  : "+v.getValidation_rulename());
+    	System.out.println("regex     : "+v.getValidation_regex());
+    	System.out.println("result.OK : "+v.isValidated_ok());
+    	if(!v.isValidated_ok())
+    	{
+    	System.out.println("error     : "+v.getErr_code()+" - "+v.getErr_msg());
+    	}
+    	System.out.println();
+    	
+    	v = vMgr.validate("NUMONLY", "121212.44l");
     	System.out.println("testvalue : "+v.getInput_String());
     	System.out.println("rulename  : "+v.getValidation_rulename());
     	System.out.println("regex     : "+v.getValidation_regex());
