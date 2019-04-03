@@ -109,6 +109,7 @@ public class CRUDMgr {
 	private String config_prop_filename 		= null;
 	
 	private ValidationMgr validationMgr 		= new ValidationMgr();
+	private boolean isAutoValidateRegex			= false;
 	
 	private static Logger logger = Logger.getLogger(CRUDMgr.class.getName());
 	
@@ -342,30 +343,40 @@ public class CRUDMgr {
 		}
 	}
 	
-	public JSONArray validateJSONData(String aCrudKey, JSONObject aDataJson, Map<String, String> aCrudCfgMap) throws JsonCrudException
+	public JSONArray validateJSONData(String aCrudKey, JSONObject aDataJson) throws JsonCrudException
 	{
+		Map<String, String> mapCrudConfig = jsoncrudConfig.getConfig(aCrudKey);
+		if(mapCrudConfig==null)
+			mapCrudConfig = new HashMap<String, String>();
+		
 		JSONArray jArrErrors = new JSONArray();
 		for(String sJsonAttr : aDataJson.keySet())
 		{
-			String sValidateCfgKey 		= "jsonattr."+sJsonAttr+".validation.rule";
-			String sValidateRuleName 	= aCrudCfgMap.get(sValidateCfgKey);
+			String sJsonVal = String.valueOf(aDataJson.get(sJsonAttr));
 			
-			if(sValidateRuleName!=null && sValidateRuleName.trim().length()>0)
+			String sValidateCfgKey 		= "jsonattr."+sJsonAttr+".validation.rule";
+			String sValidateRuleNames 	= mapCrudConfig.get(sValidateCfgKey);
+			
+			StringTokenizer tk = new StringTokenizer(sValidateRuleNames, ",");
+			while(tk.hasMoreTokens())
 			{
-				String sJsonVal = String.valueOf(aDataJson.get(sJsonAttr));
-				Validation v = validationMgr.validate(sValidateRuleName, sJsonVal);
-				if(v!=null && !v.isValidated_ok())
+				String sRuleName = tk.nextToken(); 
+				if(sRuleName!=null && sRuleName.trim().length()>0)
 				{
-					JSONObject jsonErr = new JSONObject();
-					jsonErr.put(JSONATTR_ERRCODE, v.getErr_code());
-					jsonErr.put(JSONATTR_ERRMSG, v.getErr_msg());
-					jArrErrors.put(jsonErr);
+					Validation v = validationMgr.validate(sRuleName.trim(), sJsonVal);
+					if(v!=null && !v.isValidated_ok())
+					{
+						JSONObject jsonErr = new JSONObject();
+						jsonErr.put(JSONATTR_ERRCODE, v.getErr_code());
+						jsonErr.put(JSONATTR_ERRMSG, v.getErr_msg());
+						jArrErrors.put(jsonErr);
+					}
+					else
+					{
+						throw new JsonCrudException(JsonCrudConfig.ERRCODE_JSONCRUDCFG, "Missing 'validation.rule' configuration ! "+sRuleName);
+					}
 				}
-				else
-				{
-					throw new JsonCrudException(JsonCrudConfig.ERRCODE_JSONCRUDCFG, "Missing validation.rule ! "+sValidateRuleName);
-				}
-			}			
+			}
 		}
 		
 		if(jArrErrors.length()==0)
@@ -437,15 +448,18 @@ public class CRUDMgr {
 			return null;
 		}
 		
-		JSONArray jArrErrors = validateJSONData(aCrudKey, aDataJson, mapCrudCfg);
-		if(jArrErrors!=null && jArrErrors.length()>0)
+		if(isAutoValidateRegex)
 		{
-			//TODO Throw 1 Error first
-			//System.out.println("[create.validation]"+jArrErrors.toString());
-			for(int i=0; i<jArrErrors.length(); i++)
+			JSONArray jArrErrors = validateJSONData(aCrudKey, aDataJson);
+			if(jArrErrors!=null && jArrErrors.length()>0)
 			{
-				JSONObject jsonErr = jArrErrors.getJSONObject(i);
-				throw new JsonCrudException(jsonErr.getString(JSONATTR_ERRCODE), jsonErr.getString(JSONATTR_ERRMSG));
+				//TODO Throw 1 Error first
+				//System.out.println("[create.validation]"+jArrErrors.toString());
+				for(int i=0; i<jArrErrors.length(); i++)
+				{
+					JSONObject jsonErr = jArrErrors.getJSONObject(i);
+					throw new JsonCrudException(jsonErr.getString(JSONATTR_ERRCODE), jsonErr.getString(JSONATTR_ERRMSG));
+				}
 			}
 		}
 		
@@ -1754,15 +1768,18 @@ public class CRUDMgr {
 			return null;
 		}
 
-		JSONArray jArrErrors = validateJSONData(aCrudKey, aDataJson, map);
-		if(jArrErrors!=null && jArrErrors.length()>0)
+		if(isAutoValidateRegex)
 		{
-			//TODO Throw 1 Error first
-			//System.out.println("[update.validation]"+jArrErrors.toString());
-			for(int i=0; i<jArrErrors.length(); i++)
+			JSONArray jArrErrors = validateJSONData(aCrudKey, aDataJson);
+			if(jArrErrors!=null && jArrErrors.length()>0)
 			{
-				JSONObject jsonErr = jArrErrors.getJSONObject(i);
-				throw new JsonCrudException(jsonErr.getString(JSONATTR_ERRCODE), jsonErr.getString(JSONATTR_ERRMSG));
+				//TODO Throw 1 Error first
+				//System.out.println("[update.validation]"+jArrErrors.toString());
+				for(int i=0; i<jArrErrors.length(); i++)
+				{
+					JSONObject jsonErr = jArrErrors.getJSONObject(i);
+					throw new JsonCrudException(jsonErr.getString(JSONATTR_ERRCODE), jsonErr.getString(JSONATTR_ERRMSG));
+				}
 			}
 		}
 		
