@@ -195,7 +195,7 @@ public class CRUDMgr {
 
 	private void initValidationRuleConfig()
 	{
-		Pattern pattValidationRule = Pattern.compile("(.+?)\\.(.+?)");
+		Pattern pattValidationRule = Pattern.compile("(.+)?\\.(.+)");
 		Map<String, String> mapValidation = jsoncrudConfig.getConfig(JsonCrudConfig._VALIDATION_RULE_CONFIG_KEY);
 		if(mapValidation!=null && mapValidation.size()>0)
 		{
@@ -214,8 +214,8 @@ public class CRUDMgr {
 					if(mapRuleConfig==null)
 					{
 						mapRuleConfig = new HashMap<String, String>();
-						mapRuleConfig.put(sRuleConfigKey, sConfigVal);
 					}
+					mapRuleConfig.put(sRuleConfigKey, sConfigVal);
 					mapValidationRules.put(sRuleName.toUpperCase(), mapRuleConfig);
 				}
 			}
