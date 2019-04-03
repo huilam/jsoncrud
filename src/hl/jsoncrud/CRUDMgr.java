@@ -361,6 +361,10 @@ public class CRUDMgr {
 					jsonErr.put(JSONATTR_ERRMSG, v.getErr_msg());
 					jArrErrors.put(jsonErr);
 				}
+				else
+				{
+					throw new JsonCrudException(JsonCrudConfig.ERRCODE_JSONCRUDCFG, "Missing validation.rule ! "+sValidateRuleName);
+				}
 			}			
 		}
 		
