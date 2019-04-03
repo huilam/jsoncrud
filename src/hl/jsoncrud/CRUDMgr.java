@@ -343,7 +343,7 @@ public class CRUDMgr {
 		}
 	}
 	
-	public JSONArray validateJSONData(String aCrudKey, JSONObject aDataJson) throws JsonCrudException
+	public JSONArray validateJSONDataFormat(String aCrudKey, JSONObject aDataJson) throws JsonCrudException
 	{
 		Map<String, String> mapCrudConfig = jsoncrudConfig.getConfig(aCrudKey);
 		if(mapCrudConfig==null)
@@ -366,9 +366,23 @@ public class CRUDMgr {
 					Validation v = validationMgr.validate(sRuleName.trim(), sJsonVal);
 					if(v!=null && !v.isValidated_ok())
 					{
+						StringBuffer sbErr = new StringBuffer();
+						if(v.getErr_code()!=null)
+						{
+							sbErr.append(v.getErr_code());
+						}
+						
+						if(v.getErr_msg()!=null)
+						{
+							if(sbErr.length()>0)
+							{
+								sbErr.append(" - ");
+							}
+							sbErr.append(v.getErr_msg());
+						}
+						
 						JSONObject jsonErr = new JSONObject();
-						jsonErr.put(JSONATTR_ERRCODE, v.getErr_code());
-						jsonErr.put(JSONATTR_ERRMSG, v.getErr_msg());
+						jsonErr.put(sJsonAttr, sbErr.toString());
 						jArrErrors.put(jsonErr);
 					}
 					else
@@ -450,7 +464,7 @@ public class CRUDMgr {
 		
 		if(isAutoValidateRegex)
 		{
-			JSONArray jArrErrors = validateJSONData(aCrudKey, aDataJson);
+			JSONArray jArrErrors = validateJSONDataFormat(aCrudKey, aDataJson);
 			if(jArrErrors!=null && jArrErrors.length()>0)
 			{
 				//TODO Throw 1 Error first
@@ -1770,7 +1784,7 @@ public class CRUDMgr {
 
 		if(isAutoValidateRegex)
 		{
-			JSONArray jArrErrors = validateJSONData(aCrudKey, aDataJson);
+			JSONArray jArrErrors = validateJSONDataFormat(aCrudKey, aDataJson);
 			if(jArrErrors!=null && jArrErrors.length()>0)
 			{
 				//TODO Throw 1 Error first
