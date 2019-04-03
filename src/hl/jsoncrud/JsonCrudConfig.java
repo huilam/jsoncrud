@@ -48,7 +48,12 @@ public class JsonCrudConfig {
 	public static String _LIST_FETCHSIZE 	= "fetchsize";
 	public static String _LIST_START 		= "start";
 	public static String _LIST_SORTING 		= "sorting";
-	
+
+	public final static String _VALIDATION_RULE_CONFIG_KEY 	= "validation.rule";
+	public final static String VALIDATION_REGEX 	= "regex";
+	public final static String VALIDATION_ERRCODE 	= "errcode";
+	public final static String VALIDATION_ERRMSG 	= "errmsg";
+
 	public final static String _DB_VALIDATION_ERRCODE_CONFIGKEY = "dbschema.validation_errcode";
 	public static String ERRCODE_NOT_NULLABLE 		= "not_nullable";
 	public static String ERRCODE_EXCEED_SIZE 		= "exceed_size";
@@ -57,7 +62,7 @@ public class JsonCrudConfig {
 	
 	public final static String _JSONCRUD_FRAMEWORK_ERRCODE_CONFIGKEY = "jsoncrud.framework_errcode";
 	public static String ERRCODE_PLUGINEXCEPTION	= "plugin_exception";
-	public static String ERRCODE_DBCONNEXCEPTION		= "dbconn_exception";
+	public static String ERRCODE_DBCONNEXCEPTION	= "dbconn_exception";
 	public static String ERRCODE_SQLEXCEPTION		= "sql_exception";
 	
 	public static String ERRCODE_INVALIDFORMAT		= "invalid_format_exception";
@@ -82,22 +87,21 @@ public class JsonCrudConfig {
 	public static String _PROP_KEY_JDBC_MAXCONNS				= "maxconn";
 	public static String _PROP_KEY_JDBC_CONN_WAIT_INTERVAL_MS 	= "conn.wait-interval.ms";
 	public static String _PROP_KEY_JDBC_CONN_TIMEOUT_MS			= "conn.timeout.ms";
-	
+
 	//
-	public static String _PROP_KEY_JDBC			= "jdbc";
-	public static String _PROP_KEY_DBCONFIG		= "dbconfig";
-	public static String _PROP_KEY_TABLENAME 	= "tablename";
-	public static String _PROP_KEY_JSON 		= "jsonattr";
-	public static String _PROP_KEY_COLNAME 		= "colname";
-	public static String _PROP_KEY_SQL			= "sql";
-	//public static String _PROP_KEY_FORMAT		= "format";
-	public static String _PROP_KEY_DEBUG 		= "debug";
-	public static String _PROP_KEY_RETRIEVEONLY = "retrieve.only";
+	public final static String _PROP_KEY_JDBC			= "jdbc";
+	public final static String _PROP_KEY_DBCONFIG		= "dbconfig";
+	public final static String _PROP_KEY_TABLENAME 		= "tablename";
+	public final static String _PROP_KEY_JSON 			= "jsonattr";
+	public final static String _PROP_KEY_COLNAME 		= "colname";
+	public final static String _PROP_KEY_SQL			= "sql";
+	public final static String _PROP_KEY_DEBUG 			= "debug";
+	public final static String _PROP_KEY_RETRIEVEONLY 	= "retrieve.only";
 	
-	public static String _PROP_KEY_EXCLUDE_NON_MAPPED_FIELDS	= "exclude.non-mapped-fields";
-	public static String _PROP_KEY_EXCEPTION_ON_UNKNOWN_ATTR	= "exception.on-unknown-jsonattr";
-	public static String _PROP_KEY_CHILD_MAPPING	= "mapping";
-	public static String _PROP_KEY_CHILD_INSERTSQL	= "insert.sql";
+	public final static String _PROP_KEY_EXCLUDE_NON_MAPPED_FIELDS	= "exclude.non-mapped-fields";
+	public final static String _PROP_KEY_EXCEPTION_ON_UNKNOWN_ATTR	= "exception.on-unknown-jsonattr";
+	public final static String _PROP_KEY_CHILD_MAPPING				= "mapping";
+	public final static String _PROP_KEY_CHILD_INSERTSQL			= "insert.sql";
 	//
 	public static Pattern patJsonDaoKey 		= null;
 	

@@ -104,6 +104,8 @@ public class CRUDMgr {
 	private JsonCrudConfig jsoncrudConfig 		= null;
 	private String config_prop_filename 		= null;
 	
+	private ValidationMgr validationMgr 		= new ValidationMgr();
+	
 	private static Logger logger = Logger.getLogger(CRUDMgr.class.getName());
 	
 	public CRUDMgr()
@@ -181,11 +183,64 @@ public class CRUDMgr {
 			
 			initPaginationConfig();
 			initValidationErrCodeConfig();
+			initValidationRuleConfig();
 		}
 		
 		logger.log(Level.INFO, "CRUDMgr.init() completed.");
 	}
 
+	private void initValidationRuleConfig()
+	{
+		Pattern pattValidationRule = Pattern.compile("(.+?)\\.(.+?)");
+		Map<String, String> mapValidation = jsoncrudConfig.getConfig(JsonCrudConfig._VALIDATION_RULE_CONFIG_KEY);
+		if(mapValidation!=null && mapValidation.size()>0)
+		{
+			Map<String, Map<String, String>> mapValidationRules = new HashMap<String, Map<String, String>>();
+			Matcher m = null;
+			for(String sKey : mapValidation.keySet())
+			{
+				m = pattValidationRule.matcher(sKey);
+				if(m.find())
+				{
+					String sRuleName 			= m.group(1);
+					String sRuleConfigKey 		= m.group(2);
+					String sConfigVal 			= mapValidation.get(sKey);
+					
+					Map<String, String> mapRuleConfig = mapValidationRules.get(sRuleName.toUpperCase());
+					if(mapRuleConfig==null)
+					{
+						mapRuleConfig = new HashMap<String, String>();
+						mapRuleConfig.put(sRuleConfigKey, sConfigVal);
+					}
+					mapValidationRules.put(sRuleName.toUpperCase(), mapRuleConfig);
+				}
+			}
+			
+			//Init Validation Rule
+			for(String sRuleName : mapValidationRules.keySet())
+			{
+				Map<String, String> mapRuleConfig = mapValidationRules.get(sRuleName);
+				
+				String sRegex 	= mapRuleConfig.get(JsonCrudConfig.VALIDATION_REGEX);
+				String sErrCode = mapRuleConfig.get(JsonCrudConfig.VALIDATION_ERRCODE);
+				String sErrMsg 	= mapRuleConfig.get(JsonCrudConfig.VALIDATION_ERRMSG);
+				
+				if(sRegex!=null && (sErrCode!=null || sErrMsg!=null))
+				{
+					try {
+						
+						if(validationMgr.addValitionRule(sRuleName, sRegex, sErrCode, sErrMsg)!=null)
+						{
+							logger.log(Level.INFO, "[ValidationRule] "+sRuleName+" added.");
+						}
+					} catch (Exception e) {
+						throw new RuntimeException(e);
+					}
+				}
+			}
+		}
+	}
+	
 	private void initValidationErrCodeConfig()
 	{
 		Map<String, String> mapErrCodes = jsoncrudConfig.getConfig(JsonCrudConfig._DB_VALIDATION_ERRCODE_CONFIGKEY);
