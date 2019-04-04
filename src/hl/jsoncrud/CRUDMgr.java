@@ -343,6 +343,11 @@ public class CRUDMgr {
 		}
 	}
 	
+	public void setAutoValidateRegex(boolean aIsAutoValidateRegex)
+	{
+		this.isAutoValidateRegex = aIsAutoValidateRegex;
+	}
+	
 	public JSONArray validateJSONDataWithRegex(String aCrudKey, JSONObject aDataJson) throws JsonCrudException
 	{
 		Map<String, String> mapCrudConfig = jsoncrudConfig.getConfig(aCrudKey);
