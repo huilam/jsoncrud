@@ -343,7 +343,7 @@ public class CRUDMgr {
 		}
 	}
 	
-	public JSONArray validateJSONDataFormat(String aCrudKey, JSONObject aDataJson) throws JsonCrudException
+	public JSONArray validateJSONDataWithRegex(String aCrudKey, JSONObject aDataJson) throws JsonCrudException
 	{
 		Map<String, String> mapCrudConfig = jsoncrudConfig.getConfig(aCrudKey);
 		if(mapCrudConfig==null)
@@ -464,7 +464,7 @@ public class CRUDMgr {
 		
 		if(isAutoValidateRegex)
 		{
-			JSONArray jArrErrors = validateJSONDataFormat(aCrudKey, aDataJson);
+			JSONArray jArrErrors = validateJSONDataWithRegex(aCrudKey, aDataJson);
 			if(jArrErrors!=null && jArrErrors.length()>0)
 			{
 				//TODO Throw 1 Error first
@@ -1784,7 +1784,7 @@ public class CRUDMgr {
 
 		if(isAutoValidateRegex)
 		{
-			JSONArray jArrErrors = validateJSONDataFormat(aCrudKey, aDataJson);
+			JSONArray jArrErrors = validateJSONDataWithRegex(aCrudKey, aDataJson);
 			if(jArrErrors!=null && jArrErrors.length()>0)
 			{
 				//TODO Throw 1 Error first

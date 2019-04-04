@@ -410,7 +410,7 @@ public class JsonCrudRestUtil {
 	
 	public static JSONArray validateJSONDataWithRegex(String aCrudKey, JSONObject aDataJson) throws JsonCrudException
 	{
-		JSONArray jArrErrors = getCRUDMgr(null).validateJSONDataFormat(aCrudKey, aDataJson);
+		JSONArray jArrErrors = getCRUDMgr(null).validateJSONDataWithRegex(aCrudKey, aDataJson);
 		return jArrErrors;
 	}
 }
