@@ -396,7 +396,7 @@ public class CRUDMgr {
 							jsonErr.put(sJsonAttr, sbErr.toString());
 							jArrErrors.put(jsonErr);
 						}
-						else
+						else if(v==null)
 						{
 							throw new JsonCrudException(JsonCrudConfig.ERRCODE_JSONCRUDCFG, "Missing 'validation.rule' configuration ! "+sRuleName);
 						}
