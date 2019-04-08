@@ -360,39 +360,46 @@ public class CRUDMgr {
 			String sJsonVal = String.valueOf(aDataJson.get(sJsonAttr));
 			
 			String sValidateCfgKey 		= "jsonattr."+sJsonAttr+".validation.rule";
-			String sValidateRuleNames 	= mapCrudConfig.get(sValidateCfgKey);
 			
-			StringTokenizer tk = new StringTokenizer(sValidateRuleNames, ",");
-			while(tk.hasMoreTokens())
+			if(sValidateCfgKey!=null && sValidateCfgKey.trim().length()>0)
 			{
-				String sRuleName = tk.nextToken(); 
-				if(sRuleName!=null && sRuleName.trim().length()>0)
+				String sValidateRuleNames 	= mapCrudConfig.get(sValidateCfgKey);
+				
+				if(sValidateRuleNames==null)
+					sValidateRuleNames = "";
+				
+				StringTokenizer tk = new StringTokenizer(sValidateRuleNames, ",");
+				while(tk.hasMoreTokens())
 				{
-					Validation v = validationMgr.validate(sRuleName.trim(), sJsonVal);
-					if(v!=null && !v.isValidated_ok())
+					String sRuleName = tk.nextToken(); 
+					if(sRuleName!=null && sRuleName.trim().length()>0)
 					{
-						StringBuffer sbErr = new StringBuffer();
-						if(v.getErr_code()!=null)
+						Validation v = validationMgr.validate(sRuleName.trim(), sJsonVal);
+						if(v!=null && !v.isValidated_ok())
 						{
-							sbErr.append(v.getErr_code());
-						}
-						
-						if(v.getErr_msg()!=null)
-						{
-							if(sbErr.length()>0)
+							StringBuffer sbErr = new StringBuffer();
+							if(v.getErr_code()!=null)
 							{
-								sbErr.append(" - ");
+								sbErr.append(v.getErr_code());
 							}
-							sbErr.append(v.getErr_msg());
+							
+							if(v.getErr_msg()!=null)
+							{
+								if(sbErr.length()>0)
+								{
+									sbErr.append(" - ");
+								}
+								sbErr.append(v.getErr_msg());
+							}
+							
+							JSONObject jsonErr = new JSONObject();
+							jsonErr.put(sJsonAttr, sbErr.toString());
+							jArrErrors.put(jsonErr);
 						}
-						
-						JSONObject jsonErr = new JSONObject();
-						jsonErr.put(sJsonAttr, sbErr.toString());
-						jArrErrors.put(jsonErr);
-					}
-					else
-					{
-						throw new JsonCrudException(JsonCrudConfig.ERRCODE_JSONCRUDCFG, "Missing 'validation.rule' configuration ! "+sRuleName);
+						else
+						{
+							throw new JsonCrudException(JsonCrudConfig.ERRCODE_JSONCRUDCFG, "Missing 'validation.rule' configuration ! "+sRuleName);
+						}
 					}
 				}
 			}
