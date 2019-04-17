@@ -134,7 +134,8 @@ public class CRUDMgr {
 		{
 			try {
 				jsoncrudConfig = new JsonCrudConfig(aPropFileName);
-			} catch (IOException e) {
+			} catch (JsonCrudException e) {
+				logger.log(Level.SEVERE, e.getMessage(), e);
 				throw new RuntimeException("Error loading "+aPropFileName, e);
 			}
 		}
@@ -145,7 +146,8 @@ public class CRUDMgr {
 	{
 		try {
 			jsoncrudConfig = new JsonCrudConfig(aProp);
-		} catch (IOException e) {
+		} catch (JsonCrudException e) {
+			logger.log(Level.SEVERE, e.getMessage(), e);
 			throw new RuntimeException("Error loading Properties "+aProp.toString(), e);
 		}
 		init();
@@ -183,6 +185,7 @@ public class CRUDMgr {
 				
 				
 			} catch (Exception e) {
+				logger.log(Level.SEVERE, e.getMessage(), e);
 				throw new RuntimeException(e.getMessage(), e);
 			}
 			
@@ -1374,9 +1377,9 @@ public class CRUDMgr {
 				}
 			}
 			
-		} catch (SQLException e) {
+		} catch (JsonCrudException e) {
 			// Silent, as this is just a pre-process
-			logger.log(Level.SEVERE, e.getMessage(), e);
+			logger.log(Level.WARNING, e.getMessage(), e);
 		}
 		
 		if(aReturns==null)
@@ -2032,7 +2035,7 @@ public class CRUDMgr {
 		return mapCrudCfg;
 	}
 	
-	private JdbcDBMgr initNRegJdbcDBMgr(String aJdbcConfigKey, Map<String, String> mapJdbcConfig) throws SQLException
+	private JdbcDBMgr initNRegJdbcDBMgr(String aJdbcConfigKey, Map<String, String> mapJdbcConfig) throws JsonCrudException
 	{
 		JdbcDBMgr dbmgr = mapDBMgr.get(aJdbcConfigKey);
 		
@@ -2075,9 +2078,10 @@ public class CRUDMgr {
 					}
 					
 					
-				}catch(Exception ex)
+				}
+				catch(Exception ex)
 				{
-					throw new SQLException("Error initialize JDBC - "+aJdbcConfigKey, ex);
+					throw new JsonCrudException("Error initialize JDBC - "+aJdbcConfigKey, ex);
 				}
 				//
 				int lconnpoolsize 		= -1;
@@ -2119,7 +2123,7 @@ public class CRUDMgr {
 		return lValue;
 	}
 	
-	public void reloadProps() throws Exception 
+	public void reloadProps() throws JsonCrudException
 	{
 		clearAll();
 		
@@ -2529,7 +2533,7 @@ public class CRUDMgr {
 		return null;
 	}
 	
-	private Map<String, DBColMeta> getTableMetaDataBySQL(String aCrudKey, String aSQL) throws SQLException
+	private Map<String, DBColMeta> getTableMetaDataBySQL(String aCrudKey, String aSQL) throws JsonCrudException
 	{
 		if(aSQL==null || aSQL.length()==0)
 			return null;
@@ -2594,11 +2598,19 @@ public class CRUDMgr {
 				mapDBColJson.put(coljson.getCollabel(), coljson);
 			}
 		}
+		catch(SQLException ex)
+		{
+			throw new JsonCrudException(JsonCrudConfig.ERRCODE_SQLEXCEPTION, ex);
+		}
 		finally
 		{
 			if(conn!=null)
 			{
-				conn.setAutoCommit(true);
+				try {
+					conn.setAutoCommit(true);
+				} catch (SQLException e) {
+					//keep quiet
+				}
 			}
 			jdbcMgr.closeQuietly(conn, stmt, rs);
 		}

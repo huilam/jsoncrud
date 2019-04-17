@@ -108,34 +108,42 @@ public class JsonCrudConfig {
 	private Map<String, Map<String, String>> mapJsonCrudConfig = null;
 	//
 
-	public JsonCrudConfig(String aPropFileName) throws IOException
+	public JsonCrudConfig(String aPropFileName) throws JsonCrudException
 	{
 		init(aPropFileName);
 	}
 	
-	public JsonCrudConfig(Properties aProperties) throws IOException
+	public JsonCrudConfig(Properties aProperties) throws JsonCrudException
 	{
 		init(aProperties);
 	}
 	
-	public void init(String aPropFilename) throws IOException
+	public void init(String aPropFilename) throws JsonCrudException
 	{		
 		Properties props = null;
-		if(aPropFilename!=null && aPropFilename.trim().length()>0)
-		{
-			props = PropUtil.loadProperties(aPropFilename);
-		}
 		
-		/////////
-		if(props==null || props.size()==0)
-		{
-			props = PropUtil.loadProperties(_PROP_FILENAME);
-		}
+		try {
 		
-		init(props);
+			if(aPropFilename!=null && aPropFilename.trim().length()>0)
+			{
+				props = PropUtil.loadProperties(aPropFilename);
+			}
+			
+			/////////
+			if(props==null || props.size()==0)
+			{
+				props = PropUtil.loadProperties(_PROP_FILENAME);
+			}
+			
+			init(props);
+		}
+		catch(IOException ex)
+		{
+			throw new JsonCrudException(JsonCrudConfig.ERRCODE_JSONCRUDCFG, ex);
+		}
 	}
 	
-	public void init(Properties aProperties) throws IOException
+	public void init(Properties aProperties) throws JsonCrudException
 	{		
 		mapJsonCrudConfig = new HashMap<String,Map<String, String>>();
 		patJsonDaoKey = Pattern.compile("(.+?\\..+?)\\.");
@@ -161,7 +169,7 @@ public class JsonCrudConfig {
 	}
 	
 	
-	public void loadProp(Properties aProp) throws IOException
+	public void loadProp(Properties aProp) 
 	{
 		Iterator iter = aProp.keySet().iterator();
 		while(iter.hasNext())
