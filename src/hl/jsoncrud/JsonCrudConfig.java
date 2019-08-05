@@ -193,6 +193,16 @@ public class JsonCrudConfig {
 		}
 	}
 	
+	public void setDebug(String sConfigKey, boolean isDebugEnabled)
+	{
+		Map<String, String> mapCrudKey = mapJsonCrudConfig.get(sConfigKey);
+	
+		if(mapCrudKey!=null)
+		{
+			mapCrudKey.put(JsonCrudConfig._PROP_KEY_DEBUG, isDebugEnabled?"true":"false");
+		}
+	}
+	
 	public Map<String, String> getConfig(String sConfigKey)
 	{
 		Map<String, String> map = new HashMap<String, String>();
