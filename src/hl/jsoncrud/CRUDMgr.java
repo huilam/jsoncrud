@@ -2636,6 +2636,22 @@ public class CRUDMgr {
 		return false;
 	}
 	
+	public void setDebugMode(String aCrudConfigKey, boolean isDebugMode)
+	{
+		Map<String, String> mapCrudConfig = jsoncrudConfig.getConfig(aCrudConfigKey);
+		if(mapCrudConfig!=null)
+		{
+			if(isDebugMode)
+			{
+				mapCrudConfig.put(aCrudConfigKey+"."+JsonCrudConfig._PROP_KEY_DEBUG, "true");
+			}
+			else
+			{
+				mapCrudConfig.put(aCrudConfigKey+"."+JsonCrudConfig._PROP_KEY_DEBUG, "false");
+			}
+		}
+	}
+
 	private String listParamsToString(List listParams)
 	{
 		if(listParams!=null)
