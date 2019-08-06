@@ -864,8 +864,12 @@ public class CRUDMgr {
 		JSONObject jsonReturn 			= null;
 		Map<String, String> map 		= jsoncrudConfig.getConfig(aCrudKey);
 		
-		if(map==null)
-			return null;
+		if(map==null || map.size()==0)
+		{
+			String sErr = "Invalid crudkey - "+aCrudKey;
+			logger.log(Level.SEVERE, sErr);
+			throw new JsonCrudException(JsonCrudConfig.ERRCODE_JSONCRUDCFG, sErr);
+		}
 		
 		String sExcludeNonMappedFields 	= map.get(JsonCrudConfig._PROP_KEY_EXCLUDE_NON_MAPPED_FIELDS);
 		boolean isExcludeNonMappedField = "true".equalsIgnoreCase(sExcludeNonMappedFields);
@@ -876,6 +880,13 @@ public class CRUDMgr {
 		
 		String sJdbcName 	= map.get(JsonCrudConfig._PROP_KEY_DBCONFIG);
 		JdbcDBMgr dbmgr 	= mapDBMgr.get(sJdbcName);
+		
+		if(dbmgr==null)
+		{
+			String sErr = "Invalid configuration - "+aCrudKey+".dbconfig="+sJdbcName;
+			logger.log(Level.SEVERE, sErr);
+			throw new JsonCrudException(JsonCrudConfig.ERRCODE_JSONCRUDCFG, sErr);
+		}
 		
 		List<String> listReturnsAttrName = new ArrayList<String>();
 		
