@@ -260,6 +260,9 @@ public class JsonCrudRestUtil {
 	{
 		String sConfigKey = null;
 		
+		if(aCrudKey==null)
+			return false;
+		
 		if(!aCrudKey.startsWith(JsonCrudConfig._PROP_KEY_CRUD+"."))
 		{
 			sConfigKey = JsonCrudConfig._PROP_KEY_CRUD+"."+aCrudKey;
