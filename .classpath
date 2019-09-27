@@ -5,6 +5,6 @@
 	<classpathentry kind="lib" path="lib/json-20151123.jar"/>
 	<classpathentry kind="lib" path="lib/postgresql-9.4.1212.jre6.jar"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
-	<classpathentry kind="lib" path="lib/hl-common_20190927-1047-42.jar"/>
+	<classpathentry kind="lib" path="lib/hl-common_20190927-1559-25.jar"/>
 	<classpathentry kind="output" path="build"/>
 </classpath>
