@@ -1373,6 +1373,12 @@ public class CRUDMgr {
 								Map<String, DBColMeta> mapNewCols 		= getTableMetaDataBySQL(aCrudKey, aTableViewSQL);
 								Map<String, DBColMeta> mapExistingCols 	= mapTableCols.get(aCrudKey);
 								
+								if(mapNewCols==null)
+									mapNewCols = new HashMap<String, DBColMeta>();
+								
+								if(mapExistingCols==null)
+									mapExistingCols = new HashMap<String, DBColMeta>();
+								
 								for(String sColName : mapNewCols.keySet())
 								{
 									if(mapExistingCols.get(sColName)==null)
@@ -2090,7 +2096,7 @@ public class CRUDMgr {
 					
 					
 				}
-				catch(Exception ex)
+				catch(Throwable ex)
 				{
 					throw new JsonCrudException("Error initialize JDBC - "+aJdbcConfigKey, ex);
 				}
