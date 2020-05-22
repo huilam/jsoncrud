@@ -538,104 +538,104 @@ public class CRUDMgr {
 			}
 		}
 		
-		String sSQL 		= "INSERT INTO "+sTableName+"("+sbColName.toString()+") values ("+sbParams.toString()+")";
-		
-		String sJdbcName 	= mapCrudCfg.get(JsonCrudConfig._PROP_KEY_DBCONFIG);
-		JdbcDBMgr dbmgr 	= mapDBMgr.get(sJdbcName);
-		
-		JSONArray jArrCreated = null; 
-		
-		try {
-			jArrCreated = dbmgr.executeUpdate(sSQL, listValues);
-		}
-		catch(Throwable ex)
+		if(sTableName!=null)
 		{
-			String sDebugMsg = "crudKey:"+aCrudKey+", sql:"+sSQL+", params:"+listParamsToString(listValues);
-			JsonCrudException e = new JsonCrudException(JsonCrudConfig.ERRCODE_SQLEXCEPTION, ex);
-			e.setErrorDebugInfo(sDebugMsg);
-			throw e;
-		}
-
 		
-		if(jArrCreated.length()>0)
-		{
-			JSONObject jsonCreated = jArrCreated.getJSONObject(0);
-			jsonCreated = convertCol2Json(aCrudKey, jsonCreated, false);
-			for(String sAttrName : jsonCreated.keySet())
-			{
-				jsonData.put(sAttrName, jsonCreated.get(sAttrName));
+			String sSQL 		= "INSERT INTO "+sTableName+"("+sbColName.toString()+") values ("+sbParams.toString()+")";
+			
+			String sJdbcName 	= mapCrudCfg.get(JsonCrudConfig._PROP_KEY_DBCONFIG);
+			JdbcDBMgr dbmgr 	= mapDBMgr.get(sJdbcName);
+			
+			JSONArray jArrCreated = null; 
+			
+			try {
+				jArrCreated = dbmgr.executeUpdate(sSQL, listValues);
 			}
-			
-			//child create
-			if(listUnmatchedJsonName.size()>0)
+			catch(Throwable ex)
 			{
-				JSONArray jsonArrReturn = retrieve(aCrudKey, jsonData);
-				
-				for(int i=0 ; i<jsonArrReturn.length(); i++  )
+				String sDebugMsg = "crudKey:"+aCrudKey+", sql:"+sSQL+", params:"+listParamsToString(listValues);
+				JsonCrudException e = new JsonCrudException(JsonCrudConfig.ERRCODE_SQLEXCEPTION, ex);
+				e.setErrorDebugInfo(sDebugMsg);
+				throw e;
+			}
+		
+			if(jArrCreated.length()>0)
+			{
+				JSONObject jsonCreated = jArrCreated.getJSONObject(0);
+				jsonCreated = convertCol2Json(aCrudKey, jsonCreated, false);
+				for(String sAttrName : jsonCreated.keySet())
 				{
-					JSONObject jsonReturn = jsonArrReturn.getJSONObject(i);
-							
-					//merging json obj
-					for(String sDataJsonKey : jsonData.keySet())
-					{
-						jsonReturn.put(sDataJsonKey, jsonData.get(sDataJsonKey));
-					}
-					
-					for(String sJsonName2 : listUnmatchedJsonName)
-					{
-						List<Object[]> listParams2 	= getSubQueryParams(mapCrudCfg, jsonReturn, sJsonName2);
-						String sObjInsertSQL 		= mapCrudCfg.get("jsonattr."+sJsonName2+"."+JsonCrudConfig._PROP_KEY_CHILD_INSERTSQL);
-						
-						long lupdatedRow 	= 0;
-						
-						try {
-							lupdatedRow 	= updateChildObject(dbmgr, sObjInsertSQL, listParams2);
-						}
-						catch(Throwable ex)
-						{
-							String sDebugMsg = null;							
-							try {
-								//rollback parent
-								sbRollbackParentSQL.insert(0, "DELETE FROM "+sTableName+" WHERE 1=1 ");
-
-								JSONArray jArrRollbackRows = dbmgr.executeUpdate(sbRollbackParentSQL.toString(), listValues);
-								if(jArrCreated.length() != jArrRollbackRows.length())
-								{
-									JsonCrudException e = new JsonCrudException(JsonCrudConfig.ERRCODE_SQLEXCEPTION, "Record fail to Rollback!");
-									e.setErrorDebugInfo("[Rollback Failed] sql:"+sbRollbackParentSQL.toString()+",params:"+listParamsToString(listValues));
-									throw e;
-								}
-							}
-							catch(Throwable ex2)
-							{
-								sDebugMsg = "[Rollback Failed] parent - [sql:"+sbRollbackParentSQL.toString()+",params:"+listParamsToString(listValues)+"], child:[sql:"+sObjInsertSQL+",params:"+listParamsToString(listParams2)+"]";
-								ex = ex2;
-							}
-							
-							if(sDebugMsg==null)
-							{
-								sDebugMsg = "[Rollback Success] child - sql:"+sObjInsertSQL+", params:"+listParamsToString(listParams2);
-							}
-							
-							JsonCrudException e = new JsonCrudException(JsonCrudConfig.ERRCODE_SQLEXCEPTION, ex);
-							e.setErrorDebugInfo(sDebugMsg);
-							throw e;
-						}
-							
-					}
+					jsonData.put(sAttrName, jsonCreated.get(sAttrName));
 				}
-			}			
-			
-			JSONArray jsonArray = retrieve(aCrudKey, jsonData);
-			if(jsonArray==null || jsonArray.length()==0)
-				return null;
-			else
-				return (JSONObject) jsonArray.get(0);
+				
+				//child create
+				if(listUnmatchedJsonName.size()>0)
+				{
+					JSONArray jsonArrReturn = retrieve(aCrudKey, jsonData);
+					
+					for(int i=0 ; i<jsonArrReturn.length(); i++  )
+					{
+						JSONObject jsonReturn = jsonArrReturn.getJSONObject(i);
+								
+						//merging json obj
+						for(String sDataJsonKey : jsonData.keySet())
+						{
+							jsonReturn.put(sDataJsonKey, jsonData.get(sDataJsonKey));
+						}
+						
+						for(String sJsonName2 : listUnmatchedJsonName)
+						{
+							List<Object[]> listParams2 	= getSubQueryParams(mapCrudCfg, jsonReturn, sJsonName2);
+							String sObjInsertSQL 		= mapCrudCfg.get("jsonattr."+sJsonName2+"."+JsonCrudConfig._PROP_KEY_CHILD_INSERTSQL);
+							
+							long lupdatedRow 	= 0;
+							
+							try {
+								lupdatedRow 	= updateChildObject(dbmgr, sObjInsertSQL, listParams2);
+							}
+							catch(Throwable ex)
+							{
+								String sDebugMsg = null;							
+								try {
+									//rollback parent
+									sbRollbackParentSQL.insert(0, "DELETE FROM "+sTableName+" WHERE 1=1 ");
+	
+									JSONArray jArrRollbackRows = dbmgr.executeUpdate(sbRollbackParentSQL.toString(), listValues);
+									if(jArrCreated.length() != jArrRollbackRows.length())
+									{
+										JsonCrudException e = new JsonCrudException(JsonCrudConfig.ERRCODE_SQLEXCEPTION, "Record fail to Rollback!");
+										e.setErrorDebugInfo("[Rollback Failed] sql:"+sbRollbackParentSQL.toString()+",params:"+listParamsToString(listValues));
+										throw e;
+									}
+								}
+								catch(Throwable ex2)
+								{
+									sDebugMsg = "[Rollback Failed] parent - [sql:"+sbRollbackParentSQL.toString()+",params:"+listParamsToString(listValues)+"], child:[sql:"+sObjInsertSQL+",params:"+listParamsToString(listParams2)+"]";
+									ex = ex2;
+								}
+								
+								if(sDebugMsg==null)
+								{
+									sDebugMsg = "[Rollback Success] child - sql:"+sObjInsertSQL+", params:"+listParamsToString(listParams2);
+								}
+								
+								JsonCrudException e = new JsonCrudException(JsonCrudConfig.ERRCODE_SQLEXCEPTION, ex);
+								e.setErrorDebugInfo(sDebugMsg);
+								throw e;
+							}
+								
+						}
+					}
+				}			
+				
+				JSONArray jsonArray = retrieve(aCrudKey, jsonData);
+				if(jsonArray==null || jsonArray.length()==0)
+					return null;
+				else
+					return (JSONObject) jsonArray.get(0);
+			}
 		}
-		else
-		{
-			return null;
-		}
+		return null;
 	}
 	
 	public JSONObject retrieveFirst(String aCrudKey, JSONObject aWhereJson) throws JsonCrudException
