@@ -504,6 +504,9 @@ public class CRUDMgr {
 		//boolean isDebug		= "true".equalsIgnoreCase(map.get(JsonCrudConfig._PROP_KEY_DEBUG)); 
 		
 		Map<String, String> mapCrudJsonCol = mapJson2ColName.get(aCrudKey);
+		if(mapCrudJsonCol==null)
+			mapCrudJsonCol = new HashMap<String, String>();
+		
 		for(String sJsonName : jsonData.keySet())
 		{
 			String sColName = mapCrudJsonCol.get(sJsonName);
