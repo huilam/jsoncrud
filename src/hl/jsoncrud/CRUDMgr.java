@@ -61,6 +61,8 @@ public class CRUDMgr {
 	public final static String JSONFILTER_CASE_INSENSITIVE	= "ci";
 	public final static String JSONFILTER_NOT				= "not";
 
+	public final static String JSONFILTER_VALUE_NULL		= "NULL";
+
 	private static List<String> listFilterOperator	= new ArrayList<String>();
 	static 
 	{
@@ -123,7 +125,7 @@ public class CRUDMgr {
 	{
 		JSONObject jsonVer = new JSONObject();
 		jsonVer.put("framework", "jsoncrud");
-		jsonVer.put("version", "0.8.4 beta");
+		jsonVer.put("version", "0.8.5 beta");
 		return jsonVer;
 	}
 	
@@ -1485,7 +1487,11 @@ public class CRUDMgr {
 							}
 						}
 						
-						if(JSONFILTER_STARTWITH.equals(sJsonOperator))
+						if(JSONFILTER_VALUE_NULL.equalsIgnoreCase(sJsonValue))
+						{
+							oJsonValue = JSONObject.NULL;
+						}
+						else if(JSONFILTER_STARTWITH.equals(sJsonOperator))
 						{
 							sOperator = " like ";
 							oJsonValue = sJsonValue+SQLLIKE_WILDCARD;
@@ -1528,7 +1534,12 @@ public class CRUDMgr {
 				
 				if(oJsonValue==null || oJsonValue==JSONObject.NULL)
 				{
-					sbWhere.append(sColName).append(" IS NULL ");
+					sbWhere.append(sColName).append(" IS");
+					if(isNotCondition)
+					{
+						sbWhere.append(" NOT");
+					}
+					sbWhere.append(" NULL");
 					continue;
 				}
 				
@@ -1715,6 +1726,10 @@ public class CRUDMgr {
 		
 		JSONObject jsonReturn = null;
 		try {
+
+//TODO
+logger.log(Level.INFO, sbSQL.toString());
+			
 			jsonReturn 	= retrieveBySQL(
 					aCrudKey, sbSQL.toString(), 
 					objParams, 
@@ -2461,7 +2476,12 @@ public class CRUDMgr {
 			String sErrReason 	= null;
 			
 			String sVal = String.valueOf(aVal);
-			if(col.isNumeric())
+			
+			if(col.getColnullable() && JSONFILTER_VALUE_NULL.equalsIgnoreCase(sVal))
+			{
+				return JSONObject.NULL;
+			}
+			else if(col.isNumeric())
 			{
 				try {
 					if(sVal.indexOf('.')>-1)
