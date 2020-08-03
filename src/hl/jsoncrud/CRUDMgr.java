@@ -1727,8 +1727,7 @@ public class CRUDMgr {
 		JSONObject jsonReturn = null;
 		try {
 
-//TODO
-logger.log(Level.INFO, sbSQL.toString());
+			logger.log(Level.FINE, sbSQL.toString());
 			
 			jsonReturn 	= retrieveBySQL(
 					aCrudKey, sbSQL.toString(), 
