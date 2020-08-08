@@ -79,6 +79,8 @@ public class CRUDMgr {
 	public final static String JSONSORTING_ASC				= "asc";
 	public final static String JSONSORTING_DESC				= "desc";
 	//
+	public final static String JSONVALUE_IN_SEPARATOR 		= ";";
+	//
 	private final static String SQL_IN_SEPARATOR			= ",";
 	private final static String SQLLIKE_WILDCARD			= "%";
 	private final static char[] SQLLIKE_RESERVED_CHARS		= new char[]{'%','_'};
@@ -1565,7 +1567,13 @@ public class CRUDMgr {
 					//multi-value
 					sbSQLparam.setLength(0);
 					String sStrValues = oJsonValue.toString();
-					StringTokenizer tk = new StringTokenizer(sStrValues, SQL_IN_SEPARATOR);
+					
+					String sValSeparator = SQL_IN_SEPARATOR;
+					if(sStrValues.indexOf(JSONVALUE_IN_SEPARATOR)>-1)
+					{
+						sValSeparator = JSONVALUE_IN_SEPARATOR;
+					}
+					StringTokenizer tk = new StringTokenizer(sStrValues, sValSeparator);
 					while(tk.hasMoreTokens())
 					{
 						String sVal = tk.nextToken();
