@@ -1579,10 +1579,14 @@ public class CRUDMgr {
 						String sVal = tk.nextToken();
 						oJsonValue = castJson2DBVal(aCrudKey, sJsonName, sVal.trim());
 						
-						if(sbSQLparam.length()>0)
-							sbSQLparam.append(", ");
-						sbSQLparam.append(sCIPrefix).append("?").append(sCIPostfix);
-						listValues.add(oJsonValue);
+						if(oJsonValue!=JSONObject.NULL)
+						{	
+							if(sbSQLparam.length()>0)
+								sbSQLparam.append(", ");
+							
+							sbSQLparam.append(sCIPrefix).append("?").append(sCIPostfix);
+							listValues.add(oJsonValue);
+						}
 					}
 					
 				}
@@ -2453,7 +2457,11 @@ public class CRUDMgr {
 		{
 			Object o = aDataObj.get(sKey);
 			o = castJson2DBVal(aCrudKey, sKey, o);
-			jsonObj.put(sKey, o);
+			
+			if(o!=JSONObject.NULL)
+			{
+				jsonObj.put(sKey, o);
+			}
 		}
 		
 		return jsonObj;
@@ -2536,6 +2544,11 @@ public class CRUDMgr {
 				}
 				else if(sErrReason!=null)
 				{
+					if("NaN".equalsIgnoreCase(sVal))
+					{
+						return JSONObject.NULL;
+					}
+					
 					JsonCrudException e = new JsonCrudException(JsonCrudConfig.ERRCODE_INVALID_TYPE, sErrReason);
 					if(sErrSubject!=null)
 						e.setErrorSubject(sErrSubject);
