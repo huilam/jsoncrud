@@ -32,6 +32,7 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import hl.common.FileUtil;
 import hl.common.PropUtil;
 
 
@@ -103,6 +104,7 @@ public class JsonCrudConfig {
 	public final static String _PROP_KEY_CHILD_MAPPING				= "mapping";
 	public final static String _PROP_KEY_CHILD_INSERTSQL			= "insert.sql";
 	//
+	public static Pattern patResourceName	 	= Pattern.compile("file\\:\\[(.+?)\\]");
 	public static Pattern patJsonDaoKey 		= null;
 	
 	private Map<String, Map<String, String>> mapJsonCrudConfig = null;
@@ -186,11 +188,39 @@ public class JsonCrudConfig {
 					mapConfig = new HashMap<String, String>();
 				}
 				String key = sOrgkey.substring(sPrefixKey.length()+1);
-				mapConfig.put(key, aProp.getProperty(sOrgkey));
+				String val = aProp.getProperty(sOrgkey);
+				//
+				
+				mapConfig.put(key, loadResourceContent(val));
 				//
 				mapJsonCrudConfig.put(sPrefixKey, mapConfig);
 			}
 		}
+	}
+	
+	public boolean isExtContent(String aContent)
+	{
+		Matcher m = patResourceName.matcher(aContent);
+		return m.find();
+	}
+	
+	public String loadResourceContent(String aValue)
+	{
+		String sContent = aValue;
+		Matcher m = patResourceName.matcher(sContent);
+		if(m.find())
+		{
+			String sResName = m.group(1);
+			String sTemp = FileUtil.loadContent(sResName);
+			
+	//System.out.println("### sResName:"+sResName);	
+	//System.out.println("### sTemp:"+sTemp);	
+			if(sTemp!=null)
+			{
+				sContent = sTemp;
+			}
+		}
+		return sContent;
 	}
 	
 	public void setDebug(String sConfigKey, boolean isDebugEnabled)
