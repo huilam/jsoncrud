@@ -29,6 +29,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
+import java.util.StringTokenizer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -41,6 +42,8 @@ public class JsonCrudConfig {
 	public static String _PROP_FILENAME 		= "jsoncrud.properties";
 	//
 	public static String _PROP_KEY_CRUD 		= "crud";
+	
+	public static String _PROP_ADDONS_PROP_FILES= "system.addons.properties.files";
 	
 	public final static String _PAGINATION_CONFIGKEY = "list.pagination";
 	public static String _LIST_META 		= "meta";
@@ -146,7 +149,32 @@ public class JsonCrudConfig {
 	}
 	
 	public void init(Properties aProperties) throws JsonCrudException
-	{		
+	{	
+		String sPropFiles = aProperties.getProperty(_PROP_ADDONS_PROP_FILES);
+		
+		if(sPropFiles!=null && sPropFiles.trim().length()>0)
+		{
+			StringTokenizer tkProp = new StringTokenizer(sPropFiles,",");
+			while(tkProp.hasMoreTokens())
+			{
+				String sAddonsPropFileName = tkProp.nextToken().trim();
+				
+				Properties propAddons = null;
+				try {
+					propAddons = PropUtil.loadProperties(sAddonsPropFileName);
+					
+					System.out.println("Loading additional properties - "+sAddonsPropFileName+" : "+propAddons.size());
+				} catch (IOException e) {
+					propAddons = null;
+				}
+				
+				if(propAddons!=null)
+				{
+					aProperties.putAll(propAddons);
+				}
+			}
+		}
+		
 		mapJsonCrudConfig = new HashMap<String,Map<String, String>>();
 		patJsonDaoKey = Pattern.compile("(.+?\\..+?)\\.");
 		
