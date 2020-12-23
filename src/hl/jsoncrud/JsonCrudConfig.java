@@ -107,7 +107,7 @@ public class JsonCrudConfig {
 	public final static String _PROP_KEY_CHILD_MAPPING				= "mapping";
 	public final static String _PROP_KEY_CHILD_INSERTSQL			= "insert.sql";
 	//
-	public static Pattern patResourceName	 	= Pattern.compile("file\\:\\[(.+?)\\]");
+	public static Pattern patResourceName	 	= Pattern.compile("\\$\\{file\\:(.+?)\\}");
 	public static Pattern patJsonDaoKey 		= null;
 	
 	private Map<String, Map<String, String>> mapJsonCrudConfig = null;
