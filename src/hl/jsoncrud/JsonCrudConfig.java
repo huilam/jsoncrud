@@ -226,13 +226,13 @@ public class JsonCrudConfig {
 		}
 	}
 	
-	public boolean isExtContent(String aContent)
+	public static boolean isExtContent(String aContent)
 	{
 		Matcher m = patResourceName.matcher(aContent);
 		return m.find();
 	}
 	
-	public String loadResourceContent(String aValue)
+	public static String loadResourceContent(String aValue)
 	{
 		String sContent = aValue;
 		Matcher m = patResourceName.matcher(sContent);
