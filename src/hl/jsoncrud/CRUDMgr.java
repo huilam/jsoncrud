@@ -905,7 +905,6 @@ public class CRUDMgr {
 			}
 		}
 		
-		int iFetchSize = dbmgr.getDBFetchSize();
 		boolean isFilterByReturns = listReturnsAttrName.size()>0;
 		Connection conn = null;
 		PreparedStatement stmt	= null;
@@ -922,10 +921,12 @@ public class CRUDMgr {
 			
 			stmt = conn.prepareStatement(sSQL);
 			stmt = JdbcDBMgr.setParams(stmt, aObjParams);
-			if(iFetchSize>0)
-			{
-				conn.setAutoCommit(false);
-				stmt.setFetchSize(iFetchSize);
+			
+			try {
+				conn.setReadOnly(true);
+			} 
+			catch (SQLException e) {
+				e.printStackTrace();
 			}
 			
 			try {
@@ -936,10 +937,24 @@ public class CRUDMgr {
 				throw sqlEx;
 			}
 			
-			
+			long lTotalResult 		= 0;
 			ResultSetMetaData meta 	= rs.getMetaData();
 			
-			long lTotalResult 		= 0;
+			if(aStartFrom>2)
+			{
+				try {
+					int iCurPos = (int)aStartFrom-1;
+					if(rs.absolute(iCurPos))
+					{
+						lTotalResult = iCurPos;
+					}
+				}catch(Exception ex)
+				{
+					//ignore as cursor move is not supported
+					ex.printStackTrace();
+				}
+			}
+			
 			while(rs.next())
 			{	
 				lTotalResult++;
@@ -1240,19 +1255,10 @@ public class CRUDMgr {
 			if(conn!=null)
 			{
 				//
-				if(iFetchSize>0)
-				{
-					try {
-						conn.commit();
-					} catch (SQLException e1) {
-						e1.printStackTrace();
-					}
-					//
-					try {
-						conn.setAutoCommit(true);
-					} catch (SQLException e) {
-						e.printStackTrace();
-					}
+				try {
+					conn.setReadOnly(false);
+				} catch (SQLException e) {
+					e.printStackTrace();
 				}
 			}
 			
