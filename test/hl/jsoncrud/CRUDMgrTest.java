@@ -26,8 +26,6 @@ import java.util.Map;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
-import hl.jsoncrud.CRUDMgr;
-
 public class CRUDMgrTest {
 	 
 	private void test1_CRUD(CRUDMgr m) throws JsonCrudException
