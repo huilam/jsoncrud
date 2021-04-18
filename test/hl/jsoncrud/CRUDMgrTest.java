@@ -430,6 +430,21 @@ public class CRUDMgrTest {
 		return jsonResult.getLong("cfgId");
 	}
 	
+	public void testCustomSQLConfig(CRUDMgr m)
+	{
+		Map<String, String> mapConfig = m.getCrudConfigs("customsql");
+		
+		System.out.println();
+		System.out.println(" Configuration listing :");
+		
+		int i=1;
+		for(String sKey : mapConfig.keySet())
+		{
+			System.out.println(" - "+(i++)+". "+sKey+" : "+mapConfig.get(sKey));
+		}
+	}
+	
+	
 	public static void main(String args[]) throws Exception
 	{
 		CRUDMgrTest test = new CRUDMgrTest();
@@ -471,7 +486,7 @@ public class CRUDMgrTest {
 			
 
 			//////////////////////////
-
+			test.testCustomSQLConfig(m);
 
 			//////////////////////////
 

@@ -1,0 +1,1 @@
+SELECT * FROM jsoncrud_cfg_values
