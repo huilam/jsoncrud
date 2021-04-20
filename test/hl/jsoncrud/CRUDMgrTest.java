@@ -396,7 +396,6 @@ public class CRUDMgrTest {
 
 		System.out.println();	
 		System.out.println("6. Test Create with Extra attribute");
-		System.out.println("	6.1 Insert NULL value");
 		JSONObject jsonResult = m.create("crud.jsoncrud_cfg_values", jsonData);
 		System.out.println("		- "+jsonResult);
 		//////
@@ -444,6 +443,34 @@ public class CRUDMgrTest {
 		}
 	}
 	
+	public void test7_UpdateToNull(CRUDMgr m) throws JsonCrudException
+	{
+		long id = getCfgId(m);
+		
+		JSONObject jsonData = new JSONObject();
+		jsonData.put("cfgId", id);
+		jsonData.put("key", "key999111");
+		jsonData.put("value", 101010);
+
+		System.out.println();	
+		System.out.println("7.1 Create TestData");
+		JSONObject jsonResult = m.create("crud.jsoncrud_cfg_values", jsonData);
+		System.out.println("		- "+jsonResult);
+		
+		
+		JSONObject jsonWhere = new JSONObject();
+		jsonWhere.put("cfgId", id);
+		jsonWhere.put("key", "key999111");
+		//
+		jsonData = new JSONObject();
+		jsonData.put("value", JSONObject.NULL);
+		
+		System.out.println("7.2 Update value to NULL");
+		JSONArray jArrResult = m.update("crud.jsoncrud_cfg_values", jsonData, jsonWhere);
+		jsonResult = jArrResult.getJSONObject(0);
+		System.out.println("		- "+jsonResult);
+	}
+	
 	
 	public static void main(String args[]) throws Exception
 	{
@@ -484,6 +511,7 @@ public class CRUDMgrTest {
 			//
 			test.test6_ExtraAttrs(m);
 			
+			test.test7_UpdateToNull(m);
 
 			//////////////////////////
 			test.testCustomSQLConfig(m);

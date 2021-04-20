@@ -2463,11 +2463,7 @@ public class CRUDMgr {
 		{
 			Object o = aDataObj.get(sKey);
 			o = castJson2DBVal(aCrudKey, sKey, o);
-			
-			if(o!=JSONObject.NULL)
-			{
-				jsonObj.put(sKey, o);
-			}
+			jsonObj.put(sKey, o);
 		}
 		
 		return jsonObj;
