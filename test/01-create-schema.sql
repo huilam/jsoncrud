@@ -23,3 +23,8 @@ CREATE TABLE jsoncrud_cfg_values
     CONSTRAINT uc_jsoncrud_cfg_val UNIQUE (cfg_id, cfg_key)
 );
 
+
+ALTER TABLE jsoncrud_cfg_values 
+  ADD COLUMN cfg_real real DEFAULT 0;
+ 
+ 

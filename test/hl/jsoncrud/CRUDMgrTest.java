@@ -82,6 +82,7 @@ public class CRUDMgrTest {
 		//
 		jsonData.put("key", "%testkey02_");
 		jsonData.put("value", "`testvalue|002_");
+		jsonData.put("cfg_real", 0.6);
 		jsonData.put("displaySeq", 200);
 		jsonResult = m.create("crud.jsoncrud_cfg_values", jsonData);
 		System.out.println(" 		- "+jsonResult);
