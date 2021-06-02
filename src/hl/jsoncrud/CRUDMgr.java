@@ -951,7 +951,7 @@ public class CRUDMgr {
 				}catch(Exception ex)
 				{
 					//ignore as cursor move is not supported
-					ex.printStackTrace();
+					logger.fine("[WARNING]"+ex.getMessage());
 				}
 			}
 			
@@ -3021,7 +3021,7 @@ public class CRUDMgr {
 	
     public static void main(String args[]) throws JsonCrudException
     {
-          
+          /**
           CRUDMgr mgr = new CRUDMgr();
           
           long lStart = System.currentTimeMillis();
@@ -3031,6 +3031,16 @@ public class CRUDMgr {
           System.out.println(jArr.toString());
           
           System.out.println(System.currentTimeMillis()-lStart);
+          **/
+          JSONObject json = new JSONObject();
+          json.put("FLOAT", 0.666666666666666666666666666666666666666666666666666666666666666666666);
+          
+          JSONObject json2 = new JSONObject(json.toString());
+          
+          Object obj = json2.get("FLOAT");
+          System.out.println(obj.getClass().getName());
+          
+          
     }
 
 }
