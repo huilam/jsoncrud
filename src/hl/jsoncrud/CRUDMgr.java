@@ -85,7 +85,10 @@ public class CRUDMgr {
 	private final static String SQLLIKE_WILDCARD			= "%";
 	private final static char[] SQLLIKE_RESERVED_CHARS		= new char[]{'%','_'};
 	
-	private final static String REGEX_JSONFILTER = "([a-zA-Z_][a-zA-Z0-9_-]+?)(?:\\.("+JSONFILTER_NOT+"))?"
+	private final static String _JSON_ATTRNAME = "[a-zA-Z_][a-zA-Z0-9_-]";
+	private boolean isAbsoluteCursorSupported = true;
+	
+	private final static String REGEX_JSONFILTER = "("+_JSON_ATTRNAME+"+?)(?:\\.("+JSONFILTER_NOT+"))?"
 			+"(?:\\.("+JSONFILTER_FROM+"|"+JSONFILTER_TO+"|"+JSONFILTER_IN+"|"
 			+JSONFILTER_STARTWITH+"|"+JSONFILTER_ENDWITH+"|"+JSONFILTER_CONTAIN+"|"+JSONFILTER_NOT+"|"
 			+JSONFILTER_CASE_INSENSITIVE+"))"
@@ -171,11 +174,11 @@ public class CRUDMgr {
 			mapTableCols		= new HashMap<String, Map<String, DBColMeta>>();
 			
 			//
-			pattJsonColMapping 	= Pattern.compile("jsonattr\\.([a-zA-Z_-]+?)\\.colname");
-			pattJsonSQL 		= Pattern.compile("jsonattr\\.([a-zA-Z_-]+?)\\.sql");
+			pattJsonColMapping 	= Pattern.compile("jsonattr\\.("+_JSON_ATTRNAME+"+?)\\.colname");
+			pattJsonSQL 		= Pattern.compile("jsonattr\\.("+_JSON_ATTRNAME+"+?)\\.sql");
 			//
 			pattSQLjsonname 			= Pattern.compile("\\{(.+?)\\}");
-			pattInsertSQLtableFields 	= Pattern.compile("insert\\s+?into\\s+?([a-zA-Z_]+?)\\s+?\\((.+?)\\)");
+			pattInsertSQLtableFields 	= Pattern.compile("insert\\s+?into\\s+?("+_JSON_ATTRNAME+"+?)\\s+?\\((.+?)\\)");
 			//
 			pattJsonNameFilter 	= Pattern.compile(REGEX_JSONFILTER);
 			
@@ -940,7 +943,7 @@ public class CRUDMgr {
 			long lTotalResult 		= 0;
 			ResultSetMetaData meta 	= rs.getMetaData();
 			
-			if(aStartFrom>2)
+			if(isAbsoluteCursorSupported && aStartFrom>2)
 			{
 				try {
 					int iCurPos = (int)aStartFrom-1;
@@ -951,6 +954,7 @@ public class CRUDMgr {
 				}catch(Exception ex)
 				{
 					//ignore as cursor move is not supported
+					isAbsoluteCursorSupported = false;
 					logger.fine("[WARNING]"+ex.getMessage());
 				}
 			}
