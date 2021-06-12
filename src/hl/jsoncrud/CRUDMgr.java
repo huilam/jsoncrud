@@ -2228,7 +2228,7 @@ public class CRUDMgr {
 						}
 						else
 						{
-							JsonCrudException e = new JsonCrudException(JsonCrudConfig.ERRCODE_JSONCRUDCFG, "Invalid "+JsonCrudConfig._PROP_KEY_JDBC_CLASSNAME);
+							JsonCrudException e = new JsonCrudException(JsonCrudConfig.ERRCODE_JSONCRUDCFG, "Invalid "+JsonCrudConfig._PROP_KEY_JDBC_CLASSNAME+ " - "+sKey);
 							e.setErrorSubject(sJdbcClassname);
 							throw e;
 						}
