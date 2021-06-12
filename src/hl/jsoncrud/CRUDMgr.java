@@ -85,7 +85,7 @@ public class CRUDMgr {
 	private final static String SQLLIKE_WILDCARD			= "%";
 	private final static char[] SQLLIKE_RESERVED_CHARS		= new char[]{'%','_'};
 	
-	private final static String REGEX_JSONFILTER = "([a-zA-Z_-]+?)(?:\\.("+JSONFILTER_NOT+"))?"
+	private final static String REGEX_JSONFILTER = "([a-zA-Z_][a-zA-Z0-9_-]+?)(?:\\.("+JSONFILTER_NOT+"))?"
 			+"(?:\\.("+JSONFILTER_FROM+"|"+JSONFILTER_TO+"|"+JSONFILTER_IN+"|"
 			+JSONFILTER_STARTWITH+"|"+JSONFILTER_ENDWITH+"|"+JSONFILTER_CONTAIN+"|"+JSONFILTER_NOT+"|"
 			+JSONFILTER_CASE_INSENSITIVE+"))"
