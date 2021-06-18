@@ -937,7 +937,21 @@ public class CRUDMgr {
 			}
 			catch(SQLException sqlEx)
 			{
-				throw sqlEx;
+				StringBuffer sbErr = new StringBuffer();
+				sbErr.append(sqlEx.getMessage()).append("\n");
+				sbErr.append("sql:").append(sSQL).append("\n");
+				sbErr.append("param:");				
+				if(aObjParams!=null && aObjParams.length>0)
+				{
+					for(int i=0; i<aObjParams.length; i++)
+					{
+						if(i>0)
+							sbErr.append(",");
+						sbErr.append(String.valueOf(aObjParams[i]));
+					}
+				}
+				sbErr.append("\n");
+				throw new SQLException(sbErr.toString(),sqlEx);
 			}
 			
 			long lTotalResult 		= 0;
