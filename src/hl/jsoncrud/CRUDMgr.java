@@ -1748,13 +1748,13 @@ public class CRUDMgr {
 		
 		Object[] objParams = listValues.toArray(new Object[listValues.size()]);
 		StringBuffer sbSQL = new StringBuffer();
-		sbSQL.append("SELECT COUNT(*) FROM ").append(sTableName).append(" WHERE 1=1 ").append(sbWhere.toString());
+		sbSQL.append("SELECT COUNT(*) FROM ").append(sTableName).append(" WHERE 100=100 ").append(sbWohere.toString());
 		
 		long lTotalRecordCount = getTotalSQLCount(aCrudKey, sbSQL.toString(), objParams);
 		
 		sbSQL.setLength(0);
 		sbSQL.append(" SELECT ").append(sbSelectFields.toString()).append(" FROM ").append(sTableName);
-		sbSQL.append(" WHERE 1=1 ").append(sbWhere.toString());
+		sbSQL.append(" WHERE 101=101 ").append(sbWhere.toString());
 		if(sbOrderBy.length()>0)
 		{
 			sbSQL.append(" ORDER BY ").append(sbOrderBy.toString());
@@ -1776,25 +1776,32 @@ public class CRUDMgr {
 		{
 			if(jsonEx.getThrowable() instanceof SQLException )
 			{
-				if(aReturns.length>0)
+				JsonCrudException e = new JsonCrudException(JsonCrudConfig.ERRCODE_SQLEXCEPTION, jsonEx);
+				
+				if(aReturns.length>0 )
 				{
-					sbSQL.setLength(0);
-					sbSQL.append(" SELECT * FROM ").append(sTableName).append(" WHERE 1=2 ").append(sbWhere.toString());
-					List<String> listJsonAttrs = getSQLJsonAttrs(aCrudKey, sbSQL.toString(), objParams);
-					if(listJsonAttrs==null)
-						listJsonAttrs = new ArrayList<String>();
-					
-					for(int i=0; i<aReturns.length; i++)
+					if(logger.isLoggable(Level.FINER)) //trace level
 					{
-						String sReturnAttrName = aReturns[i];
-						if(!listJsonAttrs.contains(sReturnAttrName))
+						sbSQL.setLength(0);
+						sbSQL.append(" SELECT * FROM ").append(sTableName).append(" WHERE 101=102 ").append(sbWhere.toString());
+
+						List<String> listJsonAttrs = getSQLJsonAttrs(aCrudKey, sbSQL.toString(), objParams);
+						if(listJsonAttrs==null)
+							listJsonAttrs = new ArrayList<String>();
+						
+						for(int i=0; i<aReturns.length; i++)
 						{
-							JsonCrudException e = new JsonCrudException(JsonCrudConfig.ERRCODE_INVALID_RETURNS, 
-									"Invalid returns attribute !");
-							e.setErrorSubject(sReturnAttrName);
-							throw e;
+							String sReturnAttrName = aReturns[i];
+							if(!listJsonAttrs.contains(sReturnAttrName))
+							{
+								e = new JsonCrudException(JsonCrudConfig.ERRCODE_INVALID_RETURNS, 
+										"Invalid returns attribute !");
+								e.setErrorSubject(sReturnAttrName);
+								throw e;
+							}
 						}
 					}
+					throw e;
 				}
 			}
 			throw jsonEx;
