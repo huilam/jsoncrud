@@ -1748,7 +1748,7 @@ public class CRUDMgr {
 		
 		Object[] objParams = listValues.toArray(new Object[listValues.size()]);
 		StringBuffer sbSQL = new StringBuffer();
-		sbSQL.append("SELECT COUNT(*) FROM ").append(sTableName).append(" WHERE 100=100 ").append(sbWohere.toString());
+		sbSQL.append("SELECT COUNT(*) FROM ").append(sTableName).append(" WHERE 100=100 ").append(sbWhere.toString());
 		
 		long lTotalRecordCount = getTotalSQLCount(aCrudKey, sbSQL.toString(), objParams);
 		
