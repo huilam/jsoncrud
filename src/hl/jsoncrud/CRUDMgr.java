@@ -2230,6 +2230,7 @@ public class CRUDMgr {
 				JdbcDBMgr dbmgr = null;
 				Map<String, String> mapCrudConfig = jsoncrudConfig.getConfig(sKey);
 				String sDBConfigName = mapCrudConfig.get(JsonCrudConfig._PROP_KEY_DBCONFIG);
+				String sDBTableName = mapCrudConfig.get(JsonCrudConfig._PROP_KEY_TABLENAME);
 				//
 				if(sDBConfigName!=null && sDBConfigName.trim().length()>0)
 				{
@@ -2251,9 +2252,9 @@ public class CRUDMgr {
 						{
 							dbmgr = initNRegJdbcDBMgr(sDBConfigName, mapDBConfig);
 						}
-						else
+						else if(sDBTableName!=null && sDBTableName.trim().length()>0)
 						{
-							JsonCrudException e = new JsonCrudException(JsonCrudConfig.ERRCODE_JSONCRUDCFG, "Invalid "+JsonCrudConfig._PROP_KEY_JDBC_CLASSNAME+ " - "+sKey);
+							JsonCrudException e = new JsonCrudException(JsonCrudConfig.ERRCODE_JSONCRUDCFG, "Invalid "+JsonCrudConfig._PROP_KEY_JDBC_CLASSNAME+ " - "+sKey+".dbconfig="+sDBConfigName);
 							e.setErrorSubject(sJdbcClassname);
 							throw e;
 						}
