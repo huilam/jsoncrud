@@ -843,6 +843,8 @@ public class CRUDMgr {
 			String sDebugMsg = "crudKey:"+aCrudKey+", sql:"+sSQL+", params:"+listParamsToString(aObjParams);
 			JsonCrudException e = new JsonCrudException(JsonCrudConfig.ERRCODE_SQLEXCEPTION, sqlEx);
 			e.setErrorDebugInfo(sDebugMsg);
+			
+			System.err.println(sDebugMsg);
 			throw e;
 		}
 		finally
@@ -1553,6 +1555,8 @@ public class CRUDMgr {
 			}
 			
 			String sColName = mapCrudJsonCol.get(sJsonName);
+			
+			boolean isUseSQLANY = true;
 			//
 			if(sColName!=null)
 			{
@@ -1598,6 +1602,8 @@ public class CRUDMgr {
 						sValSeparator = JSONVALUE_IN_SEPARATOR;
 					}
 					StringTokenizer tk = new StringTokenizer(sStrValues, sValSeparator);
+					List<Object> listAnyObj = new ArrayList<Object>();
+					
 					while(tk.hasMoreTokens())
 					{
 						String sVal = tk.nextToken();
@@ -1605,13 +1611,46 @@ public class CRUDMgr {
 						
 						if(oJsonValue!=JSONObject.NULL)
 						{	
-							if(sbSQLparam.length()>0)
-								sbSQLparam.append(", ");
-							
-							sbSQLparam.append(sCIPrefix).append("?").append(sCIPostfix);
-							listValues.add(oJsonValue);
+							if(isUseSQLANY)
+							{
+								listAnyObj.add(oJsonValue);
+							}
+							else
+							{
+								if(sbSQLparam.length()>0)
+									sbSQLparam.append(", ");
+								
+								sbSQLparam.append(sCIPrefix).append("?").append(sCIPostfix);
+								listValues.add(oJsonValue);
+								
+							}
 						}
 					}
+					
+					if(isUseSQLANY)
+					{
+						if(oJsonValue instanceof String)
+						{
+							listValues.add( (String[]) listAnyObj.toArray(new String[listAnyObj.size()]));
+						}
+						else if(oJsonValue instanceof Long)
+						{
+							listValues.add( (Long[]) listAnyObj.toArray(new Long[listAnyObj.size()]));
+						}
+						else if(oJsonValue instanceof Double)
+						{
+							listValues.add( (Double[]) listAnyObj.toArray(new Double[listAnyObj.size()]));
+						}
+						else if(oJsonValue instanceof Boolean)
+						{
+							listValues.add( (Boolean[]) listAnyObj.toArray(new Boolean[listAnyObj.size()]));
+						}
+						else 
+						{
+							listValues.add(listAnyObj.toArray());
+						}
+					}
+					
 					
 				}
 				else
@@ -1627,6 +1666,14 @@ public class CRUDMgr {
 				{
 					sINPrefix = " (";
 					sINPostfix = ") ";
+					
+					if(isUseSQLANY)
+					{
+						sOperator = " = ANY ";
+						
+						sbSQLparam.setLength(0);
+						sbSQLparam.append("?");
+					}
 				}
 				
 				sbWhere.append(sCIPrefix).append(sColName).append(sCIPostfix).append(sOperator);
