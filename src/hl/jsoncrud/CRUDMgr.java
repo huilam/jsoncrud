@@ -130,7 +130,7 @@ public class CRUDMgr {
 	{
 		JSONObject jsonVer = new JSONObject();
 		jsonVer.put("framework", "jsoncrud");
-		jsonVer.put("version", "0.8.5 beta");
+		jsonVer.put("version", "0.8.6 beta");
 		return jsonVer;
 	}
 	
@@ -1072,35 +1072,7 @@ public class CRUDMgr {
 								{
 									sChildMapping = sChildMapping.trim();
 									
-									if(sChildMapping.startsWith("\"") && sChildMapping.endsWith("\""))
-									{
-										//"cfg_key"
-										String sData = "";
-										if(jsonArrayChild.length()>0)
-										{
-											Object oData = jsonArrayChild.get(0);
-											if(oData!=null)
-											{
-												String sAttrkey = sChildMapping.substring(1, sChildMapping.length()-1);
-												
-												if(oData instanceof JSONObject)
-												{
-													JSONObject jsonData = ((JSONObject)oData);
-													if(jsonData.has(sAttrkey))
-													{
-														sData = String.valueOf(jsonData.get(sAttrkey));
-													}
-												}
-												else
-												{
-													sData = String.valueOf(oData);
-												}
-												
-											}
-										}
-										jsonObj.put(sJsonName, sData);
-									}
-									else if(sChildMapping.startsWith("[") && sChildMapping.endsWith("]"))
+									if(sChildMapping.startsWith("[") && sChildMapping.endsWith("]"))
 									{
 										// mapping=["cfg_key"]
 										
@@ -1172,6 +1144,36 @@ public class CRUDMgr {
 											JsonCrudException e = new JsonCrudException(JsonCrudConfig.ERRCODE_JSONCRUDCFG, "Invalid Child Mapping !");
 											e.setErrorSubject(sPropKeyMapping+"."+sChildMapping);
 											throw e;
+										}
+									}
+									else
+									{
+										if(jsonArrayChild.length()>0)
+										{
+											Object oData = jsonArrayChild.get(0);
+											if(oData!=null)
+											{
+												String sAttrkey = sChildMapping;
+												
+												if(oData instanceof JSONObject)
+												{
+													if(sChildMapping.startsWith("\"") && sChildMapping.endsWith("\""))
+														sAttrkey = sChildMapping.substring(1, sChildMapping.length()-1);
+													
+													JSONObject jsonData = ((JSONObject)oData);
+													if(jsonData.has(sAttrkey))
+													{
+														oData = jsonData.get(sAttrkey);
+													}
+												}
+													
+												if(sChildMapping.startsWith("\"") && sChildMapping.endsWith("\""))
+												{
+													oData = String.valueOf(oData);
+												}
+												
+												jsonObj.put(sJsonName, oData);
+											}
 										}
 									}
 									
