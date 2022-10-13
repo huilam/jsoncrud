@@ -1153,13 +1153,16 @@ public class CRUDMgr {
 											Object oData = jsonArrayChild.get(0);
 											if(oData!=null)
 											{
+												boolean isForceString = 
+														sChildMapping.startsWith("\"") && sChildMapping.endsWith("\"");
+												
 												String sAttrkey = sChildMapping;
+												
+												if(isForceString)
+													sAttrkey = sChildMapping.substring(1, sChildMapping.length()-1);
 												
 												if(oData instanceof JSONObject)
 												{
-													if(sChildMapping.startsWith("\"") && sChildMapping.endsWith("\""))
-														sAttrkey = sChildMapping.substring(1, sChildMapping.length()-1);
-													
 													JSONObject jsonData = ((JSONObject)oData);
 													if(jsonData.has(sAttrkey))
 													{
@@ -1167,7 +1170,7 @@ public class CRUDMgr {
 													}
 												}
 													
-												if(sChildMapping.startsWith("\"") && sChildMapping.endsWith("\""))
+												if(isForceString)
 												{
 													oData = String.valueOf(oData);
 												}
