@@ -2,7 +2,6 @@ package hl.jsoncrud;
 
 import java.sql.Connection;
 import hl.common.JdbcDBMgr;
-import hl.jsoncrud.CRUDMgr;
 
 public class JdbcDBMgrTest {
 	
