@@ -9,6 +9,6 @@
 	</classpathentry>
 	<classpathentry kind="lib" path="lib/postgresql-42.7.4.jar"/>
 	<classpathentry kind="lib" path="lib/json-20240303.jar"/>
-	<classpathentry kind="lib" path="lib/hl-common_jdk11_20241018-1056-05.jar"/>
+	<classpathentry kind="lib" path="lib/hl-common_jdk17_20250426-1945-14.jar"/>
 	<classpathentry kind="output" path="classes"/>
 </classpath>
