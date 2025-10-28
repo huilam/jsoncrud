@@ -175,7 +175,7 @@ public class CRUDMgr {
 			
 			//
 			pattJsonColMapping 	= Pattern.compile("jsonattr\\.("+_JSON_ATTRNAME+"+?)\\.colname");
-			pattJsonSQL 		= Pattern.compile("jsonattr\\.("+_JSON_ATTRNAME+"+?)\\.sql");
+			pattJsonSQL 		= Pattern.compile("jsonattr\\.([a-zA-Z0-9_-]+?)\\.sql");
 			//
 			pattSQLjsonname 			= Pattern.compile("\\{(.+?)\\}");
 			pattInsertSQLtableFields 	= Pattern.compile("insert\\s+?into\\s+?("+_JSON_ATTRNAME+"+?)\\s+?\\((.+?)\\)");
