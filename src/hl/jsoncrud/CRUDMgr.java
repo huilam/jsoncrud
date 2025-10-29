@@ -175,7 +175,7 @@ public class CRUDMgr {
 			
 			//
 			pattJsonColMapping 	= Pattern.compile("jsonattr\\.("+_JSON_ATTRNAME+"+?)\\.colname");
-			pattJsonSQL 		= Pattern.compile("jsonattr\\.([a-zA-Z0-9_-]+?)\\.sql");
+			pattJsonSQL 		= Pattern.compile("jsonattr\\.(.+?)\\.sql");
 			//
 			pattSQLjsonname 			= Pattern.compile("\\{(.+?)\\}");
 			pattInsertSQLtableFields 	= Pattern.compile("insert\\s+?into\\s+?("+_JSON_ATTRNAME+"+?)\\s+?\\((.+?)\\)");
@@ -592,7 +592,7 @@ public class CRUDMgr {
 						
 						for(String sJsonName2 : listUnmatchedJsonName)
 						{
-							List<Object[]> listParams2 	= getSubQueryParams(mapCrudCfg, jsonReturn, sJsonName2);
+							List<Object[]> listParams2 	= getInsertSubQueryParams(mapCrudCfg, jsonReturn, sJsonName2);
 							String sObjInsertSQL 		= mapCrudCfg.get("jsonattr."+sJsonName2+"."+JsonCrudConfig._PROP_KEY_CHILD_INSERTSQL);
 							
 							long lupdatedRow 	= 0;
@@ -1929,11 +1929,21 @@ public class CRUDMgr {
 			{
 				//TODO Throw 1 Error first
 				//System.out.println("[update.validation]"+jArrErrors.toString());
+				StringBuffer sbErrCode 	= new StringBuffer();
+				StringBuffer sbErrMsg 	= new StringBuffer();
+				
 				for(int i=0; i<jArrErrors.length(); i++)
 				{
 					JSONObject jsonErr = jArrErrors.getJSONObject(i);
-					throw new JsonCrudException(jsonErr.getString(JSONATTR_ERRCODE), jsonErr.getString(JSONATTR_ERRMSG));
+					sbErrCode.append("ErrCode:").append(jsonErr.getString(JSONATTR_ERRCODE));
+					sbErrCode.append("\n");
+					
+					sbErrMsg.append("[").append(jsonErr.getString(JSONATTR_ERRCODE));
+					sbErrMsg.append("] ErrMsg:").append(jsonErr.getString(JSONATTR_ERRMSG));
+					sbErrMsg.append("\n");
 				}
+				
+				throw new JsonCrudException(sbErrCode.toString(), sbErrMsg.toString());
 			}
 		}
 		
@@ -2021,7 +2031,7 @@ public class CRUDMgr {
 					
 					for(String sJsonName2 : listUnmatchedJsonName)
 					{
-						List<Object[]> listParams2 	= getSubQueryParams(map, jsonReturn, sJsonName2);
+						List<Object[]> listParams2 	= getInsertSubQueryParams(map, jsonReturn, sJsonName2);
 						String sObjInsertSQL 		= map.get("jsonattr."+sJsonName2+"."+JsonCrudConfig._PROP_KEY_CHILD_INSERTSQL);
 						
 						lAffectedRow2 += updateChildObject(dbmgr, sObjInsertSQL, listParams2);
@@ -2315,9 +2325,9 @@ public class CRUDMgr {
 				
 				if(dbmgr!=null)
 				{
-					Map<String, String> mapCrudJson2Col = new HashMap<String, String> ();
-					Map<String, String> mapCrudCol2Json = new HashMap<String, String> ();
-					Map<String, String> mapCrudJsonSql 	= new HashMap<String, String> ();
+					Map<String, String> mapCrudJson2Col 		= new HashMap<String, String> ();
+					Map<String, String> mapCrudCol2Json 		= new HashMap<String, String> ();
+					Map<String, String> mapCrudJsonSelectSql	= new HashMap<String, String> ();
 					
 					for(String sCrudCfgKey : mapCrudConfig.keySet())
 					{
@@ -2342,7 +2352,14 @@ public class CRUDMgr {
 							
 							if(sql.length()>0)
 							{
-								mapCrudJsonSql.put(jsonname, sql);
+								if(sql.trim().toLowerCase().startsWith("select"))
+								{
+									mapCrudJsonSelectSql.put(jsonname, sql);
+								}
+								else
+								{
+									System.err.println("[Non-Select-SQL] "+jsonname+" sql="+sql);
+								}
 							}
 							continue;
 							
@@ -2393,7 +2410,7 @@ public class CRUDMgr {
 					
 					mapJson2ColName.put(sKey, mapCrudJson2Col);
 					mapColName2Json.put(sKey, mapCrudCol2Json);
-					mapJson2Sql.put(sKey, mapCrudJsonSql);
+					mapJson2Sql.put(sKey, mapCrudJsonSelectSql);
 					//
 				}
 			}
@@ -2911,7 +2928,7 @@ public class CRUDMgr {
 	}
 	
 	
-	private List<Object[]> getSubQueryParams(Map<String, String> aCrudCfgMap, JSONObject aJsonParentData, String aJsonName) throws JsonCrudException
+	private List<Object[]> getInsertSubQueryParams(Map<String, String> aCrudCfgMap, JSONObject aJsonParentData, String aJsonName) throws JsonCrudException
 	{
 		String sPrefix 		= "jsonattr."+aJsonName+".";
 		String sObjSQL 		= aCrudCfgMap.get(sPrefix+JsonCrudConfig._PROP_KEY_CHILD_INSERTSQL);

@@ -105,7 +105,7 @@ public class JsonCrudConfig {
 	public final static String _PROP_KEY_EXCLUDE_NON_MAPPED_FIELDS	= "exclude.non-mapped-fields";
 	public final static String _PROP_KEY_EXCEPTION_ON_UNKNOWN_ATTR	= "exception.on-unknown-jsonattr";
 	public final static String _PROP_KEY_CHILD_MAPPING				= "mapping";
-	public final static String _PROP_KEY_CHILD_INSERTSQL			= "insert.sql";
+	public final static String _PROP_KEY_CHILD_INSERTSQL			= "insert-sql";
 	//
 	public static Pattern patResourceName	 	= Pattern.compile("\\$\\{file\\:(.+?)\\}");
 	public static Pattern patJsonDaoKey 		= null;
