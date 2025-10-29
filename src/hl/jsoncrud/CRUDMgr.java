@@ -1465,7 +1465,9 @@ public class CRUDMgr {
 			Object oJsonValue 	= jsonWhere.get(sOrgJsonName);
 			Map<String, String> mapSQLEscape = new HashMap<String, String>();
 			
-			if(sJsonName.indexOf(".")>-1)
+			String sColName = mapCrudJsonCol.get(sJsonName);;
+			
+			if(sColName==null && sJsonName.indexOf(".")>-1)
 			{
 				Matcher m = pattJsonNameFilter.matcher(sJsonName);
 				if(m.find())
@@ -1540,26 +1542,30 @@ public class CRUDMgr {
 							oJsonValue = SQLLIKE_WILDCARD+sJsonValue+SQLLIKE_WILDCARD;
 						}
 					}
+					sColName = mapCrudJsonCol.get(sJsonName);
 				}
 				else
 				{
-					int iPos = sJsonName.indexOf(".");
-					if(iPos>-1)
+					sColName = mapCrudJsonCol.get(sJsonName);
+					
+					if(sColName==null)
 					{
-						String sFilterOps = sJsonName.substring(iPos);
-						if(sFilterOps.length()>0)
+						int iPos = sJsonName.indexOf(".");
+						if(iPos>-1)
 						{
-							//invalid operators
-							JsonCrudException e = new JsonCrudException(
-									JsonCrudConfig.ERRCODE_INVALID_FILTERS, "Invalid filters operator !");
-							e.setErrorSubject(sJsonName);
-							throw e;
+							String sFilterOps = sJsonName.substring(iPos);
+							if(sFilterOps.length()>0)
+							{
+								//invalid operators
+								JsonCrudException e = new JsonCrudException(
+										JsonCrudConfig.ERRCODE_INVALID_FILTERS, "Invalid filters operator ! - "+sJsonName);
+								e.setErrorSubject(sJsonName);
+								throw e;
+							}
 						}
 					}
 				}
 			}
-			
-			String sColName = mapCrudJsonCol.get(sJsonName);
 			
 			boolean isUseSQLANY = true;
 			//
@@ -1720,10 +1726,10 @@ public class CRUDMgr {
 			for(String sOrderBy : aSorting)
 			{
 				String sOrderSeqKeyword = "";
-				int iOrderSeq = sOrderBy.indexOf('.');
+				int iOrderSeq = sOrderBy.lastIndexOf('.');
 				if(iOrderSeq>-1)
 				{
-					sOrderSeqKeyword = sOrderBy.substring(iOrderSeq+1);
+					sOrderSeqKeyword = sOrderBy.substring(iOrderSeq+1, sOrderBy.length());
 				}
 				else if(iOrderSeq==-1)
 				{
@@ -2564,7 +2570,7 @@ public class CRUDMgr {
 		return jsonObj;
 	}
 	
-	public Object castJson2DBVal(String aCrudKey, String aJsonName, Object aVal) throws JsonCrudException
+	public Object castJson2DBVal(String aCrudKey, final String aOrigJsonName, Object aVal) throws JsonCrudException
 	{
 		if(aVal == null)
 			return JSONObject.NULL;
@@ -2573,14 +2579,14 @@ public class CRUDMgr {
 			return aVal;
 		
 		//multi-values
-		if(aJsonName.toLowerCase().indexOf(".in")>-1)
+		if(aOrigJsonName.toLowerCase().indexOf(".in")>-1)
 			return aVal;
 		
 		//only cast string value
-		aJsonName = getJsonNameNoFilter(aJsonName);
+		String sJsonName = removeJsonNameFilters(aOrigJsonName);
 		
 		Object oVal = aVal;
-		DBColMeta col = getDBColMetaByJsonName(aCrudKey, aJsonName);
+		DBColMeta col = getDBColMetaByJsonName(aCrudKey, sJsonName);
 		if(col!=null)
 		{
 			boolean isFormatOk = false;
@@ -2606,7 +2612,7 @@ public class CRUDMgr {
 				catch(NumberFormatException numEx)
 				{
 					sErrReason 	= "Expecting numeric value !";
-					sErrSubject = aJsonName+":"+sVal;
+					sErrSubject = sJsonName+":"+sVal;
 					logger.log(Level.FINEST, numEx.getMessage(), numEx);
 				}
 			}
@@ -2628,7 +2634,7 @@ public class CRUDMgr {
 				else
 				{
 					sErrReason 	= "Expecting boolean value !";
-					sErrSubject = aJsonName+":"+sVal;
+					sErrSubject = sJsonName+":"+sVal;
 				}
 			}
 			
@@ -2671,7 +2677,7 @@ public class CRUDMgr {
 	
 	public DBColMeta getDBColMetaByJsonName(String aCrudKey, String aJsonName)
 	{
-		aJsonName = getJsonNameNoFilter(aJsonName);
+		aJsonName = removeJsonNameFilters(aJsonName);
 		//
 		Map<String,DBColMeta> cols = mapTableCols.get(aCrudKey);
 		if(cols!=null)
@@ -3029,15 +3035,34 @@ public class CRUDMgr {
 		return false;
 	}
 	
-	private String getJsonNameNoFilter(String aJsonName)
+	private String getFilterOperator(String aJsonName)
 	{
-		int iPos = aJsonName.indexOf(".");
+		String sOperator = null;
+		int iPos = aJsonName.lastIndexOf(".");
 		if(iPos >-1)
 		{
-			aJsonName = aJsonName.substring(0,iPos);
+			sOperator = aJsonName.substring(iPos+1, aJsonName.length()-1);
+			if(!listFilterOperator.contains(sOperator))
+			{
+				sOperator = null;
+			}
 		}
-		return aJsonName;
+		return sOperator;
+	}
+	
+	private String removeJsonNameFilters(final String aJsonName)
+	{
+		String sJsonName = aJsonName;
 		
+		String sOperator = getFilterOperator(sJsonName);
+			
+		if(sOperator!=null)
+		{
+			sJsonName =  aJsonName.substring(0, aJsonName.length()-sOperator.length());
+			if(sOperator!=null)
+				sJsonName = removeJsonNameFilters(sJsonName);
+		}
+		return sJsonName;
 	}
 	
 	public JSONObject convertCol2Json(String aCrudKey, JSONObject aJSONObject, boolean excludeIfNoMapped)

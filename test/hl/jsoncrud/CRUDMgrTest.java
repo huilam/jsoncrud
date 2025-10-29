@@ -27,6 +27,9 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 public class CRUDMgrTest {
+	
+	private final static String _ATTRNAME_enabled 		= "debug.enabled";
+	private final static String _ATTRNAME_displaySeq 	= "debug.displaySeq";
 	 
 	private void test1_CRUD(CRUDMgr m) throws JsonCrudException
 	{
@@ -74,8 +77,8 @@ public class CRUDMgrTest {
 		jsonData.put("cfgId", id);
 		jsonData.put("key", "testvalue001_");
 		jsonData.put("value", "testvalue001_");
-		jsonData.put("enabled", true);
-		jsonData.put("displaySeq", 1);
+		jsonData.put(_ATTRNAME_enabled, true);
+		jsonData.put(_ATTRNAME_displaySeq, 1);
 		System.out.println("	1.3  create childs");
 		jsonResult = m.create("crud.jsoncrud_cfg_values", jsonData);
 		System.out.println(" 		- "+jsonResult);
@@ -83,25 +86,25 @@ public class CRUDMgrTest {
 		jsonData.put("key", "%testkey02_");
 		jsonData.put("value", "`testvalue|002_");
 		jsonData.put("cfg_real", 0.6);
-		jsonData.put("displaySeq", 200);
+		jsonData.put(_ATTRNAME_displaySeq, 200);
 		jsonResult = m.create("crud.jsoncrud_cfg_values", jsonData);
 		System.out.println(" 		- "+jsonResult);
 		//
 		jsonData.put("key", "testkey03_");
 		jsonData.put("value", "testvalue003");
-		jsonData.put("displaySeq", 30);
+		jsonData.put(_ATTRNAME_displaySeq, 30);
 		jsonResult = m.create("crud.jsoncrud_cfg_values", jsonData);
 		System.out.println(" 		- "+jsonResult);
 		//
 		jsonData.put("key", "testkey04_");
 		jsonData.put("value", JSONObject.NULL);
-		jsonData.put("displaySeq", 7);
+		jsonData.put(_ATTRNAME_displaySeq, 7);
 		jsonResult = m.create("crud.jsoncrud_cfg_values", jsonData);
 		System.out.println(" 		- "+jsonResult);
 		//
 		jsonData.put("key", "testkey05_");
 		jsonData.put("value", "testvalue005");
-		jsonData.put("enabled", false);
+		jsonData.put(_ATTRNAME_enabled, false);
 		jsonResult = m.create("crud.jsoncrud_cfg_values", jsonData);
 		System.out.println(" 		- "+jsonResult);
 		//		
@@ -112,13 +115,13 @@ public class CRUDMgrTest {
 		System.out.println("	1.4 R:"+jsonArrResult);
 
 		jsonData = new JSONObject();
-		jsonData.put("enabled", true);
+		jsonData.put(_ATTRNAME_enabled, true);
 		jsonArrResult = m.update("crud.jsoncrud_cfg", jsonData, jsonWhere);
 		System.out.println("	1.5 U:"+jsonArrResult);
 		
 		jsonWhere = new JSONObject();
 		jsonWhere.put("cfgId", id);
-		jsonWhere.put("enabled", false);
+		jsonWhere.put(_ATTRNAME_enabled, false);
 		jsonArrResult = m.delete("crud.jsoncrud_cfg_values", jsonWhere);
 		System.out.println("	1.6 D:"+jsonArrResult);
 		
@@ -194,8 +197,8 @@ public class CRUDMgrTest {
 	
 	private void test4_Sorting_Returns(CRUDMgr m) throws JsonCrudException
 	{
-		String[] sSorting = new String[]{"displaySeq.desc", "cfgId", "enabled.asc"};
-		String[] sReturns = new String[]{"displaySeq", "enabled","key"};
+		String[] sSorting = new String[]{_ATTRNAME_displaySeq+".desc", "cfgId", _ATTRNAME_enabled+".asc"};
+		String[] sReturns = new String[]{_ATTRNAME_displaySeq, _ATTRNAME_enabled,"key"};
 		
 		long id = getCfgId(m);
 		
@@ -206,15 +209,15 @@ public class CRUDMgrTest {
 		jsonWhere.put("cfgId", id);
 		jsonWhere.put("value.startwith", "`");
 		jsonWhere.put("value.contain", "|");
-		jsonWhere.put("displaySeq.from", 20);
-		jsonWhere.put("displaySeq.to", 1000);
+		jsonWhere.put(_ATTRNAME_displaySeq+".from", 20);
+		jsonWhere.put(_ATTRNAME_displaySeq+".to", 1000);
 		jsonWhere.put("key.startwith", "%");
 		jsonWhere.put("key.endwith", "_");
 		jsonArrResult = m.retrieve("crud.jsoncrud_cfg_values", jsonWhere);
 		
 		System.out.println("	4.1 Filters : ");
 		System.out.println("		4.1.1 \"value.contain\":\"|\" value.startwith\", \"`\"");
-		System.out.println("		4.1.2 \"displaySeq.from\":\"20\"  \"displaySeq.to\":\"1000\"");	
+		System.out.println("		4.1.2 \""+_ATTRNAME_displaySeq+".from\":\"20\"  \""+_ATTRNAME_displaySeq+".to\":\"1000\"");	
 		System.out.println("		4.1.3 \"key.startwith\":\"%\"  \"key.endwith\":\"_\"");
 		
 		jsonArrResult = m.retrieve("crud.jsoncrud_cfg_values", jsonWhere, null, null);
@@ -224,7 +227,7 @@ public class CRUDMgrTest {
 			System.out.println("			- "+jsonArrResult.getJSONObject(i));
 		}
 		
-		System.out.println("	4.2 Sorting (\"displaySeq.desc\", \"cfgId\") : ");
+		System.out.println("	4.2 Sorting (\""+_ATTRNAME_displaySeq+".desc\", \"cfgId\") : ");
 		
 		jsonWhere = new JSONObject();
 		jsonWhere.put("cfgId", id);
@@ -295,7 +298,7 @@ public class CRUDMgrTest {
 		
 		System.out.println("		4.5.2 Numberic : ");
 		jsonWhere = new JSONObject();
-		jsonWhere.put("displaySeq.in", "1 ,7");
+		jsonWhere.put(_ATTRNAME_displaySeq+".in", "1 ,7");
 		jsonArrResult = m.retrieve("crud.jsoncrud_cfg_values", 
 				jsonWhere, null, null);
 		
