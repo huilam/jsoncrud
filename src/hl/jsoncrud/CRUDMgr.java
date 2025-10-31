@@ -85,7 +85,7 @@ public class CRUDMgr {
 	private final static String SQLLIKE_WILDCARD			= "%";
 	private final static char[] SQLLIKE_RESERVED_CHARS		= new char[]{'%','_'};
 	
-	private final static String _JSON_ATTRNAME = "[a-zA-Z_][.a-zA-Z0-9_-]";
+	public final static String _JSON_ATTRNAME = "[a-zA-Z_][\\.a-zA-Z0-9_\\-]";
 	private boolean isAbsoluteCursorSupported = true;
 	
 	private final static String REGEX_JSONFILTER = "("+_JSON_ATTRNAME+"+?)(?:\\.("+JSONFILTER_NOT+"))?"
@@ -3139,28 +3139,29 @@ public class CRUDMgr {
 		return mapLastUpdates.get(aCrudKey);
 	}
 	
-    public static void main(String args[]) throws JsonCrudException
-    {
-          /**
-          CRUDMgr mgr = new CRUDMgr();
-          
-          long lStart = System.currentTimeMillis();
-          
-          JSONArray jArr = mgr.retrieve("crud.appNamespace", null);
-          
-          System.out.println(jArr.toString());
-          
-          System.out.println(System.currentTimeMillis()-lStart);
-          **/
-          JSONObject json = new JSONObject();
-          json.put("FLOAT", 0.666666666666666666666666666666666666666666666666666666666666666666666);
-          
-          JSONObject json2 = new JSONObject(json.toString());
-          
-          Object obj = json2.get("FLOAT");
-          System.out.println(obj.getClass().getName());
-          
-          
-    }
+	//////////////////////////////////////////////////////////////
+	public static void main(String args[]) throws JsonCrudException
+	{
+		String[] sTests = new String[] 
+				{"jsonname1=val1", 
+				 "jsonname.1=val1"};
+		
+		//Test Regex
+		Pattern pattJsonName = Pattern.compile("("+_JSON_ATTRNAME+"+?)\\=");
+		
+		for(String sTest : sTests)
+		{
+			System.out.println("Testings ["+sTest+"] ...");
+			Matcher m = pattJsonName.matcher(sTest);
+			if(m.find())
+			{
+				System.out.println("  groupCount = "+m.groupCount());
+				for(int i=0; i<=m.groupCount(); i++)
+				{
+					System.out.println("    ["+i+"] = ("+m.group(i)+")");
+				}
+			}
+		}
+	}
 
 }
