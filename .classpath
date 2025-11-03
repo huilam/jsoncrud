@@ -7,8 +7,9 @@
 			<attribute name="module" value="true"/>
 		</attributes>
 	</classpathentry>
-	<classpathentry kind="lib" path="lib/hl-common_jdk17_20250428-1009-09.jar" sourcepath="/hl-common"/>
 	<classpathentry kind="lib" path="lib/json-20250517.jar"/>
 	<classpathentry kind="lib" path="lib/postgresql-42.7.8.jar"/>
+	<classpathentry kind="lib" path="lib/hl-jsoncrud_jdk17_20251103-1016-55.jar"/>
+	<classpathentry kind="lib" path="lib/hl-common_jdk17_20251103-1008-52.jar"/>
 	<classpathentry kind="output" path="classes"/>
 </classpath>

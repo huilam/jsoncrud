@@ -32,6 +32,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -49,6 +50,13 @@ import hl.jsoncrud.ValidationMgr.Validation;
 
 public class CRUDMgr {
 	
+	
+    // ANSI escape codes
+    public static final String PRN_RESET  = "\u001B[0m";
+    public static final String PRN_RED    = "\u001B[31m";
+    public static final String PRN_GREEN  = "\u001B[32m";
+    public static final String PRN_BLUE   = "\u001B[34m";
+	//
 	public final static String JSONATTR_ERRCODE				= "error_code";
 	public final static String JSONATTR_ERRMSG				= "error_msg";
 	//
@@ -85,10 +93,12 @@ public class CRUDMgr {
 	private final static String SQLLIKE_WILDCARD			= "%";
 	private final static char[] SQLLIKE_RESERVED_CHARS		= new char[]{'%','_'};
 	
-	public final static String _JSON_ATTRNAME = "[a-zA-Z_][\\.a-zA-Z0-9_\\-]";
+	public final static String _JSONNAME_TEMPL1 = "[a-zA-Z0-9_][a-zA-Z0-9\\._-]*";
+	public final static String _JSON_ATTRNAME 	= _JSONNAME_TEMPL1 + "(?:\\.\\{" +_JSONNAME_TEMPL1+"\\})?";
+	
 	private boolean isAbsoluteCursorSupported = true;
 	
-	private final static String REGEX_JSONFILTER = "("+_JSON_ATTRNAME+"+?)(?:\\.("+JSONFILTER_NOT+"))?"
+	private final static String REGEX_JSONFILTER = "("+_JSON_ATTRNAME+"?)(?:\\.("+JSONFILTER_NOT+"))?"
 			+"(?:\\.("+JSONFILTER_FROM+"|"+JSONFILTER_TO+"|"+JSONFILTER_IN+"|"
 			+JSONFILTER_STARTWITH+"|"+JSONFILTER_ENDWITH+"|"+JSONFILTER_CONTAIN+"|"+JSONFILTER_NOT+"|"
 			+JSONFILTER_CASE_INSENSITIVE+"))"
@@ -174,11 +184,11 @@ public class CRUDMgr {
 			mapTableCols		= new HashMap<String, Map<String, DBColMeta>>();
 			
 			//
-			pattJsonColMapping 	= Pattern.compile("jsonattr\\.("+_JSON_ATTRNAME+"+?)\\.colname");
+			pattJsonColMapping 	= Pattern.compile("jsonattr\\.("+_JSON_ATTRNAME+"?)\\.colname");
 			pattJsonSQL 		= Pattern.compile("jsonattr\\.(.+?)\\.sql");
 			//
 			pattSQLjsonname 			= Pattern.compile("\\{(.+?)\\}");
-			pattInsertSQLtableFields 	= Pattern.compile("insert\\s+?into\\s+?("+_JSON_ATTRNAME+"+?)\\s+?\\((.+?)\\)");
+			pattInsertSQLtableFields 	= Pattern.compile("insert\\s+?into\\s+?("+_JSON_ATTRNAME+"?)\\s+?\\((.+?)\\)");
 			//
 			pattJsonNameFilter 	= Pattern.compile(REGEX_JSONFILTER);
 			
@@ -3142,25 +3152,42 @@ public class CRUDMgr {
 	//////////////////////////////////////////////////////////////
 	public static void main(String args[]) throws JsonCrudException
 	{
-		String[] sTests = new String[] 
-				{"jsonname1=val1", 
-				 "jsonname.1=val1"};
+		Map<String, String> mapTests = new LinkedHashMap<String,String>();
+		
+		mapTests.put("j=0", "j");
+		mapTests.put("json1=0", "json1");
+		mapTests.put("json1.2=0", "json1.2");
+		mapTests.put("json.name1=0", "json.name1");
+		mapTests.put("json.name.1.2=0", "json.name.1.2");
+		mapTests.put("json.name1.{2}.3=0", "json.name.{2}.3");
+
 		
 		//Test Regex
-		Pattern pattJsonName = Pattern.compile("("+_JSON_ATTRNAME+"+?)\\=");
+		Pattern pattJsonName = Pattern.compile("("+_JSON_ATTRNAME+")?\\=");
 		
-		for(String sTest : sTests)
+		
+		int i=1;
+		for(String sTest : mapTests.keySet())
 		{
-			System.out.println("Testings ["+sTest+"] ...");
+			String sExpectedText = mapTests.get(sTest);
+			
+			System.out.println((i++)+". '"+sTest+"' ... ");
 			Matcher m = pattJsonName.matcher(sTest);
-			if(m.find())
+			boolean isMatched = m.find();
+			
+			if(isMatched)
 			{
-				System.out.println("  groupCount = "+m.groupCount());
-				for(int i=0; i<=m.groupCount(); i++)
-				{
-					System.out.println("    ["+i+"] = ("+m.group(i)+")");
-				}
+				//System.out.println("    - groundCount = "+m.groupCount());
+				System.out.print("    -> ('"+m.group(1)+"' == '"+sExpectedText+"') = ");
+				
+				isMatched = sExpectedText.equals(m.group(1));
+				
 			}
+			
+			if(isMatched)
+				System.out.println(PRN_GREEN+"true"+PRN_RESET);
+			else
+				System.out.println(PRN_RED+"false"+PRN_RESET);
 		}
 	}
 
