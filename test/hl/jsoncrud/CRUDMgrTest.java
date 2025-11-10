@@ -125,9 +125,15 @@ public class CRUDMgrTest {
 		jsonArrResult = m.delete("crud.jsoncrud_cfg_values", jsonWhere);
 		System.out.println("	1.6 D:"+jsonArrResult);
 		
+		//modifier (.ci and .not)
+		jsonWhere = new JSONObject();
+		jsonWhere.put("cfgId.in.not", id);
+		jsonArrResult = m.retrieve("crud.jsoncrud_cfg_values", jsonWhere);
+		System.out.println("	1.7 R with in.not:"+jsonArrResult);
+		
 	}
 	
-	private void test2_SchemaValidation(CRUDMgr m) throws JsonCrudException
+	private void test20_SchemaValidation(CRUDMgr m) throws JsonCrudException
 	{
 		String s100 = "1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890";
 		System.out.println();
@@ -155,7 +161,7 @@ public class CRUDMgrTest {
 		
 	}
 	
-	private void test3_CustomSQL(CRUDMgr m) throws JsonCrudException
+	private void test30_CustomSQL(CRUDMgr m) throws JsonCrudException
 	{
 		StringBuffer sbSQL = new StringBuffer();
 		sbSQL.append(" SELECT cfg.*, count(val.cfg_key) as totalKeys ");
@@ -195,7 +201,7 @@ public class CRUDMgrTest {
 		System.out.println("		- "+jsonResult);
 	}
 	
-	private void test4_Sorting_Returns(CRUDMgr m) throws JsonCrudException
+	private void test40_Sorting_Returns(CRUDMgr m) throws JsonCrudException
 	{
 		String[] sSorting = new String[]{_ATTRNAME_displaySeq+".desc", "cfgId", _ATTRNAME_enabled+".asc"};
 		String[] sReturns = new String[]{_ATTRNAME_displaySeq, _ATTRNAME_enabled,"key"};
@@ -302,7 +308,7 @@ public class CRUDMgrTest {
 		}
 	}
 	
-	private void test5_Null(CRUDMgr m) throws JsonCrudException
+	private void test50_Null(CRUDMgr m) throws JsonCrudException
 	{
 		long id = getCfgId(m);
 		
@@ -380,7 +386,7 @@ public class CRUDMgrTest {
 		}
 	}
 	
-	private void test6_ExtraAttrs(CRUDMgr m) throws JsonCrudException
+	private void test60_ExtraAttrs(CRUDMgr m) throws JsonCrudException
 	{
 		long id = getCfgId(m);
 		
@@ -439,7 +445,7 @@ public class CRUDMgrTest {
 		}
 	}
 	
-	public void test7_UpdateToNull(CRUDMgr m) throws JsonCrudException
+	public void test70_UpdateToNull(CRUDMgr m) throws JsonCrudException
 	{
 		long id = getCfgId(m);
 		
@@ -496,25 +502,23 @@ public class CRUDMgrTest {
 
 			//
 			test.test1_CRUD(m);
-			//
-			test.test2_SchemaValidation(m);
-			//
-			test.test3_CustomSQL(m);
-			//
-			test.test4_Sorting_Returns(m);
-			//
-			test.test5_Null(m);
-			//
-			test.test6_ExtraAttrs(m);
 			
-			test.test7_UpdateToNull(m);
+			//
+			test.test20_SchemaValidation(m);
+			//
+			test.test30_CustomSQL(m);
+			//
+			test.test40_Sorting_Returns(m);
+			//
+			test.test50_Null(m);
+			//
+			test.test60_ExtraAttrs(m);
+			
+			test.test70_UpdateToNull(m);
 
 			//////////////////////////
 			test.testCustomSQLConfig(m);
 
-			//////////////////////////
-
-			
 			
 		}
 		finally

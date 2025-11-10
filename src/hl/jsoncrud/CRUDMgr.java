@@ -60,14 +60,14 @@ public class CRUDMgr {
 	public final static String JSONATTR_ERRCODE				= "error_code";
 	public final static String JSONATTR_ERRMSG				= "error_msg";
 	//
-	public final static String JSONFILTER_IN 				= "in";
-	public final static String JSONFILTER_FROM 				= "from";
-	public final static String JSONFILTER_TO 				= "to";
-	public final static String JSONFILTER_STARTWITH			= "startwith";
-	public final static String JSONFILTER_ENDWITH			= "endwith";
-	public final static String JSONFILTER_CONTAIN			= "contain";
-	public final static String JSONFILTER_CASE_INSENSITIVE	= "ci";
-	public final static String JSONFILTER_NOT				= "not";
+	public final static String JSONFILTER_IN 				= ".in";
+	public final static String JSONFILTER_FROM 				= ".from";
+	public final static String JSONFILTER_TO 				= ".to";
+	public final static String JSONFILTER_STARTWITH			= ".startwith";
+	public final static String JSONFILTER_ENDWITH			= ".endwith";
+	public final static String JSONFILTER_CONTAIN			= ".contain";
+	public final static String JSONFILTER_CASE_INSENSITIVE	= ".ci";
+	public final static String JSONFILTER_NOT				= ".not";
 
 	public final static String JSONFILTER_VALUE_NULL		= "NULL";
 
@@ -98,12 +98,12 @@ public class CRUDMgr {
 	
 	private boolean isAbsoluteCursorSupported = true;
 	
-	private final static String REGEX_JSONFILTER = "("+_JSON_ATTRNAME+"?)(?:\\.("+JSONFILTER_NOT+"))?"
-			+"(?:\\.("+JSONFILTER_FROM+"|"+JSONFILTER_TO+"|"+JSONFILTER_IN+"|"
+	private final static String REGEX_JSONFILTER = "(?:("+JSONFILTER_NOT+"))?"
+			+"(?:("+JSONFILTER_FROM+"|"+JSONFILTER_TO+"|"+JSONFILTER_IN+"|"
 			+JSONFILTER_STARTWITH+"|"+JSONFILTER_ENDWITH+"|"+JSONFILTER_CONTAIN+"|"+JSONFILTER_NOT+"|"
 			+JSONFILTER_CASE_INSENSITIVE+"))"
-		+"(?:\\.("+JSONFILTER_CASE_INSENSITIVE+"|"+JSONFILTER_NOT+"))?"
-		+"(?:\\.("+JSONFILTER_CASE_INSENSITIVE+"|"+JSONFILTER_NOT+"))?";
+		+"(?:("+JSONFILTER_CASE_INSENSITIVE+"|"+JSONFILTER_NOT+"))?"
+		+"(?:("+JSONFILTER_CASE_INSENSITIVE+"|"+JSONFILTER_NOT+"))?";
 	
 	
 	private Object initLock = new Object();
@@ -119,7 +119,7 @@ public class CRUDMgr {
 	private Pattern pattSQLjsonname		= null;
 	private Pattern pattJsonColMapping 	= null;
 	private Pattern pattJsonSQL 		= null;
-	private Pattern pattJsonNameFilter			= null;
+	private Pattern pattJsonFilters		= null;
 	private Pattern pattInsertSQLtableFields 	= null;
 		
 	private JsonCrudConfig jsoncrudConfig 		= null;
@@ -190,7 +190,7 @@ public class CRUDMgr {
 			pattSQLjsonname 			= Pattern.compile("\\{(.+?)\\}");
 			pattInsertSQLtableFields 	= Pattern.compile("insert\\s+?into\\s+?("+_JSON_ATTRNAME+"?)\\s+?\\((.+?)\\)");
 			//
-			pattJsonNameFilter 	= Pattern.compile(REGEX_JSONFILTER);
+			pattJsonFilters 	= Pattern.compile(REGEX_JSONFILTER);
 			
 			try {
 				reloadProps();
@@ -1471,22 +1471,23 @@ public class CRUDMgr {
 			boolean isCaseInSensitive 	= false;
 			boolean isNotCondition		= false;
 			String sOperator 	= " = ";
-			String sJsonName 	= sOrgJsonName;
 			Object oJsonValue 	= jsonWhere.get(sOrgJsonName);
 			Map<String, String> mapSQLEscape = new HashMap<String, String>();
 			
-			String sColName = mapCrudJsonCol.get(sJsonName);;
+			String sJsonName 	= removeJsonNameFilters(sOrgJsonName);	
+			String sColName = mapCrudJsonCol.get(sJsonName);
 			
-			if(sColName==null && sJsonName.indexOf(".")>-1)
+			if(sColName!=null && sOrgJsonName.length()!=sJsonName.length())
 			{
-				Matcher m = pattJsonNameFilter.matcher(sJsonName);
+				String sFilters = sOrgJsonName.substring(sJsonName.length());
+				
+				Matcher m = pattJsonFilters.matcher(sFilters);
 				if(m.find())
 				{
-					sJsonName = m.group(1);
-					String sJsonNOT 		= m.group(2);
-					String sJsonOperator 	= m.group(3);
-					String sJsonCIorNOT_1 	= m.group(4);
-					String sJsonCIorNOT_2 	= m.group(5);
+					String sJsonNOT 		= m.group(1);
+					String sJsonOperator 	= m.group(2);
+					String sJsonCIorNOT_1 	= m.group(3);
+					String sJsonCIorNOT_2 	= m.group(4);
 										
 					if(JSONFILTER_CASE_INSENSITIVE.equalsIgnoreCase(sJsonCIorNOT_1) || JSONFILTER_CASE_INSENSITIVE.equalsIgnoreCase(sJsonCIorNOT_2) 
 							|| JSONFILTER_CASE_INSENSITIVE.equals(sJsonOperator))
@@ -3051,7 +3052,7 @@ public class CRUDMgr {
 		int iPos = aJsonName.lastIndexOf(".");
 		if(iPos >-1)
 		{
-			sOperator = aJsonName.substring(iPos+1, aJsonName.length()-1);
+			sOperator = aJsonName.substring(iPos, aJsonName.length());
 			if(!listFilterOperator.contains(sOperator))
 			{
 				sOperator = null;
@@ -3150,6 +3151,7 @@ public class CRUDMgr {
 	}
 	
 	//////////////////////////////////////////////////////////////
+	/**
 	public static void main(String args[]) throws JsonCrudException
 	{
 		Map<String, String> mapTests = new LinkedHashMap<String,String>();
@@ -3190,5 +3192,6 @@ public class CRUDMgr {
 				System.out.println(PRN_RED+"false"+PRN_RESET);
 		}
 	}
+		**/
 
 }
