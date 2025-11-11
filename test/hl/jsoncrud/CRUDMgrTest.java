@@ -126,10 +126,18 @@ public class CRUDMgrTest {
 		System.out.println("	1.6 D:"+jsonArrResult);
 		
 		//modifier (.ci and .not)
+		jsonArrResult = m.retrieve("crud.jsoncrud_cfg_values", new JSONObject());
+		System.out.println("	1.7 R with (all):"+jsonArrResult.length());
+		
 		jsonWhere = new JSONObject();
-		jsonWhere.put("cfgId.in.not", id);
+		jsonWhere.put("cfgId.not.in", id);
 		jsonArrResult = m.retrieve("crud.jsoncrud_cfg_values", jsonWhere);
-		System.out.println("	1.7 R with in.not:"+jsonArrResult);
+		System.out.println("	1.8 R with (.not.in):"+jsonArrResult.length());
+		
+		jsonWhere = new JSONObject();
+		jsonWhere.put("cfgId.in.ci", id);
+		jsonArrResult = m.retrieve("crud.jsoncrud_cfg_values", jsonWhere);
+		System.out.println("	1.9 R with (.in.ci):"+jsonArrResult.length());
 		
 	}
 	

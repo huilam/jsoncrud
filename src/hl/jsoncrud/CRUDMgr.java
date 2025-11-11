@@ -32,7 +32,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -98,12 +97,14 @@ public class CRUDMgr {
 	
 	private boolean isAbsoluteCursorSupported = true;
 	
-	private final static String REGEX_JSONFILTER = "(?:("+JSONFILTER_NOT+"))?"
-			+"(?:("+JSONFILTER_FROM+"|"+JSONFILTER_TO+"|"+JSONFILTER_IN+"|"
-			+JSONFILTER_STARTWITH+"|"+JSONFILTER_ENDWITH+"|"+JSONFILTER_CONTAIN+"|"+JSONFILTER_NOT+"|"
-			+JSONFILTER_CASE_INSENSITIVE+"))"
-		+"(?:("+JSONFILTER_CASE_INSENSITIVE+"|"+JSONFILTER_NOT+"))?"
-		+"(?:("+JSONFILTER_CASE_INSENSITIVE+"|"+JSONFILTER_NOT+"))?";
+	private final static String REGEX_JSONFILTER = 
+			 "(?:("+JSONFILTER_NOT+"))?"
+			+"(?:("
+				+ JSONFILTER_FROM+"|"+JSONFILTER_TO+"|"+JSONFILTER_IN+"|"
+				+ JSONFILTER_STARTWITH+"|"+JSONFILTER_ENDWITH+"|"+JSONFILTER_CONTAIN
+			+"))"
+			+"(?:("+JSONFILTER_CASE_INSENSITIVE+"|"+JSONFILTER_NOT+"))?"
+			+"(?:("+JSONFILTER_CASE_INSENSITIVE+"|"+JSONFILTER_NOT+"))?";
 	
 	
 	private Object initLock = new Object();
@@ -140,7 +141,7 @@ public class CRUDMgr {
 	{
 		JSONObject jsonVer = new JSONObject();
 		jsonVer.put("framework", "jsoncrud");
-		jsonVer.put("version", "0.8.6 beta");
+		jsonVer.put("version", "0.9.0 beta");
 		return jsonVer;
 	}
 	
@@ -1470,12 +1471,17 @@ public class CRUDMgr {
 		{
 			boolean isCaseInSensitive 	= false;
 			boolean isNotCondition		= false;
-			String sOperator 	= " = ";
-			Object oJsonValue 	= jsonWhere.get(sOrgJsonName);
+			String sOperator 	= " = ";			
 			Map<String, String> mapSQLEscape = new HashMap<String, String>();
 			
 			String sJsonName 	= removeJsonNameFilters(sOrgJsonName);	
 			String sColName = mapCrudJsonCol.get(sJsonName);
+			
+			Object oJsonValue 	= jsonWhere.get(sOrgJsonName);
+			if(oJsonValue!=null)
+			{
+				oJsonValue = castJson2DBVal(aCrudKey, sJsonName, oJsonValue);
+			}
 			
 			if(sColName!=null && sOrgJsonName.length()!=sJsonName.length())
 			{
@@ -1606,6 +1612,8 @@ public class CRUDMgr {
 				{
 					sCIPrefix 	= " UPPER(";
 					sCIPostfix = ") ";
+					
+					oJsonValue = ((String)oJsonValue).toUpperCase();
 				}
 
 				StringBuffer sbSQLparam = new StringBuffer();
@@ -1677,7 +1685,7 @@ public class CRUDMgr {
 				}
 				else
 				{
-					oJsonValue = castJson2DBVal(aCrudKey, sJsonName, oJsonValue);
+					//oJsonValue = castJson2DBVal(aCrudKey, sJsonName, oJsonValue);
 					listValues.add(oJsonValue);
 				}
 				
