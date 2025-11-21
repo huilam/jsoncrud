@@ -98,13 +98,15 @@ public class CRUDMgr {
 	private boolean isAbsoluteCursorSupported = true;
 	
 	private final static String REGEX_JSONFILTER = 
-			 "(?:("+JSONFILTER_NOT+"))?"
+			 "(?:(\\"+JSONFILTER_NOT+"))?"
 			+"(?:("
-				+ JSONFILTER_FROM+"|"+JSONFILTER_TO+"|"+JSONFILTER_IN+"|"
-				+ JSONFILTER_STARTWITH+"|"+JSONFILTER_ENDWITH+"|"+JSONFILTER_CONTAIN
+				+ "\\"+ JSONFILTER_FROM +"|\\"+JSONFILTER_TO
+				+"|\\"+JSONFILTER_IN
+				+"|\\"+JSONFILTER_CONTAIN
+				+"|\\"+ JSONFILTER_STARTWITH+"|\\"+JSONFILTER_ENDWITH
 			+"))"
-			+"(?:("+JSONFILTER_CASE_INSENSITIVE+"|"+JSONFILTER_NOT+"))?"
-			+"(?:("+JSONFILTER_CASE_INSENSITIVE+"|"+JSONFILTER_NOT+"))?";
+			+"(?:(\\"+JSONFILTER_CASE_INSENSITIVE+"|\\"+JSONFILTER_NOT+"))?"
+			+"(?:(\\"+JSONFILTER_CASE_INSENSITIVE+"|\\"+JSONFILTER_NOT+"))?";
 	
 	
 	private Object initLock = new Object();
@@ -1487,6 +1489,11 @@ public class CRUDMgr {
 			{
 				String sFilters = sOrgJsonName.substring(sJsonName.length());
 				
+				if(JSONFILTER_NOT.equals(sFilters))
+				{
+					sFilters += JSONFILTER_IN;
+				}
+				
 				Matcher m = pattJsonFilters.matcher(sFilters);
 				if(m.find())
 				{
@@ -2453,7 +2460,7 @@ public class CRUDMgr {
 		if(aJsonData!=null)
 		{
 			Map<String, String> mapCrudConfig = jsoncrudConfig.getConfig(aCrudKey);
-			String sCrudTableName = mapCrudConfig.get(jsoncrudConfig._PROP_KEY_TABLENAME);
+			String sCrudTableName = mapCrudConfig.get(JsonCrudConfig._PROP_KEY_TABLENAME);
 			
 			Map<String, String> mapJsonToCol = mapJson2ColName.get(aCrudKey);
 			StringBuffer sbErrInfo = new StringBuffer();
@@ -2834,7 +2841,7 @@ public class CRUDMgr {
 		}
 	}
 
-	private String listParamsToString(List listParams)
+	private String listParamsToString(List<?> listParams)
 	{
 		if(listParams!=null)
 			return listParamsToString(listParams.toArray(new Object[listParams.size()]));
@@ -2968,7 +2975,7 @@ public class CRUDMgr {
 		if(sObjSQL!=null && sObjMapping!=null)
 		{
 			Object obj				= aJsonParentData.get(aJsonName);
-			Iterator iter 			= null;
+			Iterator<?> iter 			= null;
 			boolean isKeyValPair 	= (obj instanceof JSONObject);
 			JSONObject jsonKeyVal   = null;
 			
@@ -3030,28 +3037,6 @@ public class CRUDMgr {
 		///		
 		
 		return listAllParams;
-	}
-	
-	private boolean isEmptyJson(String aJsonString)
-	{
-		if(aJsonString==null || aJsonString.trim().length()==0)
-			return true;
-		aJsonString = aJsonString.replaceAll("\\s", "");
-		
-		while(aJsonString.startsWith("{") || aJsonString.startsWith("["))
-		{
-			if(aJsonString.length()==2)
-				return true;
-			
-			if("{\"\":\"\"}".equalsIgnoreCase(aJsonString))
-			{
-				return true;
-			}
-			
-			aJsonString = aJsonString.substring(1, aJsonString.length()-1);
-		}
-				
-		return false;
 	}
 	
 	private String getFilterOperator(String aJsonName)
