@@ -132,7 +132,17 @@ public class CRUDMgrTest {
 		jsonWhere = new JSONObject();
 		jsonWhere.put("cfgId.not", id);
 		jsonArrResult = m.retrieve("crud.jsoncrud_cfg_values", jsonWhere);
-		System.out.println("	1.8 R with (.not):"+jsonArrResult.length());
+		System.out.println("	1.8.1 R with (.not):"+jsonArrResult.length());
+		
+		jsonWhere = new JSONObject();
+		jsonWhere.put("cfgId.not", id);
+		jsonArrResult = m.retrieve("crud.jsoncrud_cfg_values", jsonWhere);
+		System.out.println("	1.8.2a R with (.not):"+jsonArrResult.length());
+		
+		jsonWhere = new JSONObject();
+		jsonWhere.put("cfgId.not", id);
+		JsonCrudRestUtil.retrieveList("crud.jsoncrud_cfg_values", jsonWhere, 0, 0);
+		System.out.println("	1.8.2b R with (.not) JsonCrudRestUtil:"+jsonArrResult.length());
 		
 		jsonWhere = new JSONObject();
 		jsonWhere.put("cfgId.not.in", id);

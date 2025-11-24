@@ -174,7 +174,12 @@ public class JsonCrudRestUtil {
 	{
 		CRUDMgr crudMgr = getCRUDMgr();
 		
-		String sConfigKey = JsonCrudConfig._PROP_KEY_CRUD+"."+aCrudKey;
+		String sConfigKey = aCrudKey;
+		
+		if(!aCrudKey.startsWith(JsonCrudConfig._PROP_KEY_CRUD+"."))
+		{
+			sConfigKey = JsonCrudConfig._PROP_KEY_CRUD+"."+aCrudKey;	
+		}
 		//boolean debug = crudMgr.isDebugMode(sConfigKey);
 		
 		if(listSorting==null)
