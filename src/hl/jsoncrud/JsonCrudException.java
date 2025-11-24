@@ -26,6 +26,8 @@ import hl.common.CommonException;
 
 public class JsonCrudException extends CommonException {
 
+	private static final long serialVersionUID = 9131220368366774092L;
+
 	public JsonCrudException(String aErrCode, String aErrReason, String aErrDebugInfo, Throwable aThrowable) {
 		super(aErrCode, aErrReason, aErrDebugInfo, aThrowable);
 	}

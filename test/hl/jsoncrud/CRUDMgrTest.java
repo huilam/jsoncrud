@@ -311,7 +311,7 @@ public class CRUDMgrTest {
 		
 		System.out.println("		4.5.2 Numberic : "+_ATTRNAME_displaySeq+".in [1,7]");
 		jsonWhere = new JSONObject();
-		jsonWhere.put(_ATTRNAME_displaySeq+".in", "1 ,7");
+		jsonWhere.put(_ATTRNAME_displaySeq+".in", "1 ,7"); //will fail now
 		jsonArrResult = m.retrieve("crud.jsoncrud_cfg_values", 
 				jsonWhere, null, null);
 		

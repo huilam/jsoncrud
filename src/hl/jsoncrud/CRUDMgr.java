@@ -1476,15 +1476,16 @@ public class CRUDMgr {
 			String sOperator 	= " = ";			
 			Map<String, String> mapSQLEscape = new HashMap<String, String>();
 			
-			String sJsonName 	= removeJsonNameFilters(sOrgJsonName);	
-			String sColName = mapCrudJsonCol.get(sJsonName);
-			
 			Object oJsonValue 	= jsonWhere.get(sOrgJsonName);
 			if(oJsonValue!=null)
 			{
-				oJsonValue = castJson2DBVal(aCrudKey, sJsonName, oJsonValue);
+				// use sOrgJsonName so that it will skip multi value 
+				oJsonValue = castJson2DBVal(aCrudKey, sOrgJsonName, oJsonValue);
 			}
 			
+			String sJsonName 	= removeJsonNameFilters(sOrgJsonName);	
+			String sColName = mapCrudJsonCol.get(sJsonName);
+
 			if(sColName!=null && sOrgJsonName.length()!=sJsonName.length())
 			{
 				String sFilters = sOrgJsonName.substring(sJsonName.length());
